@@ -42,6 +42,7 @@ export default function HydrationCard({ period }: { period: Period }) {
   const [sheet, setSheet] = useState<SheetMode>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
   const goal = goalFor(goals, "water")?.target ?? null;
   const today = dateKey(new Date());
@@ -168,7 +169,7 @@ export default function HydrationCard({ period }: { period: Period }) {
             {/* Today's entries */}
             {todayEntries.length > 0 && (
               <ul className="mt-4 divide-y divide-line border-t border-line">
-                {todayEntries.map((r) => (
+                {(showAll ? todayEntries : todayEntries.slice(0, 3)).map((r) => (
                   <li key={r.id}>
                     <button
                       onClick={() => openSheet({ kind: "edit", record: r })}
@@ -184,6 +185,16 @@ export default function HydrationCard({ period }: { period: Period }) {
                     </button>
                   </li>
                 ))}
+                {todayEntries.length > 3 && (
+                  <li>
+                    <button
+                      onClick={() => setShowAll(!showAll)}
+                      className="w-full pt-2.5 text-left text-xs font-semibold text-forest"
+                    >
+                      {showAll ? "Show less" : `Show all ${todayEntries.length} entries`}
+                    </button>
+                  </li>
+                )}
               </ul>
             )}
           </>
@@ -201,13 +212,13 @@ export default function HydrationCard({ period }: { period: Period }) {
           </>
         )}
 
-        {/* Chart */}
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="mb-3 text-xs font-medium text-ink-soft">
-            {period === 1 ? "Last 7 days" : `Last ${period} days`}
-          </p>
-          <DayBars keys={keys} values={totals} target={goal} format={litres} />
-        </div>
+        {/* Chart (trends view only — the daily view stays short) */}
+        {period !== 1 && (
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="mb-3 text-xs font-medium text-ink-soft">Last {period} days</p>
+            <DayBars keys={keys} values={totals} target={goal} format={litres} />
+          </div>
+        )}
       </section>
 
       {/* Add / edit / goal sheet */}

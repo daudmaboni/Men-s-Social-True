@@ -35,10 +35,10 @@ export default function Welcome() {
   const [lang, setLang] = useState<Lang>("en");
   const t = copy[lang];
 
-  // If he already confirmed 18+ before, go straight to Home
+  // If he already confirmed 18+ before, go straight to Man
   useEffect(() => {
     try {
-      if (localStorage.getItem("ms_age_ok") === "1") router.replace("/home");
+      if (localStorage.getItem("ms_age_ok") === "1") router.replace("/man");
     } catch {}
   }, [router]);
 
@@ -47,7 +47,7 @@ export default function Welcome() {
       localStorage.setItem("ms_age_ok", "1");
       localStorage.setItem("ms_lang", lang);
     } catch {}
-    router.push("/home");
+    router.push("/man");
   }
 
   return (

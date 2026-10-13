@@ -98,9 +98,11 @@ export default function CheckInCard({ period }: { period: Period }) {
                 </div>
               </div>
             )}
-            <div className="mt-3">
-              <DayBars keys={keys} values={values} target={null} scaleMax={5} format={(v) => `${v}/5`} compact />
-            </div>
+            {period !== 1 && (
+              <div className="mt-3">
+                <DayBars keys={keys} values={values} target={null} scaleMax={5} format={(v) => `${v}/5`} compact />
+              </div>
+            )}
           </div>
         );
       })}

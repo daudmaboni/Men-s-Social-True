@@ -139,10 +139,12 @@ export default function SleepCard({ period }: { period: Period }) {
           </div>
         )}
 
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="mb-3 text-xs font-medium text-ink-soft">{period === 1 ? "Last 7 nights" : `Last ${period} nights`}</p>
-          <DayBars keys={keys} values={values} target={goal} format={duration} />
-        </div>
+        {period !== 1 && (
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="mb-3 text-xs font-medium text-ink-soft">Last {period} nights</p>
+            <DayBars keys={keys} values={values} target={goal} format={duration} />
+          </div>
+        )}
       </section>
 
       <Sheet open={mode !== null} onClose={() => setMode(null)} title={mode === "goal" ? "Sleep goal" : "Last night's sleep"}>

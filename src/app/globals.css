@@ -26,6 +26,10 @@
   --font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
@@ -97,6 +101,14 @@ body {
 .backdrop-in { animation: backdrop-in 0.25s ease-out both; }
 .sheet-in { animation: sheet-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* 5. Points burst: "+15" floats up and fades when an activity is done */
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(4px) scale(0.9); }
+  20% { opacity: 1; transform: translateY(0) scale(1.05); }
+  100% { opacity: 0; transform: translateY(-28px) scale(1); }
+}
+.float-up { animation: float-up 0.9s ease-out both; pointer-events: none; }
+
 /* Hatched (striped) bar, like Fernly's empty days */
 .hatch {
   background-image: repeating-linear-gradient(
@@ -110,5 +122,5 @@ body {
 /* Respect phones set to "reduce motion" */
 @media (prefers-reduced-motion: reduce) {
   .rise, .page-enter, .stagger > *, .grow-bar,
-  .toast-in, .toast-out, .backdrop-in, .sheet-in { animation: none; }
+  .toast-in, .toast-out, .backdrop-in, .sheet-in, .float-up { animation: none; }
 }
