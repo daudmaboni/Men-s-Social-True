@@ -1,0 +1,10 @@
+{
+  "name": "Kayani Men's Social",
+  "short_name": "Men's Social",
+  "description": "Your private companion for men's wellness.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f4",
+  "theme_color": "#0f5c46",
+  "icons": [{ "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }]
+}
