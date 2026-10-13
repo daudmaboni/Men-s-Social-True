@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { ArrowLeft, Bookmark } from "lucide-react";
 import { ContentRow } from "@/components/social/ContentCards";
-import { LIBRARY } from "@/lib/content/library";
+import { useLibrary } from "@/lib/content/useLibrary";
+import type { ContentItem } from "@/lib/content/types";
 import { useSocial } from "@/lib/social/store";
 
 export default function SavedPage() {
   const { bookmarks, ready } = useSocial();
+  const library = useLibrary().items;
   const items = Object.entries(bookmarks)
     .sort((a, b) => b[1].localeCompare(a[1])) // newest saved first
-    .map(([id]) => LIBRARY.find((c) => c.id === id))
-    .filter((c): c is (typeof LIBRARY)[number] => Boolean(c));
+    .map(([id]) => library.find((c) => c.id === id))
+    .filter((c): c is ContentItem => Boolean(c));
 
   return (
     <div className="stagger space-y-4">

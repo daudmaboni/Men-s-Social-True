@@ -3,6 +3,7 @@
 // where Daud can add, edit and schedule it. Point values are configurable there too.
 
 import { LIBRARY } from "../content/library";
+import type { ContentItem } from "../content/types";
 
 export type Slot = "morning" | "afternoon" | "evening";
 
@@ -100,15 +101,22 @@ const TOPIC_LABEL: Record<string, string> = {
   wellbeing: "Lifestyle",
 };
 
-export const LESSONS: Lesson[] = LIBRARY.filter((c) => c.inManFeed).map((c) => ({
-  id: c.id,
-  title: c.title,
-  topic: TOPIC_LABEL[c.topic] ?? c.topic,
-  minutes: c.minutes,
-  summary: c.summary,
-  body: c.body ?? [],
-  points: c.points ?? 10,
-}));
+/** Daily lessons for the Man tab: any content marked "show on Man tab" (built-in or published in the Studio). */
+export function lessonsFrom(items: ContentItem[]): Lesson[] {
+  return items
+    .filter((c) => c.inManFeed)
+    .map((c) => ({
+      id: c.id,
+      title: c.title,
+      topic: TOPIC_LABEL[c.topic] ?? c.topic,
+      minutes: c.minutes,
+      summary: c.summary,
+      body: c.body ?? [],
+      points: c.points ?? 10,
+    }));
+}
+
+export const LESSONS: Lesson[] = lessonsFrom(LIBRARY);
 
 export const TIPS: string[] = [
   "Drink a glass of water before your morning tea.",

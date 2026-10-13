@@ -1,6 +1,8 @@
 "use client";
 
-import { ACTIVITIES, LESSONS, TIPS } from "@/lib/feed/catalog";
+import { useMemo } from "react";
+import { ACTIVITIES, lessonsFrom, TIPS } from "@/lib/feed/catalog";
+import { useLibrary } from "@/lib/content/useLibrary";
 import {
   activeDays,
   activityStatus,
@@ -22,6 +24,8 @@ import { useProgress } from "@/lib/progress/store";
 export function useHomeFeed() {
   const feed = useFeed();
   const progress = useProgress();
+  const library = useLibrary().items;
+  const LESSONS = useMemo(() => lessonsFrom(library), [library]);
   const ready = feed.ready && progress.ready;
 
   const now = new Date();

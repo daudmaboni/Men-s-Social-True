@@ -5,7 +5,8 @@ import { SlidersHorizontal } from "lucide-react";
 import FeaturedCard from "./FeaturedCard";
 import { SectionRow } from "./ContentCards";
 import InterestsSheet from "./InterestsSheet";
-import { LIBRARY, TOPICS } from "@/lib/content/library";
+import { TOPICS } from "@/lib/content/library";
+import { useLibrary } from "@/lib/content/useLibrary";
 import { orderSections, pickFeatured, sectionItems } from "@/lib/content/select";
 import { useSocial } from "@/lib/social/store";
 
@@ -25,10 +26,11 @@ export function DiscoverSkeleton() {
 export default function Discover() {
   const { interests, ready } = useSocial();
   const [pickTopics, setPickTopics] = useState(false);
+  const { items } = useLibrary();
 
   if (!ready) return <DiscoverSkeleton />;
 
-  const featured = pickFeatured(interests, LIBRARY);
+  const featured = pickFeatured(interests, items);
   if (!featured) {
     return (
       <div className="rounded-3xl bg-surface p-8 text-center ring-1 ring-line">
@@ -66,7 +68,7 @@ export default function Discover() {
       </button>
 
       {orderSections(interests).map((s) => (
-        <SectionRow key={s.id} id={s.id} title={s.title} blurb={s.blurb} items={sectionItems(s.id, featured.id)} />
+        <SectionRow key={s.id} id={s.id} title={s.title} blurb={s.blurb} items={sectionItems(s.id, featured.id, items)} />
       ))}
 
       <p className="px-2 text-center text-[11px] leading-relaxed text-ink-soft">

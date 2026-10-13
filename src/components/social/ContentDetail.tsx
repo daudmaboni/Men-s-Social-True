@@ -8,16 +8,28 @@ import BookmarkButton from "./BookmarkButton";
 import { ContentRow } from "./ContentCards";
 import { DoctorCheck, PelvicFloorTrainer, QuizRunner } from "./ContentTools";
 import { useToast } from "@/components/motion/Toast";
-import { LIBRARY, TOPICS } from "@/lib/content/library";
+import { TOPICS } from "@/lib/content/library";
+import { useLibrary } from "@/lib/content/useLibrary";
 import { getContent, KIND_LABEL } from "@/lib/content/select";
 import { feedStore, useFeed } from "@/lib/feed/store";
 
 /** Full page for any piece of content: guide, article, video, quiz, tool or expert answer. */
 export default function ContentDetail({ id, back }: { id: string; back: { href: string; label: string } }) {
-  const item = getContent(id);
+  const library = useLibrary();
+  const item = getContent(id, library.items);
   const feed = useFeed();
   const showToast = useToast();
   const [lang, setLang] = useState<"en" | "sw">("en");
+
+  if (!item && !library.ready) {
+    return (
+      <div className="space-y-4" aria-busy="true" aria-label="Loading">
+        <div className="aspect-[16/9] animate-pulse rounded-[28px] bg-forest-deep/15" />
+        <div className="h-7 w-3/4 animate-pulse rounded-full bg-line" />
+        <div className="h-40 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
+      </div>
+    );
+  }
 
   if (!item) {
     return (
@@ -41,7 +53,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   const title = sw && item.titleSw ? item.titleSw : item.title;
   const body = sw ? item.bodySw : item.body;
   const read = Boolean(feed.lessons[item.id]);
-  const related = LIBRARY.filter((c) => c.topic === item.topic && c.id !== item.id)
+  const related = library.items.filter((c) => c.topic === item.topic && c.id !== item.id)
     .sort((a, b) => b.priority - a.priority)
     .slice(0, 3);
 

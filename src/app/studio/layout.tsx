@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
-      <main className="mx-auto min-h-dvh max-w-3xl px-5 pb-16 pt-6">{children}</main>
+      <main className="mx-auto min-h-dvh max-w-6xl px-5 pb-16 pt-6">{children}</main>
     </ToastProvider>
   );
 }

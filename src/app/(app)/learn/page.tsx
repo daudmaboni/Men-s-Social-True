@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Check } from "lucide-react";
-import { LESSONS } from "@/lib/feed/catalog";
+import { lessonsFrom } from "@/lib/feed/catalog";
+import { useLibrary } from "@/lib/content/useLibrary";
 import { useFeed } from "@/lib/feed/store";
 
 export default function LearnPage() {
   const feed = useFeed();
+  const LESSONS = lessonsFrom(useLibrary().items);
   return (
     <div className="stagger space-y-4">
       <Link href="/man" className="flex items-center gap-1 text-sm text-ink-soft">

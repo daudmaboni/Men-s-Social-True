@@ -17,7 +17,7 @@ export default function Cover({
   className = "",
   showPlay = true,
 }: {
-  item: Pick<ContentItem, "cover" | "kind" | "id">;
+  item: Pick<ContentItem, "cover" | "kind" | "id" | "coverImageUrl">;
   className?: string;
   showPlay?: boolean;
 }) {
@@ -28,6 +28,10 @@ export default function Cover({
 
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ background: t.bg }} aria-hidden="true">
+      {item.coverImageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- images come from Supabase storage, any size
+        <img src={item.coverImageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
       <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
         {item.cover.motif === "rings" && (
           <g fill="none" strokeWidth="18">
@@ -76,6 +80,7 @@ export default function Cover({
           </g>
         )}
       </svg>
+      )}
       {showPlay && item.kind === "video" && (
         <span className="absolute inset-0 flex items-center justify-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 text-forest-deep shadow-lg">

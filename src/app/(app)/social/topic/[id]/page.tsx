@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { ContentRow } from "@/components/social/ContentCards";
+import { useLibrary } from "@/lib/content/useLibrary";
 import { isSectionId, sectionAll, SECTIONS } from "@/lib/content/select";
 
 export default function TopicPage() {
   const { id } = useParams<{ id: string }>();
   const valid = isSectionId(id);
-  const items = valid ? sectionAll(id) : [];
+  const library = useLibrary().items;
+  const items = valid ? sectionAll(id, library) : [];
   const section = SECTIONS.find((s) => s.id === id);
 
   return (

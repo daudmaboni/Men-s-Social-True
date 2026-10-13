@@ -6,6 +6,7 @@ import { ContentRow } from "./ContentCards";
 import PostCard from "./PostCard";
 import { useCommunity } from "./useCommunity";
 import { searchContent } from "@/lib/content/select";
+import { useLibrary } from "@/lib/content/useLibrary";
 import { topicLabel } from "@/lib/social/community";
 import { TOPICS } from "@/lib/content/library";
 
@@ -16,10 +17,11 @@ export default function SearchPanel({ tab, onClose }: { tab: "discover" | "commu
   const [q, setQ] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const c = useCommunity();
+  const library = useLibrary().items;
   useEffect(() => input.current?.focus(), []);
 
   const words = norm(q).split(/\s+/).filter((w) => w.length > 1);
-  const content = tab === "discover" ? searchContent(q) : [];
+  const content = tab === "discover" ? searchContent(q, library) : [];
   const posts =
     tab === "community" && words.length
       ? c

@@ -45,7 +45,16 @@ export interface ContentItem {
   titleSw?: string;
   /** Where the content was adapted from, e.g. a Kayani Herbs Instagram post. */
   origin?: { platform: "instagram"; url: string; postedAt: string; format: "reel" | "post" | "carousel" };
+  /** Uploaded cover photo (Content Studio). When set, it replaces the drawn cover. */
+  coverImageUrl?: string;
+  /** Content Studio fields */
+  status?: ContentStatus;
+  updatedAt?: string;
+  /** true = shipped with the app (catalog files), false/undefined = from the database */
+  builtIn?: boolean;
 }
+
+export type ContentStatus = "draft" | "published" | "archived";
 
 export interface Topic {
   id: TopicId;
