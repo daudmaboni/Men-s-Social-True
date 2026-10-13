@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Lang = "en" | "sw";
 
@@ -15,7 +16,6 @@ const copy = {
     ageQuestion: "This app talks openly about men's sexual health.",
     confirm: "I am 18 or older",
     privacy: "No sign-up needed to look around. Your data stays private.",
-    welcome: "Welcome in. The home feed is coming next.",
   },
   sw: {
     tagline: "Mwenzako wa siri kwa afya ya mwanaume",
@@ -27,14 +27,28 @@ const copy = {
     ageQuestion: "Programu hii inazungumzia afya ya uzazi ya mwanaume kwa uwazi.",
     confirm: "Nina miaka 18 au zaidi",
     privacy: "Huhitaji kujisajili ili kuangalia. Taarifa zako ni siri.",
-    welcome: "Karibu. Ukurasa wa nyumbani unakuja hivi karibuni.",
   },
 } as const;
 
 export default function Welcome() {
+  const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
-  const [entered, setEntered] = useState(false);
   const t = copy[lang];
+
+  // If he already confirmed 18+ before, go straight to Home
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("ms_age_ok") === "1") router.replace("/home");
+    } catch {}
+  }, [router]);
+
+  function enter() {
+    try {
+      localStorage.setItem("ms_age_ok", "1");
+      localStorage.setItem("ms_lang", lang);
+    } catch {}
+    router.push("/home");
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-8 pt-6">
@@ -78,19 +92,13 @@ export default function Welcome() {
 
       {/* Age check */}
       <section className="rise rise-3 mt-4 rounded-3xl bg-surface p-5 ring-1 ring-line">
-        {entered ? (
-          <p className="text-center text-sm font-medium text-forest">{t.welcome}</p>
-        ) : (
-          <>
-            <p className="text-sm text-ink-soft">{t.ageQuestion}</p>
-            <button
-              onClick={() => setEntered(true)}
-              className="mt-4 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
-            >
-              {t.confirm}
-            </button>
-          </>
-        )}
+        <p className="text-sm text-ink-soft">{t.ageQuestion}</p>
+        <button
+          onClick={enter}
+          className="mt-4 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
+        >
+          {t.confirm}
+        </button>
       </section>
 
       <p className="rise rise-4 mt-auto pt-8 text-center text-xs text-ink-soft">{t.privacy}</p>

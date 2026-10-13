@@ -43,6 +43,72 @@ body {
 .rise-3 { animation-delay: 0.16s; }
 .rise-4 { animation-delay: 0.24s; }
 
+/* ===== Motion kit (Fernly-style) ===== */
+
+/* 1. Page enter: whole page fades in */
+@keyframes page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.page-enter { animation: page-in 0.35s ease-out both; }
+
+/* 1b. Stagger: each direct child rises in, one after another */
+.stagger > * { animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.stagger > *:nth-child(6) { animation-delay: 0.34s; }
+.stagger > *:nth-child(7) { animation-delay: 0.40s; }
+.stagger > *:nth-child(n + 8) { animation-delay: 0.46s; }
+
+/* 2. Bars grow upward */
+@keyframes grow-up {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.grow-bar {
+  transform-origin: bottom;
+  animation: grow-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* 3. Toast pill: pops up from the bottom, then fades away */
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 16px) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  to { opacity: 0; transform: translate(-50%, 8px) scale(0.98); }
+}
+.toast-in { animation: toast-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.toast-out { animation: toast-out 0.25s ease-in both; }
+
+/* 4. Popup sheet: background dims + blurs, card scales in */
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.backdrop-in { animation: backdrop-in 0.25s ease-out both; }
+.sheet-in { animation: sheet-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Hatched (striped) bar, like Fernly's empty days */
+.hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--line) 0 2px,
+    transparent 2px 7px
+  );
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Respect phones set to "reduce motion" */
 @media (prefers-reduced-motion: reduce) {
-  .rise { animation: none; }
+  .rise, .page-enter, .stagger > *, .grow-bar,
+  .toast-in, .toast-out, .backdrop-in, .sheet-in { animation: none; }
 }
