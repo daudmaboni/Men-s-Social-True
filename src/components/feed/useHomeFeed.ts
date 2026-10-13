@@ -68,6 +68,7 @@ export function useHomeFeed() {
     streak,
     isNew: points === 0,
     reminder,
+    pointDays,
     lesson: pickForDay(LESSONS, today),
     lessonRead: (id: string) => Boolean(feed.lessons[id]),
     tip: pickForDay(TIPS, today),

@@ -10,6 +10,7 @@ import { DoctorCheck, PelvicFloorTrainer, QuizRunner } from "./ContentTools";
 import { useToast } from "@/components/motion/Toast";
 import { TOPICS } from "@/lib/content/library";
 import { useLibrary } from "@/lib/content/useLibrary";
+import { useLang, type Lang } from "@/lib/me/lang";
 import { getContent, KIND_LABEL } from "@/lib/content/select";
 import { feedStore, useFeed } from "@/lib/feed/store";
 
@@ -19,7 +20,10 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   const item = getContent(id, library.items);
   const feed = useFeed();
   const showToast = useToast();
-  const [lang, setLang] = useState<"en" | "sw">("en");
+  // Opens in the language he chose (Me tab); he can still switch on the page
+  const appLang = useLang();
+  const [picked, setLang] = useState<Lang | null>(null);
+  const lang = picked ?? appLang;
 
   if (!item && !library.ready) {
     return (
