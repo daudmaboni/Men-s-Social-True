@@ -11,7 +11,6 @@ import { useHomeFeed } from "@/components/feed/useHomeFeed";
 import CheckInCard from "@/components/progress/CheckInCard";
 import HydrationCard from "@/components/progress/HydrationCard";
 import SleepCard from "@/components/progress/SleepCard";
-import SaveProgressCard, { WhereSavedNote } from "@/components/account/SaveProgressCard";
 
 export default function ManTab() {
   const f = useHomeFeed();
@@ -42,7 +41,6 @@ export default function ManTab() {
         <HydrationCard period={1} />
       </div>
       <ActivitiesCard f={f} />
-      <SaveProgressCard points={f.points} />
 
       <LessonCard f={f} />
       <TipCard f={f} />
@@ -51,7 +49,7 @@ export default function ManTab() {
         <TrendsSection />
       </div>
 
-      <WhereSavedNote />
+      <p className="px-2 pt-2 text-center text-[11px] text-ink-soft">Saved privately to your account.</p>
     </div>
   );
 }

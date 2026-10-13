@@ -57,7 +57,7 @@ export default function Community() {
       </div>
 
       {/* Topic filter + sort */}
-      <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]" role="tablist" aria-label="Topic">
+      <div className="flex gap-2 overflow-x-auto rounded-full pb-1 [scrollbar-width:none]" role="tablist" aria-label="Topic">
         {[{ id: "all", label: "All" }, ...COMMUNITY_TOPICS].map((t) => (
           <button
             key={t.id}

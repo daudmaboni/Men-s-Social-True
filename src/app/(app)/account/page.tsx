@@ -78,7 +78,7 @@ function AccountInner() {
         <div className="space-y-2">
           <button
             onClick={async () => {
-              const r = await account.signInGoogle();
+              const r = await account.signInGoogle(afterSignIn);
               if (r.error) showToast(r.error);
             }}
             disabled={!AUTH_METHODS.google}

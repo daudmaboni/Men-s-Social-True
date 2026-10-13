@@ -1,7 +1,6 @@
 "use client";
 
 // A friendly "create a free account" invite at the right moments, never more than once per moment:
-// - first-points: he just earned his first points
 // - first-save: he saved his first guide
 // Only shown to guests. He can always say "Not now".
 
@@ -11,15 +10,11 @@ import { ShieldCheck } from "lucide-react";
 import Sheet from "@/components/motion/Sheet";
 import { useAccount } from "@/lib/account/useAccount";
 
-export type InviteReason = "first-points" | "first-save";
+export type InviteReason = "first-save";
 const EVENT = "ms-account-invite";
 const seenKey = (r: InviteReason) => `ms_invite_${r}`;
 
 const COPY: Record<InviteReason, { title: string; text: string }> = {
-  "first-points": {
-    title: "Nice start! 🎉",
-    text: "You just earned your first points. Create a free account so your progress is safe, even if you change phones.",
-  },
   "first-save": {
     title: "Saved for later",
     text: "Create a free account and your saved guides follow you to any phone.",

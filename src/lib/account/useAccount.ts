@@ -90,10 +90,12 @@ export const account = {
     return { error: error ? friendly(error.message) : null };
   },
 
-  async signInGoogle(): Promise<Result> {
+  /** Google sends him back to `next` (the tab or page he started from). */
+  async signInGoogle(next = "/me"): Promise<Result> {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
-    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}/me` } });
+    const safe = next.startsWith("/") && !next.startsWith("//") ? next : "/me";
+    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}${safe}` } });
     return { error: error ? friendly(error.message) : null };
   },
 

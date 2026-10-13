@@ -24,9 +24,27 @@ function SocialInner() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between">
-        <h1 className="text-[28px] font-bold leading-none">Social</h1>
-        <div className="flex gap-2">
+      {/* One row: Discover / Community on the left, Search and Saved on the right */}
+      <header className="flex items-center justify-between gap-2">
+        <h1 className="sr-only">Social</h1>
+        <div className="inline-flex rounded-full bg-surface p-1 ring-1 ring-line" role="tablist" aria-label="Social sections">
+          {(["discover", "community"] as const).map((t) => (
+            <button
+              key={t}
+              role="tab"
+              id={`tab-${t}`}
+              aria-selected={tab === t}
+              aria-controls="social-panel"
+              onClick={() => setTab(t)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                tab === t ? "bg-forest-deep text-white" : "text-ink-soft"
+              }`}
+            >
+              {t === "discover" ? "Discover" : "Community"}
+            </button>
+          ))}
+        </div>
+        <div className="flex shrink-0 gap-2">
           <button
             aria-label="Search"
             aria-pressed={searching}
@@ -44,24 +62,6 @@ function SocialInner() {
           </Link>
         </div>
       </header>
-
-      <div className="inline-flex rounded-full bg-surface p-1 ring-1 ring-line" role="tablist" aria-label="Social sections">
-        {(["discover", "community"] as const).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            id={`tab-${t}`}
-            aria-selected={tab === t}
-            aria-controls="social-panel"
-            onClick={() => setTab(t)}
-            className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
-              tab === t ? "bg-forest-deep text-white" : "text-ink-soft"
-            }`}
-          >
-            {t === "discover" ? "Discover" : "Community"}
-          </button>
-        ))}
-      </div>
 
       <div id="social-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} key={`${tab}-${searching}`} className="page-enter">
         {searching ? (

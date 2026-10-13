@@ -13,6 +13,8 @@ import SocialTab from "@/components/tabs/SocialTab";
 import ManTab from "@/components/tabs/ManTab";
 import MeTab from "@/components/tabs/MeTab";
 import { bubbleShape, isTabRoot, TAB_PATHS, tabFor } from "@/lib/tabs";
+import LockedTab from "@/components/account/LockedTab";
+import { useAccount } from "@/lib/account/useAccount";
 
 const PANELS = [SocialTab, ManTab, MeTab];
 
@@ -33,6 +35,9 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
   const [placed, setPlaced] = useState(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frame = useRef(0);
+  // Man and Me hold his private records: guests see a locked preview instead
+  const acc = useAccount();
+  const locked = acc.status === "guest";
 
   // Put the strip on the right tab: instantly on first load, smoothly when a tab is tapped
   useLayoutEffect(() => {
@@ -97,7 +102,13 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
           >
             <div className="mx-auto max-w-md px-5 pb-32 pt-6">
               <PanelBoundary>
-                <Panel />
+                {i > 0 && acc.status === "loading" ? (
+                  <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
+                ) : i > 0 && locked ? (
+                  <LockedTab tab={i === 1 ? "man" : "me"} />
+                ) : (
+                  <Panel />
+                )}
               </PanelBoundary>
             </div>
           </section>

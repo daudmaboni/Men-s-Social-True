@@ -69,7 +69,7 @@ export function SectionRow({
           See all <ChevronRight size={14} />
         </Link>
       </div>
-      <div className="-mx-5 mt-3 flex snap-x gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
+      <div className="mt-3 flex snap-x gap-3 overflow-x-auto rounded-3xl pb-1 [scrollbar-width:none]">
         {items.map((c) => (
           <ContentCard key={c.id} item={c} />
         ))}

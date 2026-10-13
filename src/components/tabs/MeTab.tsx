@@ -44,7 +44,7 @@ export default function MeTab() {
 
   return (
     <div className="stagger space-y-4">
-      <h1 className="text-2xl font-bold">Me</h1>
+      <h1 className="sr-only">Me</h1>
       <ProfileHero
         nickname={social.nickname}
         points={f.points}
