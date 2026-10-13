@@ -22,6 +22,8 @@ const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false } };
 const SERVER_STATE: FeedState = { ...EMPTY, ready: false };
 let cache: FeedState | null = null;
 const listeners = new Set<() => void>();
+/** Told only about HIS changes (not about data arriving from his account), so they can be saved to it. */
+const changeListeners = new Set<() => void>();
 
 function load(): FeedState {
   if (cache) return cache;
@@ -51,6 +53,7 @@ function save(next: FeedDB) {
     // keep working in memory
   }
   listeners.forEach((l) => l());
+  changeListeners.forEach((l) => l());
 }
 
 export function useFeed(): FeedState {
@@ -94,5 +97,36 @@ export const feedStore = {
   setDiscreet(discreet: boolean) {
     const db = load();
     save({ ...db, settings: { ...db.settings, discreet } });
+  },
+};
+
+/** Used by account sync: read, replace or clear this phone's copy. */
+export const feedSync = {
+  get(): FeedDB {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { ready, ...db } = load();
+    return db;
+  },
+  /** Data from his account: saved on the phone and shown, but not sent back again. */
+  replace(db: FeedDB) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(db));
+    } catch {}
+    cache = null;
+    load();
+    listeners.forEach((l) => l());
+  },
+  clear() {
+    try {
+      localStorage.removeItem(KEY);
+    } catch {}
+    cache = null;
+    listeners.forEach((l) => l());
+  },
+  onChange(cb: () => void) {
+    changeListeners.add(cb);
+    return () => {
+      changeListeners.delete(cb);
+    };
   },
 };

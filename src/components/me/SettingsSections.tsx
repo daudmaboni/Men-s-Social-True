@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Download, Droplet, EyeOff, Globe, Moon, ShieldCheck, Stethoscope, Trash2, UserPlus } from "lucide-react";
+import { ChevronRight, Download, Droplet, EyeOff, Globe, Moon, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
 import InterestsSheet from "@/components/social/InterestsSheet";
@@ -12,6 +12,9 @@ import { feedStore } from "@/lib/feed/store";
 import { deleteMyData, exportMyData } from "@/lib/me/data";
 import { setLang, type Lang } from "@/lib/me/lang";
 import { progressStore } from "@/lib/progress/store";
+import AccountCard from "@/components/account/AccountCard";
+import type { AccountState } from "@/lib/account/useAccount";
+import { deleteCloudData, stopSync } from "@/lib/account/sync";
 
 /* ───────── Goals and topics ───────── */
 export function GoalsCard({ water, sleep, interests }: { water: number | null; sleep: number | null; interests: TopicId[] }) {
@@ -148,7 +151,8 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
 }
 
 /* ───────── Account, privacy and help ───────── */
-export function PrivacyCard() {
+export function PrivacyCard({ acc }: { acc: AccountState }) {
+  const signedIn = acc.status === "signedIn";
   const showToast = useToast();
   const [confirm, setConfirm] = useState(false);
 
@@ -168,7 +172,16 @@ export function PrivacyCard() {
     }
   }
 
-  function removeAll() {
+  async function removeAll() {
+    if (signedIn) {
+      stopSync({ clearPhone: false });
+      try {
+        await deleteCloudData(acc.user.id);
+      } catch {
+        showToast("Couldn't delete from your account. Check your internet.");
+        return;
+      }
+    }
     try {
       deleteMyData(localStorage);
     } catch {}
@@ -178,18 +191,7 @@ export function PrivacyCard() {
 
   return (
     <>
-      <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
-        <div className="flex gap-3">
-          <UserPlus size={18} className="mt-0.5 shrink-0 text-forest" />
-          <div>
-            <p className="font-semibold">Account</p>
-            <p className="mt-1 text-sm text-ink-soft">
-              You&apos;re using Men&apos;s Social as a guest. Everything is saved on this phone only. Accounts are coming soon, so
-              you can change phones without losing your progress.
-            </p>
-          </div>
-        </div>
-      </section>
+      <AccountCard acc={acc} />
 
       <section className="divide-y divide-line rounded-3xl bg-surface ring-1 ring-line">
         <div className="flex gap-3 p-5">
@@ -197,8 +199,10 @@ export function PrivacyCard() {
           <div>
             <p className="font-semibold">Your privacy</p>
             <p className="mt-1 text-sm text-ink-soft">
-              Your check-ins, sleep, water and notes stay on this phone. We never use them for adverts and never ask for intimate
-              photos.
+              {signedIn
+                ? "Your check-ins, sleep, water and notes are saved privately in your account. Only you can see them, not even Kayani staff."
+                : "Your check-ins, sleep, water and notes stay on this phone."}{" "}
+              We never use them for adverts and never ask for intimate photos.
             </p>
           </div>
         </div>
@@ -231,8 +235,8 @@ export function PrivacyCard() {
 
       <Sheet open={confirm} onClose={() => setConfirm(false)} title="Delete everything?">
         <p className="text-sm text-ink-soft">
-          This removes your points, badges, check-ins, sleep and water records, saved guides and posts from this phone. It
-          can&apos;t be undone.
+          This removes your points, badges, check-ins, sleep and water records, saved guides and posts
+          {signedIn ? " from this phone and from your account (your login stays)" : " from this phone"}. It can&apos;t be undone.
         </p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button onClick={() => setConfirm(false)} className="rounded-full py-3 text-sm font-semibold ring-1 ring-line">

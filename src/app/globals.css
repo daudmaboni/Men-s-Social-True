@@ -124,3 +124,78 @@ body {
   .rise, .page-enter, .stagger > *, .grow-bar,
   .toast-in, .toast-out, .backdrop-in, .sheet-in, .float-up { animation: none; }
 }
+
+/* ===== Tabs: sliding strip of tabs + liquid glass tab bar ===== */
+
+/* The strip: three full-screen tabs side by side. The phone's own scrolling moves it. */
+.tab-strip {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-behavior: auto;
+  transition: opacity 0.15s ease-out;
+}
+.tab-strip::-webkit-scrollbar { display: none; }
+/* Each tab scrolls up and down on its own, and remembers where it was */
+.tab-panel {
+  flex: 0 0 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overscroll-behavior-y: contain;
+}
+/* Card rows that scroll sideways stop at their ends instead of dragging the whole tab along */
+.tab-panel .overflow-x-auto { overscroll-behavior-x: contain; }
+
+/* Pages that open on top of a tab */
+.overlay-page {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  background: var(--bg);
+  overscroll-behavior-y: contain;
+}
+@keyframes slide-from-right {
+  from { opacity: 0.6; transform: translateX(40%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.slide-from-right { animation: slide-from-right 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+
+/* Frosted glass bar: page shows through, blurred and a little brighter */
+.glass-bar {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.42));
+  -webkit-backdrop-filter: blur(22px) saturate(1.8);
+  backdrop-filter: blur(22px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 10px 30px rgba(7, 59, 45, 0.16),
+    0 2px 6px rgba(7, 59, 45, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(7, 59, 45, 0.04);
+}
+/* The bubble: a brighter piece of glass with a mint tint and a light edge */
+.glass-bubble {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(223, 243, 234, 0.85));
+  box-shadow:
+    0 4px 14px rgba(15, 92, 70, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 0 0 1px rgba(93, 202, 165, 0.25);
+}
+/* Bubble position and stretch come straight from the strip (set while it moves) */
+.tab-bubble-track { transform: translateX(calc(var(--tab-pos, 0) * 100%)); will-change: transform; }
+.tab-bubble { transform: scale(var(--tab-stretch, 1), calc(2 - var(--tab-stretch, 1))); }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-bar { background: rgba(255, 255, 255, 0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-from-right { animation: none; }
+}

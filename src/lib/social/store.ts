@@ -23,6 +23,8 @@ const EMPTY: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [],
 const SERVER_STATE: SocialState = { ...EMPTY, ready: false };
 let cache: SocialState | null = null;
 const listeners = new Set<() => void>();
+/** Told only about HIS changes (not about data arriving from his account), so they can be saved to it. */
+const changeListeners = new Set<() => void>();
 
 const obj = <T,>(v: unknown, fallback: T): T => (v && typeof v === "object" ? (v as T) : fallback);
 
@@ -58,6 +60,7 @@ function save(next: SocialDB) {
     // keep working in memory
   }
   listeners.forEach((l) => l());
+  changeListeners.forEach((l) => l());
 }
 
 const id = () =>
@@ -148,5 +151,36 @@ export const socialStore = {
     const reports = { ...db.reports };
     delete reports[targetId];
     save({ ...db, reports });
+  },
+};
+
+/** Used by account sync: read, replace or clear this phone's copy. */
+export const socialSync = {
+  get(): SocialDB {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { ready, ...db } = load();
+    return db;
+  },
+  /** Data from his account: saved on the phone and shown, but not sent back again. */
+  replace(db: SocialDB) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(db));
+    } catch {}
+    cache = null;
+    load();
+    listeners.forEach((l) => l());
+  },
+  clear() {
+    try {
+      localStorage.removeItem(KEY);
+    } catch {}
+    cache = null;
+    listeners.forEach((l) => l());
+  },
+  onChange(cb: () => void) {
+    changeListeners.add(cb);
+    return () => {
+      changeListeners.delete(cb);
+    };
   },
 };

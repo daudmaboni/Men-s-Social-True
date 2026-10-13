@@ -1,10 +1,16 @@
 import BottomNav from "@/components/BottomNav";
+import TabPager from "@/components/TabPager";
 import { ToastProvider } from "@/components/motion/Toast";
+import AccountSync from "@/components/account/AccountSync";
+import AccountInviteSheet from "@/components/account/AccountInvite";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
-      <main className="mx-auto min-h-dvh max-w-md px-5 pb-28 pt-6">{children}</main>
+      <AccountSync />
+      <AccountInviteSheet />
+      {/* The three tabs live in the pager; other pages (children) open on top of it */}
+      <TabPager>{children}</TabPager>
       <BottomNav />
     </ToastProvider>
   );

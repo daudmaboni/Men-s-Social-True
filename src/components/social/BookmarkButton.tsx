@@ -3,6 +3,7 @@
 import { Bookmark } from "lucide-react";
 import { useToast } from "@/components/motion/Toast";
 import { socialStore, useSocial } from "@/lib/social/store";
+import { inviteToAccount } from "@/components/account/AccountInvite";
 
 export default function BookmarkButton({
   contentId,
@@ -34,6 +35,7 @@ export default function BookmarkButton({
         e.stopPropagation();
         const nowSaved = socialStore.toggleBookmark(contentId);
         showToast(nowSaved ? "Saved" : "Removed from saved");
+        if (nowSaved) inviteToAccount("first-save");
       }}
       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-transform active:scale-90 ${styles}`}
     >

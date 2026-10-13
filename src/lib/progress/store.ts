@@ -28,6 +28,8 @@ function withDefaults(goals: Goal[]): Goal[] {
 const SERVER_STATE: ProgressState = { records: [], goals: DEFAULT_GOALS, ready: false };
 let cache: ProgressState | null = null;
 const listeners = new Set<() => void>();
+/** Told only about HIS changes (not about data arriving from his account), so they can be saved to it. */
+const changeListeners = new Set<() => void>();
 
 function load(): ProgressState {
   if (cache) return cache;
@@ -56,6 +58,7 @@ function save(next: DB) {
     // Storage full or blocked — keep working in memory for this visit
   }
   listeners.forEach((l) => l());
+  changeListeners.forEach((l) => l());
 }
 
 function newId() {
@@ -171,3 +174,34 @@ export const progressStore = {
 export function goalFor(goals: Goal[], metric: MetricType): Goal | undefined {
   return goals.find((g) => g.metric === metric);
 }
+
+/** Used by account sync: read, replace or clear this phone's copy. */
+export const progressSync = {
+  get(): DB {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { ready, ...db } = load();
+    return db;
+  },
+  /** Data from his account: saved on the phone and shown, but not sent back again. */
+  replace(db: DB) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(db));
+    } catch {}
+    cache = null;
+    load();
+    listeners.forEach((l) => l());
+  },
+  clear() {
+    try {
+      localStorage.removeItem(KEY);
+    } catch {}
+    cache = null;
+    listeners.forEach((l) => l());
+  },
+  onChange(cb: () => void) {
+    changeListeners.add(cb);
+    return () => {
+      changeListeners.delete(cb);
+    };
+  },
+};
