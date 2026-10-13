@@ -3,6 +3,7 @@
 // Health wording rules: no cure claims, no guaranteed results, always say when to see a doctor.
 
 import type { ContentItem, Topic } from "./types";
+import { INSTAGRAM_CONTENT } from "./instagram";
 
 export const TOPICS: Topic[] = [
   { id: "erection", title: "Erection health", short: "Erections" },
@@ -15,7 +16,7 @@ export const TOPICS: Topic[] = [
 
 const DRAFT = "Men's Social editorial · Draft, pending review by a qualified health professional";
 
-export const LIBRARY: ContentItem[] = [
+const EDITORIAL_SAMPLES: ContentItem[] = [
   // ───────────── Erection health ─────────────
   {
     id: "erection-guide",
@@ -506,3 +507,6 @@ export const LIBRARY: ContentItem[] = [
     ],
   },
 ];
+
+/** Everything in Discover: real content adapted from Instagram, plus editorial samples. */
+export const LIBRARY: ContentItem[] = [...INSTAGRAM_CONTENT, ...EDITORIAL_SAMPLES];

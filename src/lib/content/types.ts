@@ -40,6 +40,11 @@ export interface ContentItem {
   inManFeed?: boolean;
   points?: number;
   cover: { tone: "forest" | "night" | "mint" | "sand" | "clay"; motif: "rings" | "waves" | "arc" | "grid" | "dots" };
+  /** Kiswahili version of the body (same "## " heading rule). */
+  bodySw?: string[];
+  titleSw?: string;
+  /** Where the content was adapted from, e.g. a Kayani Herbs Instagram post. */
+  origin?: { platform: "instagram"; url: string; postedAt: string; format: "reel" | "post" | "carousel" };
 }
 
 export interface Topic {

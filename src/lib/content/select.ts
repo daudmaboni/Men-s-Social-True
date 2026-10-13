@@ -28,12 +28,14 @@ export function isSectionId(id: string): id is SectionId {
 
 /**
  * Featured item: highest editorial priority among guides/articles,
- * boosted when it matches a topic he chose. Ties broken by id so it's stable.
+ * boosted when it matches a topic he chose, and when it's real content rather than a sample.
+ * Ties broken by id so it's stable.
  */
 export function pickFeatured(interests: TopicId[], library: ContentItem[] = LIBRARY): ContentItem | null {
   const candidates = library.filter((c) => READING.includes(c.kind));
   if (candidates.length === 0) return null;
-  const score = (c: ContentItem) => c.priority + (interests.includes(c.topic) ? 40 : 0) + (c.kind === "guide" ? 5 : 0);
+  const score = (c: ContentItem) =>
+    c.priority + (interests.includes(c.topic) ? 60 : 0) + (c.kind === "guide" ? 5 : 0) + (c.fixture ? 0 : 30);
   return [...candidates].sort((a, b) => score(b) - score(a) || a.id.localeCompare(b.id))[0];
 }
 
@@ -76,7 +78,9 @@ export function searchContent(query: string, library: ContentItem[] = LIBRARY): 
   const scored = library.map((c) => {
     const title = norm(c.title);
     const tags = norm(c.tags.join(" ") + " " + topicTitle(c.topic) + " " + c.kind);
-    const rest = norm([c.summary, c.question ?? "", ...(c.body ?? []), ...(c.keyPoints ?? [])].join(" "));
+    const rest = norm(
+      [c.summary, c.question ?? "", c.titleSw ?? "", ...(c.body ?? []), ...(c.bodySw ?? []), ...(c.keyPoints ?? [])].join(" "),
+    );
     let score = 0;
     for (const w of words) {
       const s = (title.includes(w) ? 3 : 0) + (tags.includes(w) ? 2 : 0) + (rest.includes(w) ? 1 : 0);

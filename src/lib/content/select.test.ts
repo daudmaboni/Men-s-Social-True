@@ -4,14 +4,21 @@ import { orderSections, pickFeatured, searchContent, sectionAll, sectionItems, S
 import type { ContentItem } from "./types";
 
 describe("content library", () => {
-  it("has unique ids and every item is marked as a sample draft", () => {
+  it("has unique ids, and every item shows its source and draft status", () => {
     const ids = LIBRARY.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(LIBRARY.every((c) => c.fixture && c.review === "draft" && c.source.length > 0)).toBe(true);
+    expect(LIBRARY.every((c) => c.review === "draft" && c.source.length > 0)).toBe(true);
+  });
+  it("real (non-sample) items link back to where they came from, with a Kiswahili version", () => {
+    for (const c of LIBRARY.filter((x) => !x.fixture)) {
+      expect(c.origin?.url, c.id).toMatch(/^https:\/\/www\.instagram\.com\//);
+      expect(c.bodySw?.length, c.id).toBe(c.body?.length);
+      expect(c.titleSw, c.id).toBeTruthy();
+    }
   });
   it("never promises cures or guaranteed results", () => {
     const text = JSON.stringify(LIBRARY).toLowerCase();
-    for (const banned of ["guaranteed to", "guarantees", "100%", "will cure", "cures erectile", "permanent cure", "miracle"]) {
+    for (const banned of ["guaranteed to", "guarantees", "100%", "will cure", "cures erectile", "permanent cure", "miracle", "unatibu", "inatibu", "huponya", "kutibu kabisa", "tsh", "0655", "0635", "kayapower", "whatsapp"]) {
       expect(text.includes(banned), banned).toBe(false);
     }
   });
@@ -28,12 +35,15 @@ describe("content library", () => {
 });
 
 describe("featured content", () => {
-  it("picks the highest editorial priority when he has no interests", () => {
-    expect(pickFeatured([])?.id).toBe("erection-guide");
+  it("prefers real content over samples when he has no interests", () => {
+    expect(pickFeatured([])?.fixture).toBe(false);
+  });
+  it("uses samples only when there is no real content", () => {
+    expect(pickFeatured([], LIBRARY.filter((c) => c.fixture))?.id).toBe("erection-guide");
   });
   it("favours a topic he chose", () => {
     expect(pickFeatured(["intimacy"])?.topic).toBe("intimacy");
-    expect(pickFeatured(["ejaculation"])?.id).toBe("lasting-longer");
+    expect(pickFeatured(["ejaculation"])?.topic).toBe("ejaculation");
   });
   it("only features reading content (guides and articles)", () => {
     expect(["guide", "article"]).toContain(pickFeatured(["libido"])?.kind);
@@ -66,5 +76,14 @@ describe("sections and search", () => {
   it("works on any list (e.g. a future database result)", () => {
     const one = [{ ...LIBRARY[0], id: "x", title: "Hello world" } as ContentItem];
     expect(searchContent("hello", one)).toHaveLength(1);
+  });
+});
+
+describe("Kiswahili search", () => {
+  it("finds content by Kiswahili words", () => {
+    const ids = searchContent("gesi tumbo").map((c) => c.id);
+    expect(ids).toContain("ig-eating-day-calm-stomach");
+    expect(ids).toContain("ig-gas-bloating-habits");
+    expect(searchContent("kurudia tendo")[0].id).toBe("ig-second-round");
   });
 });

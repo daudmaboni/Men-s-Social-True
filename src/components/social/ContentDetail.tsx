@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
 import Cover from "./Cover";
 import BookmarkButton from "./BookmarkButton";
 import { ContentRow } from "./ContentCards";
@@ -16,6 +17,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   const item = getContent(id);
   const feed = useFeed();
   const showToast = useToast();
+  const [lang, setLang] = useState<"en" | "sw">("en");
 
   if (!item) {
     return (
@@ -35,6 +37,9 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   }
 
   const topic = TOPICS.find((t) => t.id === item.topic);
+  const sw = lang === "sw" && Boolean(item.bodySw);
+  const title = sw && item.titleSw ? item.titleSw : item.title;
+  const body = sw ? item.bodySw : item.body;
   const read = Boolean(feed.lessons[item.id]);
   const related = LIBRARY.filter((c) => c.topic === item.topic && c.id !== item.id)
     .sort((a, b) => b.priority - a.priority)
@@ -71,8 +76,8 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
           </Link>{" "}
           · {KIND_LABEL[item.kind]} · {item.minutes} min
         </p>
-        <h1 className="mt-2 text-[26px] font-bold leading-tight">{item.title}</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{item.summary}</p>
+        <h1 className="mt-2 text-[26px] font-bold leading-tight">{title}</h1>
+        {!sw && <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{item.summary}</p>}
         <p className="mt-3 flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[11px] leading-snug text-ink-soft ring-1 ring-line">
           <ShieldCheck size={13} className="mt-px shrink-0 text-forest" />
           <span>
@@ -80,6 +85,37 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
             {item.fixture && " · Sample content for development"}
           </span>
         </p>
+        {(item.bodySw || item.origin) && (
+          <div className="mt-3 flex items-center justify-between gap-2">
+            {item.bodySw ? (
+              <div className="inline-flex rounded-full bg-surface p-1 text-xs font-semibold ring-1 ring-line" role="tablist" aria-label="Language">
+                {(["en", "sw"] as const).map((l) => (
+                  <button
+                    key={l}
+                    role="tab"
+                    aria-selected={lang === l}
+                    onClick={() => setLang(l)}
+                    className={`rounded-full px-3 py-1.5 ${lang === l ? "bg-forest text-white" : "text-ink-soft"}`}
+                  >
+                    {l === "en" ? "English" : "Kiswahili"}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <span />
+            )}
+            {item.origin && (
+              <a
+                href={item.origin.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs font-semibold text-forest"
+              >
+                {item.origin.format === "reel" ? "Watch on Instagram" : "View on Instagram"} <ExternalLink size={12} />
+              </a>
+            )}
+          </div>
+        )}
       </header>
 
       {item.kind === "expert" && item.question && (
@@ -89,9 +125,9 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
         </blockquote>
       )}
 
-      {item.body && (
-        <div className="space-y-3 rounded-3xl bg-surface p-5 text-[15px] leading-relaxed ring-1 ring-line">
-          {item.body.map((p, i) =>
+      {body && (
+        <div lang={sw ? "sw" : "en"} className="space-y-3 rounded-3xl bg-surface p-5 text-[15px] leading-relaxed ring-1 ring-line">
+          {body.map((p, i) =>
             p.startsWith("## ") ? (
               <h2 key={i} className="pt-2 text-lg font-bold">
                 {p.slice(3)}
