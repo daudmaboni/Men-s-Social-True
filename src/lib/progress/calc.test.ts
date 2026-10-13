@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   adherence,
   averageRecorded,
+  dayLatest,
   dayTotal,
   daysGoalMet,
   energyBalance,
   goalStreak,
   measurementChange,
   metricStatus,
+  periodChange,
+  sleepMinutes,
   targetProgress,
 } from "./calc";
 import { dateKey, lastNDays, shiftKey } from "./dates";
@@ -94,5 +97,27 @@ describe("dates", () => {
     expect(keys).toEqual([
       "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13",
     ]);
+  });
+});
+
+describe("sleep and check-ins", () => {
+  it("works out sleep across midnight: 22:30 → 06:15 = 7h 45m", () => {
+    expect(sleepMinutes("22:30", "06:15")).toBe(465);
+    expect(sleepMinutes("01:00", "07:30")).toBe(390);
+  });
+  it("rejects bad or equal times", () => {
+    expect(sleepMinutes("25:00", "06:00")).toBeNull();
+    expect(sleepMinutes("22:00", "22:00")).toBeNull();
+    expect(sleepMinutes("", "06:00")).toBeNull();
+  });
+  it("uses the latest answer of the day", () => {
+    const a = { ...rec("2026-10-13", 2), metric: "energy" as const, updatedAt: "2026-10-13T07:00:00Z" };
+    const b = { ...rec("2026-10-13", 4), id: "b", metric: "energy" as const, updatedAt: "2026-10-13T09:00:00Z" };
+    expect(dayLatest([a, b], "energy", "2026-10-13")?.value).toBe(4);
+    expect(dayLatest([a, b], "energy", "2026-10-12")).toBeNull();
+  });
+  it("compares periods only when both have data", () => {
+    expect(periodChange(3.6, 2.8)).toBeCloseTo(0.8);
+    expect(periodChange(3.6, null)).toBeNull();
   });
 });

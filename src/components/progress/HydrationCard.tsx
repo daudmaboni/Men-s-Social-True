@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Droplet, GlassWater, Milk, Plus, Pencil } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import DayBars from "./DayBars";
+import StatusBadge from "./StatusBadge";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
 import { goalFor, progressStore, useProgress } from "@/lib/progress/store";
@@ -17,12 +18,8 @@ import {
   metricStatus,
   targetProgress,
 } from "@/lib/progress/calc";
-import type { RecordSource, TrackingRecord } from "@/lib/progress/types";
-
-export type Period = 1 | 7 | 30 | 90;
-
-const litres = (ml: number) =>
-  `${(ml / 1000).toLocaleString("en", { maximumFractionDigits: 2 })} L`;
+import { litres } from "@/lib/progress/format";
+import type { Period, RecordSource, TrackingRecord } from "@/lib/progress/types";
 
 const QUICK = [
   { ml: 250, label: "Glass", Icon: GlassWater },
@@ -88,7 +85,7 @@ export default function HydrationCard({ period }: { period: Period }) {
       progressStore.updateRecord(sheet.record.id, n);
       showToast("Entry updated");
     } else if (sheet?.kind === "goal") {
-      progressStore.setGoal("water", n);
+      progressStore.setGoal("water", n, "ml");
       showToast(`Daily goal set to ${litres(n)}`);
     }
     setSheet(null);
@@ -261,15 +258,6 @@ export default function HydrationCard({ period }: { period: Period }) {
       </Sheet>
     </>
   );
-}
-
-function StatusBadge({ status }: { status: ReturnType<typeof metricStatus> }) {
-  const map = {
-    not_recorded: { text: "Not yet recorded", cls: "bg-bg text-ink-soft ring-1 ring-line" },
-    tracked: { text: "Tracked", cls: "bg-mint text-forest" },
-    goal_achieved: { text: "Goal reached", cls: "bg-forest-deep text-white" },
-  }[status];
-  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${map.cls}`}>{map.text}</span>;
 }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint: string }) {

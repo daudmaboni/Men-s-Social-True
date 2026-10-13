@@ -48,6 +48,41 @@ export function dayTotals(records: TrackingRecord[], metric: MetricType, keys: s
   return keys.map((k) => dayTotal(records, metric, k));
 }
 
+/** Latest record of a metric on a day (for once-a-day logs like sleep or a check-in). */
+export function dayLatest(records: TrackingRecord[], metric: MetricType, key: string): TrackingRecord | null {
+  const day = records
+    .filter((r) => r.metric === metric && r.localDate === key)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return day[0] ?? null;
+}
+
+/** Latest value per day for many days (null where nothing was recorded). */
+export function dayLatestValues(records: TrackingRecord[], metric: MetricType, keys: string[]): (number | null)[] {
+  return keys.map((k) => dayLatest(records, metric, k)?.value ?? null);
+}
+
+/** Sleep length in minutes from "HH:MM" bedtime to "HH:MM" wake time (crosses midnight). */
+export function sleepMinutes(bedtime: string, wakeTime: string): number | null {
+  const parse = (t: string) => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+    if (!m) return null;
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    return h < 24 && min < 60 ? h * 60 + min : null;
+  };
+  const bed = parse(bedtime);
+  const wake = parse(wakeTime);
+  if (bed === null || wake === null) return null;
+  const diff = (wake - bed + 1440) % 1440;
+  return diff === 0 ? null : diff;
+}
+
+/** Change between two averages (this period vs the one before). null if either is missing. */
+export function periodChange(current: number | null, previous: number | null): number | null {
+  if (!isNum(current) || !isNum(previous)) return null;
+  return current - previous;
+}
+
 /** Average over recorded days only — skipped days are left out, not counted as 0. */
 export function averageRecorded(values: (number | null)[]): number | null {
   const recorded = values.filter(isNum);

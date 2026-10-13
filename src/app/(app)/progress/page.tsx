@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Moon, Footprints, Utensils, Smile, Ruler, ListChecks, Lock } from "lucide-react";
-import HydrationCard, { type Period } from "@/components/progress/HydrationCard";
+import { Footprints, Utensils, Ruler, ListChecks, Lock } from "lucide-react";
+import HydrationCard from "@/components/progress/HydrationCard";
+import SleepCard from "@/components/progress/SleepCard";
+import CheckInCard from "@/components/progress/CheckInCard";
+import type { Period } from "@/lib/progress/types";
 
 const PERIODS: { value: Period; label: string }[] = [
   { value: 1, label: "Today" },
@@ -13,10 +16,8 @@ const PERIODS: { value: Period; label: string }[] = [
 
 // Trackers we will add next, one step at a time. Shown honestly as "not set up yet".
 const UPCOMING = [
-  { label: "Sleep", Icon: Moon },
   { label: "Steps and workouts", Icon: Footprints },
   { label: "Food (photo + AI estimate)", Icon: Utensils },
-  { label: "Energy and mood", Icon: Smile },
   { label: "Weight and waist", Icon: Ruler },
   { label: "Habits", Icon: ListChecks },
   { label: "Private wellness", Icon: Lock },
@@ -54,7 +55,9 @@ export default function ProgressPage() {
       </div>
 
       {/* Real trackers */}
+      <CheckInCard period={period} />
       <HydrationCard period={period} />
+      <SleepCard period={period} />
 
       {/* Coming next */}
       <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">

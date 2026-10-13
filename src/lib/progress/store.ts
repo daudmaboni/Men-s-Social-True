@@ -6,17 +6,24 @@
 
 import { useSyncExternalStore } from "react";
 import { dateKey } from "./dates";
-import type { Goal, MetricType, RecordSource, TrackingRecord, Unit } from "./types";
+import type { Goal, MetricType, RecordMeta, RecordSource, TrackingRecord, Unit } from "./types";
 
 const KEY = "ms_progress_v1";
 
 type DB = { records: TrackingRecord[]; goals: Goal[] };
 export type ProgressState = DB & { ready: boolean };
 
-// Starting goals — the man can change them. Marked so the UI can say "suggested".
+// Starting goals — the man can change them.
 const DEFAULT_GOALS: Goal[] = [
   { metric: "water", target: 2500, unit: "ml", period: "day", direction: "increase", updatedAt: "" },
+  { metric: "sleep", target: 420, unit: "min", period: "day", direction: "increase", updatedAt: "" },
 ];
+
+/** Adds any default goal the saved data doesn't have yet (e.g. after a new tracker is added). */
+function withDefaults(goals: Goal[]): Goal[] {
+  const missing = DEFAULT_GOALS.filter((d) => !goals.some((g) => g.metric === d.metric));
+  return [...goals, ...missing];
+}
 
 const SERVER_STATE: ProgressState = { records: [], goals: DEFAULT_GOALS, ready: false };
 let cache: ProgressState | null = null;
@@ -31,7 +38,7 @@ function load(): ProgressState {
       const parsed = JSON.parse(raw) as Partial<DB>;
       db = {
         records: Array.isArray(parsed.records) ? parsed.records : [],
-        goals: Array.isArray(parsed.goals) && parsed.goals.length ? parsed.goals : DEFAULT_GOALS,
+        goals: withDefaults(Array.isArray(parsed.goals) ? parsed.goals : []),
       };
     }
   } catch {
@@ -69,43 +76,57 @@ export function useProgress(): ProgressState {
   );
 }
 
+type NewRecord = {
+  metric: MetricType;
+  value: number;
+  unit: Unit;
+  source: RecordSource;
+  recordedAt?: Date;
+  note?: string;
+  meta?: RecordMeta;
+};
+
+function makeRecord(input: NewRecord): TrackingRecord {
+  const at = input.recordedAt ?? new Date();
+  const now = new Date().toISOString();
+  return {
+    id: newId(),
+    userId: "local",
+    metric: input.metric,
+    value: Math.round(input.value * 10) / 10,
+    unit: input.unit,
+    source: input.source,
+    recordedAt: at.toISOString(),
+    localDate: dateKey(at),
+    note: input.note,
+    meta: input.meta,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export const progressStore = {
-  addRecord(input: {
-    metric: MetricType;
-    value: number;
-    unit: Unit;
-    source: RecordSource;
-    recordedAt?: Date;
-    note?: string;
-  }): TrackingRecord | null {
+  addRecord(input: NewRecord): TrackingRecord | null {
     if (!Number.isFinite(input.value) || input.value <= 0) return null;
-    const at = input.recordedAt ?? new Date();
-    const now = new Date().toISOString();
-    const record: TrackingRecord = {
-      id: newId(),
-      userId: "local",
-      metric: input.metric,
-      value: Math.round(input.value),
-      unit: input.unit,
-      source: input.source,
-      recordedAt: at.toISOString(),
-      localDate: dateKey(at),
-      note: input.note,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const record = makeRecord(input);
     const db = load();
     save({ records: [...db.records, record], goals: db.goals });
     return record;
   },
 
-  updateRecord(id: string, value: number) {
+  updateRecord(id: string, value: number, meta?: RecordMeta) {
     if (!Number.isFinite(value) || value <= 0) return;
     const db = load();
     save({
       records: db.records.map((r) =>
         r.id === id
-          ? { ...r, value: Math.round(value), source: "manual", updatedAt: new Date().toISOString() }
+          ? {
+              ...r,
+              value: Math.round(value * 10) / 10,
+              meta: meta ?? r.meta,
+              source: "manual",
+              updatedAt: new Date().toISOString(),
+            }
           : r,
       ),
       goals: db.goals,
@@ -119,7 +140,21 @@ export const progressStore = {
     return removed;
   },
 
-  setGoal(metric: MetricType, target: number) {
+  /** One value per day (e.g. today's energy rating): replaces today's earlier answer. */
+  setDailyValue(input: NewRecord) {
+    if (!Number.isFinite(input.value) || input.value <= 0) return;
+    const record = makeRecord(input);
+    const db = load();
+    save({
+      records: [
+        ...db.records.filter((r) => !(r.metric === record.metric && r.localDate === record.localDate)),
+        record,
+      ],
+      goals: db.goals,
+    });
+  },
+
+  setGoal(metric: MetricType, target: number, unit: Unit) {
     if (!Number.isFinite(target) || target <= 0) return;
     const db = load();
     const now = new Date().toISOString();
@@ -128,7 +163,7 @@ export const progressStore = {
       records: db.records,
       goals: exists
         ? db.goals.map((g) => (g.metric === metric ? { ...g, target: Math.round(target), updatedAt: now } : g))
-        : [...db.goals, { metric, target: Math.round(target), unit: "ml", period: "day", direction: "increase", updatedAt: now }],
+        : [...db.goals, { metric, target: Math.round(target), unit, period: "day", direction: "increase", updatedAt: now }],
     });
   },
 };
