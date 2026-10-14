@@ -15,12 +15,24 @@ export function isTabRoot(pathname: string): boolean {
   return (TAB_PATHS as readonly string[]).includes(pathname);
 }
 
+
 /**
- * The glass bubble follows the strip: position 0–2 (1.5 = halfway between Man and Me).
- * It stretches sideways while between tabs, like a drop of liquid, and is round again when it lands.
+ * Where the sliding strip of tabs is right now (0–2, fractions while moving).
+ * The pager writes it; the Liquid Glass tab bar reads it every frame. No React re-renders involved.
  */
-export function bubbleShape(position: number): { x: number; stretch: number } {
-  const x = Math.min(Math.max(position, 0), TAB_PATHS.length - 1);
-  const between = x - Math.floor(x);
-  return { x, stretch: 1 + 0.22 * Math.sin(Math.PI * between) };
-}
+let stripPos = 0;
+const stripListeners = new Set<(pos: number, byFinger: boolean) => void>();
+export const stripPosition = {
+  get: () => stripPos,
+  /** byFinger: true while he's swiping the pages (the glass then follows the finger exactly). */
+  set(pos: number, byFinger = false) {
+    stripPos = pos;
+    stripListeners.forEach((l) => l(pos, byFinger));
+  },
+  subscribe(cb: (pos: number, byFinger: boolean) => void) {
+    stripListeners.add(cb);
+    return () => {
+      stripListeners.delete(cb);
+    };
+  },
+};

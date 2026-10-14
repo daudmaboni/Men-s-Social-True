@@ -1,16 +1,73 @@
 @import "tailwindcss";
 
 /* Brand tokens — Kayani Men's Social (Fernly-inspired: white, forest green, mint) */
+/* Colour modes: the "a-" values are the chosen colour (Green, Blue or Red, set on <html data-accent>). */
 :root {
+  /* Green (default) */
+  --a-forest: #0f5c46;
+  --a-deep: #073b2d;
+  --a-mint: #dff3ea;
+  --a-strong: #5dcaa5;
+  --a-deep-rgb: 7 59 45;
+  --a-mint-rgb: 223 243 234;
+  --a-strong-rgb: 93 202 165;
+  /* …and its night version */
+  --a-forest-dark: #17785b;
+  --a-deep-dark: #0a3328;
+  --a-bright: #6fd3ae;
+  --a-soft: #d6f3e7;
+  --a-tint-dark: #16382d;
+  --a-bg-dark: #0b1411;
+  --a-surface-dark: #131f1b;
+  --a-line-dark: #24342e;
+
   --bg: #f4f6f4;
   --surface: #ffffff;
   --ink: #0f1f1a;
   --ink-soft: #5b6b65;
   --line: #e3e8e5;
-  --forest: #0f5c46;
-  --forest-deep: #073b2d;
-  --mint: #dff3ea;
-  --mint-strong: #5dcaa5;
+  --forest: var(--a-forest);
+  --forest-deep: var(--a-deep);
+  --mint: var(--a-mint);
+  --mint-strong: var(--a-strong);
+}
+[data-accent="blue"] {
+  --a-forest: #1e5bb8;
+  --a-deep: #0c2a57;
+  --a-mint: #e2ecfb;
+  --a-strong: #5b9cf0;
+  --a-deep-rgb: 12 42 87;
+  --a-mint-rgb: 226 236 251;
+  --a-strong-rgb: 91 156 240;
+  --a-forest-dark: #2a6fd6;
+  --a-deep-dark: #0d2650;
+  --a-bright: #8ab8ff;
+  --a-soft: #dbe8ff;
+  --a-tint-dark: #172c4d;
+  --a-bg-dark: #0a0f17;
+  --a-surface-dark: #121a26;
+  --a-line-dark: #233046;
+  --bg: #f3f5f9;
+  --line: #e1e6ee;
+}
+[data-accent="red"] {
+  --a-forest: #b3263a;
+  --a-deep: #5a0f1b;
+  --a-mint: #fbe4e7;
+  --a-strong: #f07686;
+  --a-deep-rgb: 90 15 27;
+  --a-mint-rgb: 251 228 231;
+  --a-strong-rgb: 240 118 134;
+  --a-forest-dark: #c8364b;
+  --a-deep-dark: #4a0f18;
+  --a-bright: #ff99a6;
+  --a-soft: #ffe0e4;
+  --a-tint-dark: #44181f;
+  --a-bg-dark: #140b0d;
+  --a-surface-dark: #1e1316;
+  --a-line-dark: #3a2328;
+  --bg: #f8f4f4;
+  --line: #ece3e4;
 }
 
 @theme inline {
@@ -176,22 +233,52 @@ body {
   backdrop-filter: blur(22px) saturate(1.8);
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
-    0 10px 30px rgba(7, 59, 45, 0.16),
-    0 2px 6px rgba(7, 59, 45, 0.06),
+    0 10px 30px rgb(var(--a-deep-rgb) / 0.16),
+    0 2px 6px rgb(var(--a-deep-rgb) / 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(7, 59, 45, 0.04);
+    inset 0 -1px 0 rgb(var(--a-deep-rgb) / 0.04);
 }
-/* The bubble: a brighter piece of glass with a mint tint and a light edge */
-.glass-bubble {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(223, 243, 234, 0.85));
+/* ===== Liquid Glass: the moving piece of glass in the tab bar ===== */
+.liquid-glass {
+  will-change: transform, border-radius;
+  /* a clearer, brighter piece of glass sitting on the frosted bar */
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(180deg, rgba(250, 253, 251, 0.94), rgb(var(--a-mint-rgb) / 0.9));
+  -webkit-backdrop-filter: blur(3px) saturate(1.6) brightness(1.06);
+  backdrop-filter: blur(3px) saturate(1.6) brightness(1.06);
+  /* edge lighting: bright rim on top, soft coloured rims on the sides (like light bending at the edge) */
   box-shadow:
-    0 4px 14px rgba(15, 92, 70, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    inset 0 0 0 1px rgba(93, 202, 165, 0.25);
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgb(var(--a-deep-rgb) / 0.12),
+    inset 1.5px 0 1px rgba(150, 220, 255, 0.35),
+    inset -1.5px 0 1px rgba(160, 255, 210, 0.35),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.6),
+    0 6px 18px rgb(var(--a-deep-rgb) / 0.16),
+    0 1px 3px rgb(var(--a-deep-rgb) / 0.10);
 }
-/* Bubble position and stretch come straight from the strip (set while it moves) */
-.tab-bubble-track { transform: translateX(calc(var(--tab-pos, 0) * 100%)); will-change: transform; }
-.tab-bubble { transform: scale(var(--tab-stretch, 1), calc(2 - var(--tab-stretch, 1))); }
+/* a highlight that slides across the glass while it moves */
+.liquid-shine {
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.45) 48%, rgba(255, 255, 255, 0) 62%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+  transition: transform 0.12s linear;
+}
+[data-theme="dark"] .liquid-glass {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--a-tint-dark) 80%, white 12%), var(--a-tint-dark));
+  -webkit-backdrop-filter: blur(3px) saturate(1.5) brightness(1.15);
+  backdrop-filter: blur(3px) saturate(1.5) brightness(1.15);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.28),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.3),
+    inset 1.5px 0 1px rgba(120, 200, 255, 0.22),
+    inset -1.5px 0 1px rgba(120, 255, 200, 0.22),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    0 6px 18px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .liquid-shine { opacity: 0.5; }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-bar { background: rgba(255, 255, 255, 0.96); }
@@ -199,3 +286,55 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .slide-from-right { animation: none; }
 }
+
+/* ===== Dark mode ===== */
+/* Same brand, night version: deep green-black background, soft light text, mint accents. */
+[data-theme="dark"] {
+  --bg: var(--a-bg-dark);
+  --surface: var(--a-surface-dark);
+  --ink: #e8eeeb;
+  --ink-soft: #9fb0a9;
+  --line: var(--a-line-dark);
+  --forest: var(--a-forest-dark);
+  --forest-deep: var(--a-deep-dark);
+  /* --mint stays light: it's used for light text on the dark green cards */
+}
+[data-theme="dark"] body { background: var(--bg); }
+
+/* Light-tinted backgrounds become dark green tints */
+[data-theme="dark"] .bg-mint { background-color: var(--a-tint-dark); }
+[data-theme="dark"] .bg-mint\/60 { background-color: color-mix(in srgb, var(--a-tint-dark) 78%, transparent); }
+[data-theme="dark"] .bg-mint\/50 { background-color: color-mix(in srgb, var(--a-tint-dark) 62%, transparent); }
+/* Green text becomes brighter so it reads on dark */
+[data-theme="dark"] .text-forest { color: var(--a-bright); }
+[data-theme="dark"] .text-forest-deep:not([class*="bg-white"]) { color: var(--a-soft); }
+[data-theme="dark"] .ring-forest { --tw-ring-color: var(--a-bright); }
+/* Warning and error boxes */
+[data-theme="dark"] .bg-red-50 { background-color: rgba(185, 28, 28, 0.18); }
+[data-theme="dark"] .text-red-700, [data-theme="dark"] .text-red-800 { color: #fca5a5; }
+[data-theme="dark"] .bg-amber-50 { background-color: rgba(180, 120, 20, 0.18); }
+[data-theme="dark"] .text-amber-800, [data-theme="dark"] .text-amber-900 { color: #fcd34d; }
+/* Popup background stays dark (ink turns light in dark mode) */
+[data-theme="dark"] .bg-ink\/30 { background-color: rgba(0, 0, 0, 0.55); }
+
+/* Dark glass tab bar */
+[data-theme="dark"] .glass-bar {
+  background: linear-gradient(180deg, rgba(30, 46, 40, 0.66), rgba(19, 31, 27, 0.5));
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-theme="dark"] .glass-bar { background: rgba(19, 31, 27, 0.97); }
+}
+
+/* Switching themes: the new look grows out of a circle (set up in lib/theme.ts) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Two-finger pinch is used for light/dark, so the app itself doesn't zoom */
+.tab-strip, .tab-panel, .overlay-page { touch-action: pan-x pan-y; }

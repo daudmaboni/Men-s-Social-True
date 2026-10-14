@@ -12,19 +12,15 @@ import { usePathname, useRouter } from "next/navigation";
 import SocialTab from "@/components/tabs/SocialTab";
 import ManTab from "@/components/tabs/ManTab";
 import MeTab from "@/components/tabs/MeTab";
-import { bubbleShape, isTabRoot, TAB_PATHS, tabFor } from "@/lib/tabs";
+import { isTabRoot, stripPosition, TAB_PATHS, tabFor } from "@/lib/tabs";
 import LockedTab from "@/components/account/LockedTab";
 import { useAccount } from "@/lib/account/useAccount";
 
 const PANELS = [SocialTab, ManTab, MeTab];
 
-/** Tells the glass bubble in the tab bar where the strip is (0 = Social … 2 = Me). */
-function setBubble(position: number) {
-  const { x, stretch } = bubbleShape(position);
-  const root = document.documentElement.style;
-  root.setProperty("--tab-pos", String(x));
-  root.setProperty("--tab-stretch", String(stretch));
-}
+/** Tells the Liquid Glass tab bar where the strip is (0 = Social … 2 = Me). */
+const setBubble = (position: number, byFinger = false) =>
+  stripPosition.set(Math.min(Math.max(position, 0), TAB_PATHS.length - 1), byFinger);
 
 export default function TabPager({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,6 +31,8 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
   const [placed, setPlaced] = useState(false);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const frame = useRef(0);
+  // Is a finger moving the pages (or did one just let go and the page is still gliding)?
+  const fingerUntil = useRef(0);
   // Man and Me hold his private records: guests see a locked preview instead
   const acc = useAccount();
   const locked = acc.status === "guest";
@@ -72,7 +70,9 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
     const el = strip.current;
     if (!el) return;
     cancelAnimationFrame(frame.current);
-    frame.current = requestAnimationFrame(() => setBubble(el.scrollLeft / el.clientWidth));
+    frame.current = requestAnimationFrame(() =>
+      setBubble(el.scrollLeft / el.clientWidth, performance.now() < fingerUntil.current),
+    );
     // When the strip comes to rest on another tab, update the address (without adding to Back history)
     if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => {
@@ -88,6 +88,9 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
       <div
         ref={strip}
         onScroll={onScroll}
+        onTouchStart={() => (fingerUntil.current = Infinity)}
+        onTouchEnd={() => (fingerUntil.current = performance.now() + 700)}
+        onTouchCancel={() => (fingerUntil.current = performance.now() + 700)}
         className={`tab-strip ${placed ? "opacity-100" : "opacity-0"}`}
         inert={!onRoot}
         aria-hidden={!onRoot}

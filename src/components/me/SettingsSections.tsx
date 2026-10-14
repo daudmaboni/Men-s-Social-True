@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Download, Droplet, EyeOff, Globe, Moon, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
+import { ChevronRight, Download, Droplet, EyeOff, Globe, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
+import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
 import InterestsSheet from "@/components/social/InterestsSheet";
@@ -97,8 +98,57 @@ export function GoalsCard({ water, sleep, interests }: { water: number | null; s
 /* ───────── App settings ───────── */
 export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean }) {
   const showToast = useToast();
+  const theme = useThemePref();
+  const accent = useAccent();
   return (
     <section className="divide-y divide-line rounded-3xl bg-surface ring-1 ring-line">
+      <div className="p-5">
+        <div className="flex items-center gap-3">
+          <MoonStar size={18} className="shrink-0 text-forest" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Appearance</p>
+            <p className="text-xs text-ink-soft">Tip: spread two fingers apart for dark, pinch them together for light.</p>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 rounded-full bg-bg p-1 text-xs font-semibold ring-1 ring-line" role="radiogroup" aria-label="Appearance">
+          {(["light", "dark", "auto"] as ThemePref[]).map((t) => (
+            <button
+              key={t}
+              role="radio"
+              aria-checked={theme === t}
+              onClick={(e) => setThemePref(t, { x: e.clientX, y: e.clientY })}
+              className={`rounded-full py-2 ${theme === t ? "bg-forest text-white" : "text-ink-soft"}`}
+            >
+              {t === "light" ? "Light" : t === "dark" ? "Dark" : "Auto"}
+            </button>
+          ))}
+        </div>
+        <p className="mt-4 text-xs font-semibold text-ink-soft">Colour</p>
+        <div className="mt-2 flex gap-3" role="radiogroup" aria-label="Colour">
+          {ACCENTS.map((a) => (
+            <button
+              key={a.id}
+              role="radio"
+              aria-checked={accent === a.id}
+              onClick={(e) => {
+                setAccent(a.id, { x: e.clientX, y: e.clientY });
+                showToast(`${a.label} colour`);
+              }}
+              className={`flex flex-1 flex-col items-center gap-1.5 rounded-2xl py-2.5 text-xs font-semibold ring-1 transition-colors ${
+                accent === a.id ? "bg-bg text-ink ring-forest" : "text-ink-soft ring-line"
+              }`}
+            >
+              <span
+                className="flex h-8 w-8 items-center justify-center rounded-full shadow-inner"
+                style={{ background: `linear-gradient(135deg, ${a.swatch}, ${a.swatch}cc)` }}
+              >
+                {accent === a.id && <span className="h-2.5 w-2.5 rounded-full bg-white" />}
+              </span>
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="flex items-center gap-3 p-5">
         <Globe size={18} className="shrink-0 text-forest" />
         <div className="min-w-0 flex-1">

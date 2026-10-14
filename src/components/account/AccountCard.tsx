@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CloudCheck, CloudOff, Loader2, LogOut, UserPlus, UserX } from "lucide-react";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
@@ -12,6 +13,7 @@ const SERVER = { status: "idle" as const, lastSaved: null };
 
 export default function AccountCard({ acc }: { acc: AccountState }) {
   const showToast = useToast();
+    const router = useRouter();
   const sync = useSyncExternalStore(syncStatus.subscribe, syncStatus.get, () => SERVER);
   const [sheet, setSheet] = useState<"signout" | "delete" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,6 +55,7 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
     setBusy(false);
     setSheet(null);
     showToast("Signed out");
+    router.replace("/social");
   }
 
   async function deleteAccount() {
