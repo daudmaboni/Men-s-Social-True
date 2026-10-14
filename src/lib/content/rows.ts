@@ -31,7 +31,7 @@ export interface ContentRow {
 }
 
 const KINDS: ContentKind[] = ["guide", "article", "video", "quiz", "tool", "expert"];
-const TOPICS: TopicId[] = ["erection", "ejaculation", "libido", "confidence", "intimacy", "wellbeing"];
+const TOPICS: TopicId[] = ["erection", "ejaculation", "libido", "fertility", "confidence", "intimacy", "wellbeing"];
 const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
 
 export function rowToItem(row: Partial<ContentRow>): ContentItem | null {

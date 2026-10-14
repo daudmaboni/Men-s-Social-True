@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LIBRARY } from "./library";
-import { orderSections, pickFeatured, searchContent, sectionAll, sectionItems, SECTIONS } from "./select";
+import { featuredToday, orderSections, pickFeatured, questionToday, quickVideos, recommendations, searchContent, sectionAll, sectionItems, SECTIONS, topicTiles, type Personal } from "./select";
 import type { ContentItem } from "./types";
 
 describe("content library", () => {
@@ -28,8 +28,8 @@ describe("content library", () => {
       if (c.kind === "tool") expect(c.tool).toBeTruthy();
     }
   });
-  it("fills all nine Discover sections", () => {
-    expect(SECTIONS).toHaveLength(9);
+  it("fills all ten topic pages (7 topics incl. Fertility + 3 formats)", () => {
+    expect(SECTIONS).toHaveLength(10);
     for (const s of SECTIONS) expect(sectionItems(s.id).length, s.id).toBeGreaterThan(0);
   });
 });
@@ -85,5 +85,48 @@ describe("Kiswahili search", () => {
     expect(ids).toContain("ig-eating-day-calm-stomach");
     expect(ids).toContain("ig-gas-bloating-habits");
     expect(searchContent("kurudia tendo")[0].id).toBe("ig-second-round");
+  });
+});
+
+const none: Personal = { interests: [], bookmarks: {}, history: {} };
+
+describe("Discover home: show less, deliver more", () => {
+  it("featured rotates daily among the best few, and avoids what he already read", () => {
+    const days = new Set([0, 1, 2, 3].map((d) => featuredToday(none, LIBRARY, d)?.id));
+    expect(days.size).toBeGreaterThan(1);
+    const today = featuredToday(none, LIBRARY, 5)!;
+    expect(featuredToday({ ...none, history: { [today.id]: "x" } }, LIBRARY, 5)?.id).not.toBe(today.id);
+  });
+  it("gives a new man three good starting points from different topics", () => {
+    const r = recommendations(none, LIBRARY);
+    expect(r).toHaveLength(3);
+    expect(new Set(r.map((x) => x.item.topic)).size).toBe(3);
+    expect(r.every((x) => x.reason === "A good place to start")).toBe(true);
+  });
+  it("recommends his chosen topic first and says why", () => {
+    const r = recommendations({ ...none, interests: ["fertility"] }, LIBRARY);
+    expect(r[0].item.topic).toBe("fertility");
+    expect(r[0].reason).toBe("Because you follow Fertility");
+  });
+  it("learns from what he saves and reads, and skips what he already read", () => {
+    const read = LIBRARY.find((c) => c.id === "lasting-longer")!;
+    const r = recommendations({ ...none, history: { [read.id]: "x" } }, LIBRARY);
+    expect(r.some((x) => x.item.id === read.id)).toBe(false);
+    expect(r.some((x) => x.item.topic === "ejaculation" && x.reason.startsWith("Because you read"))).toBe(true);
+  });
+  it("never repeats the featured item", () => {
+    const f = featuredToday(none, LIBRARY, 0)!;
+    expect(recommendations(none, LIBRARY, [f.id]).some((x) => x.item.id === f.id)).toBe(false);
+  });
+  it("shows at most two short videos and one question", () => {
+    expect(quickVideos(none, LIBRARY).length).toBeLessThanOrEqual(2);
+    expect(quickVideos(none, LIBRARY).every((c) => c.kind === "video")).toBe(true);
+    expect(questionToday(none, LIBRARY, 0)?.kind).toBe("expert");
+  });
+  it("keeps the whole library reachable through topic pages", () => {
+    const tiles = topicTiles(LIBRARY);
+    expect(tiles.find((t) => t.id === "fertility")?.count).toBeGreaterThan(0);
+    const reachable = new Set(tiles.flatMap((t) => sectionAll(t.id, LIBRARY).map((c) => c.id)));
+    expect(LIBRARY.every((c) => reachable.has(c.id))).toBe(true);
   });
 });

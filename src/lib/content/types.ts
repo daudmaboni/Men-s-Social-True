@@ -1,7 +1,7 @@
 // Shape of every piece of educational content in Men's Social.
 // Today: sample items in library.ts. Later: rows in the Content Studio (admin) / database.
 
-export type TopicId = "erection" | "ejaculation" | "libido" | "confidence" | "intimacy" | "wellbeing";
+export type TopicId = "erection" | "ejaculation" | "libido" | "fertility" | "confidence" | "intimacy" | "wellbeing";
 
 export type ContentKind = "guide" | "article" | "video" | "quiz" | "tool" | "expert";
 

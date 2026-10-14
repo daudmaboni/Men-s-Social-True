@@ -50,6 +50,9 @@ beforeAll(async () => {
   const migration = readFileSync(join(process.cwd(), "supabase/migrations/0001_content_studio.sql"), "utf8");
   await db.exec(migration);
   await db.exec(migration); // must be safe to run twice
+  const fertility = readFileSync(join(process.cwd(), "supabase/migrations/0003_fertility_topic.sql"), "utf8");
+  await db.exec(fertility);
+  await db.exec(fertility);
   await db.exec(GRANTS);
   await db.query("insert into auth.users (id) values ($1), ($2)", [ADMIN, USER]);
   await db.query("insert into public.admins (user_id, role) values ($1, 'owner')", [ADMIN]);
@@ -99,6 +102,12 @@ describe("content security rules", () => {
     ]);
     const user = await as(USER, "authenticated", "select * from public.content_audit");
     expect(user.rows).toHaveLength(0);
+  });
+
+  it("accepts the Fertility topic (migration 0003)", async () => {
+    await as(ADMIN, "authenticated", "insert into public.content_items (id, kind, topic, title) values ('sperm-health', 'article', 'fertility', 'Sperm health')");
+    const r = await db.query<{ topic: string }>("select topic from public.content_items where id = 'sperm-health'");
+    expect(r.rows[0].topic).toBe("fertility");
   });
 
   it("rejects bad values (unknown topic, bad id)", async () => {

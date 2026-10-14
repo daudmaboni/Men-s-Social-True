@@ -7,7 +7,7 @@ const rec = (id: string, value: number, updatedAt: string): TrackingRecord => ({
   id, userId: "local", metric: "water", value, unit: "ml", source: "manual",
   recordedAt: "2026-10-13T08:00:00Z", localDate: "2026-10-13", createdAt: "2026-10-13T08:00:00Z", updatedAt,
 });
-const emptySocial: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {} };
+const emptySocial: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {} };
 
 describe("merging phone data with his account", () => {
   it("keeps records from both sides and the newest edit of the same record", () => {

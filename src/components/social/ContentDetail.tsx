@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, ExternalLink, MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
 import Cover from "./Cover";
@@ -13,6 +13,7 @@ import { useLibrary } from "@/lib/content/useLibrary";
 import { useLang, type Lang } from "@/lib/me/lang";
 import { getContent, KIND_LABEL } from "@/lib/content/select";
 import { feedStore, useFeed } from "@/lib/feed/store";
+import { socialStore } from "@/lib/social/store";
 
 /** Full page for any piece of content: guide, article, video, quiz, tool or expert answer. */
 export default function ContentDetail({ id, back }: { id: string; back: { href: string; label: string } }) {
@@ -24,6 +25,11 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   const appLang = useLang();
   const [picked, setLang] = useState<Lang | null>(null);
   const lang = picked ?? appLang;
+  // Remember he opened it, so Discover can suggest things he hasn't read yet
+  const found = Boolean(item);
+  useEffect(() => {
+    if (found) socialStore.recordOpen(id);
+  }, [found, id]);
 
   if (!item && !library.ready) {
     return (

@@ -19,8 +19,37 @@ import { useAccount } from "@/lib/account/useAccount";
 const PANELS = [SocialTab, ManTab, MeTab];
 
 /** Tells the Liquid Glass tab bar where the strip is (0 = Social … 2 = Me). */
-const setBubble = (position: number, byFinger = false) =>
+const setBubble = (position: number, byFinger = false) => {
   stripPosition.set(Math.min(Math.max(position, 0), TAB_PATHS.length - 1), byFinger);
+  frostPanels(position);
+};
+
+/**
+ * The same frosted-glass feel as Discover ⇄ Community, for the main tabs:
+ * while the pages slide, the page leaving and the page arriving are seen through frosted glass
+ * (blurred, a little faded and smaller), and each comes into focus as it reaches the centre.
+ * It follows the strip, so it tracks the finger exactly and works for taps too.
+ */
+const reduceMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function frostPanels(position: number) {
+  if (reduceMotion()) return;
+  for (let i = 0; i < TAB_PATHS.length; i++) {
+    const content = document.getElementById(`tab-panel-${i}`)?.firstElementChild as HTMLElement | null;
+    if (!content) continue;
+    const d = Math.min(Math.abs(position - i), 1); // 0 = in the centre, 1 = a full page away
+    if (d < 0.004 || d > 0.996) {
+      // In focus, or fully off screen: no effects at all (keeps scrolling smooth and saves battery)
+      content.style.filter = "";
+      content.style.opacity = "";
+      content.style.transform = "";
+      continue;
+    }
+    const e = Math.sin((d * Math.PI) / 2); // eases in quickly, like the Discover ⇄ Community glide
+    content.style.filter = `blur(${(e * 10).toFixed(2)}px) saturate(${(1 + e * 0.4).toFixed(3)})`;
+    content.style.opacity = String(1 - e * 0.45);
+    content.style.transform = `scale(${(1 - e * 0.03).toFixed(4)})`;
+  }
+}
 
 export default function TabPager({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

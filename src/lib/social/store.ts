@@ -15,11 +15,13 @@ export interface SocialDB {
   replies: Reply[]; // his own replies
   reactions: Record<string, ReactionKind[]>; // postId/replyId → his reactions
   reports: Record<string, { reason: string; at: string }>; // reported items (hidden for him, queued for moderators)
+  /** Guides and answers he opened (contentId → last opened). Used to recommend what he hasn't read yet. */
+  history: Record<string, string>;
 }
 export type SocialState = SocialDB & { ready: boolean };
 
 const KEY = "ms_social_v1";
-const EMPTY: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {} };
+const EMPTY: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {} };
 const SERVER_STATE: SocialState = { ...EMPTY, ready: false };
 let cache: SocialState | null = null;
 const listeners = new Set<() => void>();
@@ -43,6 +45,7 @@ function load(): SocialState {
         replies: Array.isArray(p.replies) ? p.replies : [],
         reactions: obj(p.reactions, {}),
         reports: obj(p.reports, {}),
+        history: obj(p.history, {}),
       };
     }
   } catch {
@@ -77,7 +80,21 @@ export function useSocial(): SocialState {
   );
 }
 
+const HISTORY_LIMIT = 150;
+
 export const socialStore = {
+  /** He opened a guide, video or answer. Keeps the most recent ones only. */
+  recordOpen(contentId: string) {
+    const db = load();
+    const history = { ...db.history, [contentId]: new Date().toISOString() };
+    const keep = Object.entries(history)
+      .sort((a, b) => b[1].localeCompare(a[1]))
+      .slice(0, HISTORY_LIMIT);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { ready, ...rest } = db;
+    save({ ...rest, history: Object.fromEntries(keep) });
+  },
+
   toggleBookmark(contentId: string): boolean {
     const db = load();
     const next = { ...db.bookmarks };

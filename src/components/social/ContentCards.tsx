@@ -10,11 +10,11 @@ import type { ContentItem } from "@/lib/content/types";
 export const contentHref = (id: string) => `/social/c/${id}`;
 
 /** Small card for horizontal rows on Discover. */
-export function ContentCard({ item }: { item: ContentItem }) {
+export function ContentCard({ item, className = "w-44 shrink-0 snap-start" }: { item: ContentItem; className?: string }) {
   return (
     <Link
       href={contentHref(item.id)}
-      className="block w-44 shrink-0 snap-start overflow-hidden rounded-3xl bg-surface ring-1 ring-line transition-transform active:scale-[0.98]"
+      className={`block overflow-hidden rounded-3xl bg-surface ring-1 ring-line transition-transform active:scale-[0.98] ${className}`}
     >
       <Cover item={item} className="h-24 w-full" />
       <div className="p-3">
@@ -27,8 +27,8 @@ export function ContentCard({ item }: { item: ContentItem }) {
   );
 }
 
-/** Row for lists: search results, saved, topic pages. */
-export function ContentRow({ item }: { item: ContentItem }) {
+/** Row for lists: search results, saved, topic pages. With `reason`, it also says why it's suggested. */
+export function ContentRow({ item, reason }: { item: ContentItem; reason?: string }) {
   return (
     <Link href={contentHref(item.id)} className="flex items-center gap-3 rounded-3xl bg-surface p-3 ring-1 ring-line">
       <Cover item={item} className="h-16 w-16 shrink-0 rounded-2xl" showPlay={false} />
@@ -37,6 +37,7 @@ export function ContentRow({ item }: { item: ContentItem }) {
           {KIND_LABEL[item.kind]} · {item.minutes} min
         </p>
         <p className="line-clamp-2 text-sm font-semibold leading-snug">{item.title}</p>
+        {reason && <p className="mt-0.5 truncate text-[11px] text-ink-soft">{reason}</p>}
       </div>
       <BookmarkButton contentId={item.id} variant="plain" />
     </Link>

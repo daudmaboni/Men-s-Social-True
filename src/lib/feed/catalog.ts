@@ -96,6 +96,7 @@ const TOPIC_LABEL: Record<string, string> = {
   erection: "Erections",
   ejaculation: "Lasting longer",
   libido: "Desire",
+  fertility: "Fertility",
   confidence: "Confidence",
   intimacy: "Intimacy",
   wellbeing: "Lifestyle",

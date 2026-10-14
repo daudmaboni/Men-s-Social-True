@@ -54,7 +54,7 @@ export function mergeFeed(local: FeedDB, remote: Partial<FeedDB> | null): FeedDB
 }
 
 export function mergeSocial(local: SocialDB, remote: Partial<SocialDB> | null): SocialDB {
-  const r: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, ...remote };
+  const r: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {}, ...remote };
   const reactions: SocialDB["reactions"] = { ...r.reactions };
   for (const [id, kinds] of Object.entries(local.reactions)) reactions[id] = [...new Set([...(reactions[id] ?? []), ...kinds])];
   return {
@@ -65,6 +65,7 @@ export function mergeSocial(local: SocialDB, remote: Partial<SocialDB> | null): 
     replies: byIdNewest(r.replies, local.replies, (p) => p.createdAt),
     reactions,
     reports: { ...r.reports, ...local.reports },
+    history: { ...r.history, ...local.history },
   };
 }
 

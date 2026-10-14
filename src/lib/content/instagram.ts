@@ -207,7 +207,7 @@ export const INSTAGRAM_CONTENT: ContentItem[] = [
   {
     id: "ig-fertility-smoothie",
     kind: "article",
-    topic: "libido",
+    topic: "fertility",
     title: "A fertility-friendly smoothie",
     titleSw: "Smoothie rafiki kwa afya ya uzazi",
     summary: "Banana, almonds, avocado and milk bring nutrients sperm need — as part of a healthy lifestyle.",

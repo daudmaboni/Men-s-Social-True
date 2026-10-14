@@ -8,7 +8,8 @@ import { INSTAGRAM_CONTENT } from "./instagram";
 export const TOPICS: Topic[] = [
   { id: "erection", title: "Erection health", short: "Erections" },
   { id: "ejaculation", title: "Ejaculation and satisfaction", short: "Lasting longer" },
-  { id: "libido", title: "Libido and reproductive health", short: "Desire and fertility" },
+  { id: "libido", title: "Libido and sexual desire", short: "Desire" },
+  { id: "fertility", title: "Fertility and sperm health", short: "Fertility" },
   { id: "confidence", title: "Confidence and performance anxiety", short: "Confidence" },
   { id: "intimacy", title: "Intimacy and relationships", short: "Intimacy" },
   { id: "wellbeing", title: "Sleep, stress and physical wellbeing", short: "Body and mind" },
@@ -283,7 +284,7 @@ const EDITORIAL_SAMPLES: ContentItem[] = [
   {
     id: "fertility-basics",
     kind: "article",
-    topic: "libido",
+    topic: "fertility",
     title: "Fertility basics for men",
     summary: "Simple facts about male fertility and the everyday habits that help protect it.",
     minutes: 4,

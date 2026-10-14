@@ -110,3 +110,99 @@ export const CTA_LABEL: Record<ContentKind, string> = {
   tool: "Open tool",
   expert: "Read answer",
 };
+
+/* ───────────── Discover home: show less, deliver more ───────────── */
+
+export interface Personal {
+  interests: TopicId[];
+  /** contentId → when he saved it */
+  bookmarks: Record<string, string>;
+  /** contentId → when he last opened it */
+  history: Record<string, string>;
+}
+
+/** Day number, so daily picks change once a day (not on every visit). */
+export const dayNumber = (d = new Date()) => Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000);
+
+/** Topics he has shown interest in by saving or reading (not only the ones he ticked). */
+function engagedTopics(p: Personal, library: ContentItem[]): Map<TopicId, number> {
+  const weight = new Map<TopicId, number>();
+  const add = (id: string, w: number) => {
+    const c = library.find((x) => x.id === id);
+    if (c) weight.set(c.topic, (weight.get(c.topic) ?? 0) + w);
+  };
+  Object.keys(p.bookmarks).forEach((id) => add(id, 2));
+  Object.keys(p.history).forEach((id) => add(id, 1));
+  return weight;
+}
+
+/**
+ * Featured insight that rotates daily among the best few candidates, so the top of Discover
+ * isn't the same forever. Prefers things he hasn't opened yet.
+ */
+export function featuredToday(p: Personal, library: ContentItem[], day = dayNumber()): ContentItem | null {
+  const candidates = library.filter((c) => READING.includes(c.kind));
+  if (!candidates.length) return null;
+  const score = (c: ContentItem) =>
+    c.priority + (p.interests.includes(c.topic) ? 60 : 0) + (c.kind === "guide" ? 5 : 0) + (c.fixture ? 0 : 30) - (p.history[c.id] ? 70 : 0);
+  const top = [...candidates].sort((a, b) => score(b) - score(a) || a.id.localeCompare(b.id)).slice(0, 3);
+  return top[day % top.length];
+}
+
+export interface Recommendation {
+  item: ContentItem;
+  /** Shown under the card, so he knows why it's there. */
+  reason: string;
+}
+
+/**
+ * Two or three picks for him. Based on the topics he chose, what he saved and read;
+ * skips what he already read and the featured item; mixes topics so it's not three of the same.
+ * New men get a balanced set of good starting points.
+ */
+export function recommendations(p: Personal, library: ContentItem[], exclude: string[] = [], count = 3): Recommendation[] {
+  const engaged = engagedTopics(p, library);
+  const isNew = p.interests.length === 0 && engaged.size === 0;
+  const pool = library.filter((c) => (READING.includes(c.kind) || c.kind === "tool" || c.kind === "quiz") && !exclude.includes(c.id) && !p.history[c.id]);
+
+  const reasonFor = (c: ContentItem): { score: number; reason: string } => {
+    const topic = TOPICS.find((t) => t.id === c.topic)?.short ?? "";
+    if (p.interests.includes(c.topic)) return { score: c.priority + 100, reason: `Because you follow ${topic}` };
+    const e = engaged.get(c.topic) ?? 0;
+    if (e > 0) return { score: c.priority + 40 + e * 10, reason: `Because you read about ${topic.toLowerCase()}` };
+    return { score: c.priority, reason: isNew ? "A good place to start" : "Popular with men like you" };
+  };
+
+  const ranked = pool
+    .map((item) => ({ item, ...reasonFor(item) }))
+    .sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id));
+
+  // Mix topics: at most one per topic first, then fill up if needed
+  const picked: typeof ranked = [];
+  for (const r of ranked) if (picked.length < count && !picked.some((x) => x.item.topic === r.item.topic)) picked.push(r);
+  for (const r of ranked) if (picked.length < count && !picked.includes(r)) picked.push(r);
+  return picked.map(({ item, reason }) => ({ item, reason }));
+}
+
+/** One or two short videos, favouring his topics. */
+export function quickVideos(p: Personal, library: ContentItem[], count = 2): ContentItem[] {
+  return library
+    .filter((c) => c.kind === "video")
+    .sort((a, b) => Number(p.interests.includes(b.topic)) - Number(p.interests.includes(a.topic)) || Number(!!p.history[a.id]) - Number(!!p.history[b.id]) || b.priority - a.priority)
+    .slice(0, count);
+}
+
+/** One question men often ask, changing daily, favouring his topics and ones he hasn't read. */
+export function questionToday(p: Personal, library: ContentItem[], day = dayNumber()): ContentItem | null {
+  const all = library.filter((c) => c.kind === "expert" && c.question);
+  if (!all.length) return null;
+  const unread = all.filter((c) => !p.history[c.id]);
+  const mine = unread.filter((c) => p.interests.includes(c.topic));
+  const pool = mine.length ? mine : unread.length ? unread : all;
+  return [...pool].sort((a, b) => a.id.localeCompare(b.id))[day % pool.length];
+}
+
+/** Every topic and format with how many items it has — for "Explore all topics". */
+export function topicTiles(library: ContentItem[]) {
+  return SECTIONS.map((s) => ({ ...s, count: sectionAll(s.id, library).length }));
+}
