@@ -2,6 +2,7 @@
 
 // "Man": Home and Progress in one place.
 // Top: what to do today (all interactive right here). Bottom: his trends.
+// On a computer the cards sit in two columns.
 
 import TopBar from "@/components/feed/TopBar";
 import ActivitiesCard from "@/components/feed/ActivitiesCard";
@@ -19,39 +20,57 @@ export default function ManTab() {
 
   if (!f.ready) {
     return (
-      <div className="space-y-4">
-        <TopBar />
-        <div className="h-40 animate-pulse rounded-3xl bg-forest-deep/20" />
-        <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
+      <div className="space-y-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:space-y-0">
+        <div className="lg:col-span-12">
+          <TopBar />
+        </div>
+        <div className="h-40 animate-pulse rounded-3xl bg-forest-deep/20 lg:col-span-7" />
+        <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line lg:col-span-5" />
       </div>
     );
   }
 
+  // Phone: one column, in this order. Computer (lg): today's actions on the left, the three trackers
+  // on the right, trends across the bottom. The `order-*` classes keep the phone order the same.
   return (
-    <div className="stagger space-y-4">
-      <TopBar />
-      <TodayCard f={f} />
-      {f.allClosed ? <EndCard /> : <ReminderCard f={f} />}
-
-      <div id="checkin" className="scroll-mt-4">
-        <CheckInCard period={1} />
+    <div className="stagger flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:gap-6">
+      <div className="lg:col-span-12">
+        <TopBar />
       </div>
-      <div id="sleep" className="scroll-mt-4">
-        <SleepCard period={1} />
-      </div>
-      <div id="water" className="scroll-mt-4">
-        <HydrationCard period={1} />
-      </div>
-      <ActivitiesCard f={f} />
 
-      <LessonCard f={f} />
-      <TipCard f={f} />
+      <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
+        <div className="order-1">
+          <TodayCard f={f} />
+        </div>
+        <div className="order-2">{f.allClosed ? <EndCard /> : <ReminderCard f={f} />}</div>
+        <div className="order-6">
+          <ActivitiesCard f={f} />
+        </div>
+        <div className="order-7">
+          <LessonCard f={f} />
+        </div>
+        <div className="order-8">
+          <TipCard f={f} />
+        </div>
+      </div>
 
-      <div className="pt-4">
+      <div className="contents lg:col-span-5 lg:flex lg:flex-col lg:gap-5">
+        <div id="checkin" className="order-3 scroll-mt-4">
+          <CheckInCard period={1} />
+        </div>
+        <div id="sleep" className="order-4 scroll-mt-4">
+          <SleepCard period={1} />
+        </div>
+        <div id="water" className="order-5 scroll-mt-4">
+          <HydrationCard period={1} />
+        </div>
+      </div>
+
+      <div className="order-9 pt-4 lg:col-span-12 lg:pt-2">
         <TrendsSection />
       </div>
 
-      <p className="px-2 pt-2 text-center text-[11px] text-ink-soft">{t("Saved privately to your account.")}</p>
+      <p className="order-10 px-2 pt-2 text-center text-[11px] text-ink-soft lg:col-span-12">{t("Saved privately to your account.")}</p>
     </div>
   );
 }

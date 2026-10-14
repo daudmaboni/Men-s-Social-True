@@ -28,9 +28,9 @@ export default function MeTab() {
 
   if (!f.ready || !social.ready) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label={t("Loading")}>
-        <div className="h-52 animate-pulse rounded-[28px] bg-forest-deep/15" />
-        <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
+      <div className="space-y-4 lg:grid lg:grid-cols-12 lg:gap-6 lg:space-y-0" aria-busy="true" aria-label={t("Loading")}>
+        <div className="h-52 animate-pulse rounded-[28px] bg-forest-deep/15 lg:col-span-5" />
+        <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line lg:col-span-7" />
       </div>
     );
   }
@@ -47,8 +47,10 @@ export default function MeTab() {
   });
 
   return (
-    <div className="stagger space-y-4">
+    // Phone: one column. Computer: profile and badges on the left (they stay in view), goals and settings on the right.
+    <div className="stagger flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
       <h1 className="sr-only">{t("Me")}</h1>
+      <div className="contents lg:sticky lg:top-0 lg:col-span-5 lg:flex lg:flex-col lg:gap-5">
       <ProfileHero
         nickname={social.nickname}
         profile={social.profile}
@@ -59,6 +61,8 @@ export default function MeTab() {
         since={firstActiveDay({ records: progress.records, feed })}
       />
       <BadgesSection badges={badges} />
+      </div>
+      <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
       <GoalsCard
         water={goalFor(progress.goals, "water")?.target ?? null}
         sleep={goalFor(progress.goals, "sleep")?.target ?? null}
@@ -67,7 +71,8 @@ export default function MeTab() {
       <SettingsCard lang={lang} discreet={feed.settings.discreet} />
       {acc.status === "signedIn" && <NotificationPrefs />}
       <PrivacyCard acc={acc} />
-      <p className="pb-2 text-center text-[11px] text-ink-soft">{t("Kayani Men's Social · test version")}</p>
+      </div>
+      <p className="pb-2 lg:col-span-12 text-center text-[11px] text-ink-soft">{t("Kayani Men's Social · test version")}</p>
     </div>
   );
 }

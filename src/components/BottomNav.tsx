@@ -200,7 +200,7 @@ export default function BottomNav() {
   };
 
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 px-4 pb-[max(12px,env(safe-area-inset-bottom))]">
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 px-4 lg:hidden pb-[max(12px,env(safe-area-inset-bottom))]">
       <div
         ref={bar}
         className="glass-bar relative mx-auto max-w-sm touch-none select-none rounded-[32px]"

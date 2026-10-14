@@ -58,6 +58,11 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
     );
   }
 
+  // On a computer the sections sit in two columns (the big video row and the note go across both).
+  // The Studio's phone preview always stays one column.
+  const desk = preview ? "" : "lg:grid lg:grid-flow-row-dense lg:grid-cols-2 lg:items-start lg:gap-x-6 lg:gap-y-8 lg:space-y-0";
+  const full = preview ? "" : "lg:col-span-2";
+
   const answerIntro = (lang === "sw" && question?.bodySw ? question.bodySw : question?.body)?.find((p) => !p.startsWith("## "));
 
   const render = (s: SectionConfig) => {
@@ -72,7 +77,11 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
             : me.interests.includes(featured.topic)
               ? t("Picked for you because you follow {topic}.", { topic: topicShort(featured.topic, t) })
               : t("Picked by our editors as today's most useful read.");
-        return <FeaturedCard key={s.id} item={featured} reason={reason} />;
+        return (
+          <div key={s.id}>
+            <FeaturedCard item={featured} reason={reason} />
+          </div>
+        );
       }
       case "for_you":
         if (!forYou.length) return null;
@@ -114,7 +123,7 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
       case "videos":
         if (!videos.length) return null;
         return (
-          <section key={s.id} aria-labelledby="sec-videos" className="space-y-3">
+          <section key={s.id} aria-labelledby="sec-videos" className={`space-y-3 ${full}`}>
             <div className="flex items-end justify-between">
               <div>
                 <h2 id="sec-videos" className="text-base font-bold">
@@ -126,7 +135,7 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
                 {t("All videos")} <ChevronRight size={14} />
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid grid-cols-2 gap-3 ${preview ? "" : "lg:grid-cols-4 lg:gap-4"}`}>
               {videos.map((v) => (
                 <ContentCard key={v.id} item={v} className="w-full" />
               ))}
@@ -136,7 +145,7 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
       case "question":
         if (!question) return null;
         return (
-          <section key={s.id} aria-labelledby="sec-question" className="rounded-3xl bg-mint/60 p-5">
+          <section key={s.id} aria-labelledby="sec-question" className={`rounded-3xl bg-mint/60 p-5 ${preview ? "" : "lg:p-7"}`}>
             <p id="sec-question" className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-forest">
               <MessageCircle size={13} /> {title(s, "A question men often ask")}
             </p>
@@ -182,10 +191,10 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
   };
 
   return (
-    <div className="stagger space-y-7">
+    <div className={`stagger space-y-7 ${desk}`}>
       {config.sections.map(render)}
 
-      <p className="px-2 text-center text-[11px] leading-relaxed text-ink-soft">
+      <p className={`px-2 text-center text-[11px] leading-relaxed text-ink-soft ${full}`}>
         {t('All content here is general education, not medical advice. Items marked "Sample" are drafts that will be reviewed by a qualified health professional before launch.')}
       </p>
 

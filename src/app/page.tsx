@@ -59,7 +59,7 @@ export default function Welcome() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-8 pt-6">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-8 pt-6 lg:max-w-5xl lg:px-10 lg:pt-8">
       {/* Top bar: logo + language switch */}
       <header className="rise flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -84,13 +84,15 @@ export default function Welcome() {
         </div>
       </header>
 
+      {/* On a computer: the hero on the left, the way in on the right */}
+      <div className="lg:my-auto lg:grid lg:grid-cols-[1.25fr_1fr] lg:items-stretch lg:gap-6 lg:py-10">
       {/* Hero card */}
-      <section className="rise rise-2 mt-8 rounded-3xl bg-forest-deep p-6 text-white">
+      <section className="rise rise-2 mt-8 rounded-3xl bg-forest-deep p-6 text-white lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-12">
         <p className="text-sm text-mint-strong">Kayani Men&apos;s Social</p>
-        <h1 className="mt-2 text-[28px] font-bold leading-tight">{t.tagline}</h1>
-        <ul className="mt-6 space-y-3">
+        <h1 className="mt-2 text-[28px] font-bold leading-tight lg:text-[44px]">{t.tagline}</h1>
+        <ul className="mt-6 space-y-3 lg:mt-8 lg:space-y-4">
           {t.points.map((p) => (
-            <li key={p} className="flex items-start gap-3 text-sm text-mint">
+            <li key={p} className="flex items-start gap-3 text-sm text-mint lg:text-base">
               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-mint-strong" />
               {p}
             </li>
@@ -99,7 +101,7 @@ export default function Welcome() {
       </section>
 
       {/* Age check + three ways in */}
-      <section className="rise rise-3 mt-4 rounded-3xl bg-surface p-5 ring-1 ring-line">
+      <section className="rise rise-3 mt-4 rounded-3xl bg-surface p-5 ring-1 ring-line lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-8">
         <p className="text-sm text-ink-soft">{t.ageQuestion}</p>
         {acc.status === "signedIn" ? (
           <>
@@ -147,7 +149,9 @@ export default function Welcome() {
         )}
       </section>
 
-      <p className="rise rise-4 mt-auto pt-8 text-center text-xs text-ink-soft">{t.privacy}</p>
+      </div>
+
+      <p className="rise rise-4 mt-auto pt-8 lg:mt-0 lg:pt-0 text-center text-xs text-ink-soft">{t.privacy}</p>
     </main>
   );
 }
