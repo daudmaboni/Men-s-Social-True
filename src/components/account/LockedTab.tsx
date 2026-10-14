@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Droplet, Flame, Lock, Moon, ShieldCheck, Smile, Sparkles, Trophy } from "lucide-react";
+import { Droplet, Flame, Heart, Lock, MessageCircle, Moon, ShieldCheck, Smile, Sparkles, Stethoscope, Trophy, VenetianMask } from "lucide-react";
 import { account, AUTH_METHODS } from "@/lib/account/useAccount";
 import { useToast } from "@/components/motion/Toast";
 
@@ -19,6 +19,15 @@ const COPY = {
       { Icon: Flame, text: "Daily activities, points and a forgiving streak" },
     ],
   },
+  community: {
+    title: "Talk with other men, privately",
+    text: "Ask questions anonymously, reply, and support each other. An account keeps Community safe and free of spam.",
+    points: [
+      { Icon: VenetianMask, text: "Post anonymously, nobody sees your name" },
+      { Icon: MessageCircle, text: "Read real questions and replies from men like you" },
+      { Icon: Stethoscope, text: "Ask for an expert answer on health questions" },
+    ],
+  },
   me: {
     title: "Your progress and settings",
     text: "See your level, badges and goals, and control your privacy and data. Private to you.",
@@ -30,20 +39,21 @@ const COPY = {
   },
 };
 
-export default function LockedTab({ tab }: { tab: "man" | "me" }) {
+/** `community` is shown inside Social (under the Discover / Community switch), so it has no page title. */
+export default function LockedTab({ tab }: { tab: "man" | "me" | "community" }) {
   const c = COPY[tab];
-  const next = tab === "man" ? "/man" : "/me";
+  const next = tab === "man" ? "/man" : tab === "me" ? "/me" : "/social?tab=community";
   const showToast = useToast();
   const [busy, setBusy] = useState(false);
 
   return (
     <div className="space-y-5">
-      <h1 className="sr-only">{tab === "man" ? "Man" : "Me"}</h1>
+      {tab !== "community" && <h1 className="sr-only">{tab === "man" ? "Man" : "Me"}</h1>}
 
       {/* Blurred example of the real tab */}
       <div className="relative overflow-hidden rounded-[28px]" aria-hidden>
         <div className="pointer-events-none select-none space-y-3 blur-[5px]">
-          {tab === "man" ? <ManPreview /> : <MePreview />}
+          {tab === "man" ? <ManPreview /> : tab === "me" ? <MePreview /> : <CommunityPreview />}
         </div>
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-bg/10 via-bg/40 to-bg">
           <span className="glass-bar flex h-14 w-14 items-center justify-center rounded-full text-forest-deep">
@@ -134,6 +144,23 @@ function ManPreview() {
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+function CommunityPreview() {
+  return (
+    <>
+      {["Is it normal to finish quickly sometimes?", "How do I talk to my wife about this?"].map((q) => (
+        <div key={q} className="rounded-3xl bg-surface p-4 ring-1 ring-line">
+          <p className="text-xs text-ink-soft">Anonymous · 2h</p>
+          <p className="mt-1 font-semibold">{q}</p>
+          <p className="mt-3 flex gap-4 text-xs text-ink-soft">
+            <span className="flex items-center gap-1"><Heart size={12} /> 12</span>
+            <span className="flex items-center gap-1"><MessageCircle size={12} /> 5 replies</span>
+          </p>
+        </div>
+      ))}
     </>
   );
 }

@@ -7,6 +7,9 @@ import { Bookmark, Search } from "lucide-react";
 import Discover, { DiscoverSkeleton } from "@/components/social/Discover";
 import Community from "@/components/social/Community";
 import SearchPanel from "@/components/social/SearchPanel";
+import LiquidSegment from "@/components/LiquidSegment";
+import LockedTab from "@/components/account/LockedTab";
+import { useAccount } from "@/lib/account/useAccount";
 
 type Tab = "discover" | "community";
 
@@ -16,34 +19,38 @@ function SocialInner() {
   const params = useSearchParams();
   const [tab, setTab] = useState<Tab>(params.get("tab") === "community" ? "community" : "discover");
   const [searching, setSearching] = useState(false);
-  // Coming back from a Community post (link to /social?tab=community) switches to Community
+  // Which way the content glides when switching (Community is to the right of Discover)
+  const [dir, setDir] = useState<"left" | "right" | null>(null);
+  // The address can switch the section: ?tab=community (back from a post) or ?tab=discover (after signing out)
   const wanted = params.get("tab");
   useEffect(() => {
-    if (wanted === "community") setTab("community");
+    if (wanted === "community" || wanted === "discover") {
+      setTab(wanted);
+      setSearching(false);
+    }
   }, [wanted]);
+  // Community needs an account (anonymous posting still works, but we need to know who to moderate)
+  const acc = useAccount();
+  const communityLocked = acc.status === "guest";
 
   return (
     <div className="space-y-5">
       {/* One row: Discover / Community on the left, Search and Saved on the right */}
       <header className="flex items-center justify-between gap-2">
         <h1 className="sr-only">Social</h1>
-        <div className="inline-flex rounded-full bg-surface p-1 ring-1 ring-line" role="tablist" aria-label="Social sections">
-          {(["discover", "community"] as const).map((t) => (
-            <button
-              key={t}
-              role="tab"
-              id={`tab-${t}`}
-              aria-selected={tab === t}
-              aria-controls="social-panel"
-              onClick={() => setTab(t)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                tab === t ? "bg-forest-deep text-white" : "text-ink-soft"
-              }`}
-            >
-              {t === "discover" ? "Discover" : "Community"}
-            </button>
-          ))}
-        </div>
+        <LiquidSegment
+          label="Social sections"
+          value={tab}
+          onChange={(t) => {
+            if (t === tab) return;
+            setDir(t === "community" ? "left" : "right");
+            setTab(t);
+          }}
+          options={[
+            { id: "discover", label: "Discover" },
+            { id: "community", label: "Community" },
+          ]}
+        />
         <div className="flex shrink-0 gap-2">
           <button
             aria-label="Search"
@@ -63,8 +70,15 @@ function SocialInner() {
         </div>
       </header>
 
-      <div id="social-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} key={`${tab}-${searching}`} className="page-enter">
-        {searching ? (
+      <div
+        id="social-panel"
+        role="tabpanel"
+        aria-labelledby={`tab-${tab}`} key={`${tab}-${searching}`}
+        className={dir === "left" ? "glass-from-right" : dir === "right" ? "glass-from-left" : "page-enter"}
+      >
+        {tab === "community" && communityLocked ? (
+          <LockedTab tab="community" />
+        ) : searching ? (
           <SearchPanel tab={tab} onClose={() => setSearching(false)} />
         ) : tab === "discover" ? (
           <Discover />

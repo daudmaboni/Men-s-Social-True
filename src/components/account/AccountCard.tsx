@@ -13,7 +13,7 @@ const SERVER = { status: "idle" as const, lastSaved: null };
 
 export default function AccountCard({ acc }: { acc: AccountState }) {
   const showToast = useToast();
-    const router = useRouter();
+  const router = useRouter();
   const sync = useSyncExternalStore(syncStatus.subscribe, syncStatus.get, () => SERVER);
   const [sheet, setSheet] = useState<"signout" | "delete" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -55,7 +55,7 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
     setBusy(false);
     setSheet(null);
     showToast("Signed out");
-    router.replace("/social");
+    router.replace("/social?tab=discover"); // back to Social → Discover, the part guests can use
   }
 
   async function deleteAccount() {

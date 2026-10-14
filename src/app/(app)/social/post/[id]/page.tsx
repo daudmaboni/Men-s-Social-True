@@ -11,8 +11,27 @@ import { useCommunity } from "@/components/social/useCommunity";
 import { useToast } from "@/components/motion/Toast";
 import { checkReply, LIMITS, topicLabel } from "@/lib/social/community";
 import { socialStore } from "@/lib/social/store";
+import LockedTab from "@/components/account/LockedTab";
+import { useAccount } from "@/lib/account/useAccount";
 
+/** Community posts need an account, like the Community tab itself. */
 export default function PostPage() {
+  const acc = useAccount();
+  if (acc.status === "loading") return <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />;
+  if (acc.status === "guest") {
+    return (
+      <div className="space-y-4">
+        <Link href="/social" className="flex items-center gap-1 text-sm text-ink-soft">
+          <ArrowLeft size={16} /> Social
+        </Link>
+        <LockedTab tab="community" />
+      </div>
+    );
+  }
+  return <PostView />;
+}
+
+function PostView() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const showToast = useToast();
