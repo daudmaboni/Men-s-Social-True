@@ -7,13 +7,14 @@
 // - The address (/social, /man, /me) follows the tab you land on.
 // - Other pages (an article, sign-up…) open on top of the strip and slide in from the right.
 
-import { Component, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import SocialTab from "@/components/tabs/SocialTab";
 import ManTab from "@/components/tabs/ManTab";
 import MeTab from "@/components/tabs/MeTab";
 import { isTabRoot, stripPosition, TAB_PATHS, tabFor } from "@/lib/tabs";
 import LockedTab from "@/components/account/LockedTab";
+import { readTabTransition } from "@/lib/tabTransition";
 import { useAccount } from "@/lib/account/useAccount";
 
 const PANELS = [SocialTab, ManTab, MeTab];
@@ -25,29 +26,89 @@ const setBubble = (position: number, byFinger = false) => {
 };
 
 /**
- * The same frosted-glass feel as Discover ⇄ Community, for the main tabs:
- * while the pages slide, the page leaving and the page arriving are seen through frosted glass
- * (blurred, a little faded and smaller), and each comes into focus as it reaches the centre.
+ * Frosted-glass feel while the pages slide, made cheap enough for any phone:
+ * a frosted veil fades in over the page that's leaving / arriving, and the page shrinks and fades a little.
+ * Only opacity and transform change (the phone's graphics chip does that for free) — no live blur,
+ * which made phones redraw the whole screen every frame and feel sticky.
  * It follows the strip, so it tracks the finger exactly and works for taps too.
  */
+const ENTER_CLASSES = ["glass-from-right", "glass-from-left", "tab-fade-through", "tab-slide-right", "tab-slide-left"];
+
+/** Play an entrance animation on a tab's content (restarts cleanly on quick repeated taps). */
+function playIn(tab: number, cls: string) {
+  const content = document.getElementById(`tab-panel-${tab}`)?.firstElementChild as HTMLElement | null;
+  if (!content) return;
+  content.classList.remove(...ENTER_CLASSES);
+  void content.offsetWidth; // restart the animation
+  content.classList.add(cls);
+  content.addEventListener("animationend", () => content.classList.remove(cls), { once: true });
+}
+
+/** Move the strip to the tapped tab using the chosen transition. */
+function switchTab(el: HTMLElement, left: number, tab: number, from: number) {
+  const kind = readTabTransition();
+  const jump = () => el.scrollTo({ left, behavior: "instant" });
+  const forward = tab > from;
+  if (reduceMotion() || kind === "instant") return jump();
+  if (kind === "reveal") {
+    // The new page grows out in a circle from the tab he tapped in the bar
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
+    const button = document.querySelector<HTMLElement>(`nav[aria-label="Main"] a[href="${TAB_PATHS[tab]}"]`)?.getBoundingClientRect();
+    if (!doc.startViewTransition || !button) return jump();
+    const x = button.left + button.width / 2;
+    const y = button.top + button.height / 2;
+    const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    doc
+      .startViewTransition(jump)
+      .ready.then(() =>
+        document.documentElement.animate(
+          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+          { duration: 480, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", pseudoElement: "::view-transition-new(root)" },
+        ),
+      )
+      .catch(() => {});
+    return;
+  }
+  jump();
+  if (kind === "fade") playIn(tab, "tab-fade-through");
+  else if (kind === "slide") playIn(tab, forward ? "tab-slide-right" : "tab-slide-left");
+  else playIn(tab, forward ? "glass-from-right" : "glass-from-left");
+}
+
 const reduceMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 function frostPanels(position: number) {
-  if (reduceMotion()) return;
+  // The frosted veil while swiping belongs to the "Frosted" choice; the others keep a plain slide
+  if (reduceMotion() || readTabTransition() !== "frosted") {
+    for (let i = 0; i < TAB_PATHS.length; i++) {
+      const veil = document.getElementById(`tab-veil-${i}`);
+      const content = document.getElementById(`tab-panel-${i}`)?.firstElementChild as HTMLElement | null;
+      if (veil) veil.style.opacity = "0";
+      if (content) {
+        content.style.transform = "";
+        content.style.opacity = "";
+        content.style.willChange = "";
+      }
+    }
+    return;
+  }
   for (let i = 0; i < TAB_PATHS.length; i++) {
     const content = document.getElementById(`tab-panel-${i}`)?.firstElementChild as HTMLElement | null;
-    if (!content) continue;
+    const veil = document.getElementById(`tab-veil-${i}`);
+    if (!content || !veil) continue;
     const d = Math.min(Math.abs(position - i), 1); // 0 = in the centre, 1 = a full page away
     if (d < 0.004 || d > 0.996) {
-      // In focus, or fully off screen: no effects at all (keeps scrolling smooth and saves battery)
-      content.style.filter = "";
-      content.style.opacity = "";
+      // In focus, or fully off screen: nothing to draw
       content.style.transform = "";
+      content.style.opacity = "";
+      content.style.willChange = "";
+      veil.style.opacity = "0";
       continue;
     }
     const e = Math.sin((d * Math.PI) / 2); // eases in quickly, like the Discover ⇄ Community glide
-    content.style.filter = `blur(${(e * 10).toFixed(2)}px) saturate(${(1 + e * 0.4).toFixed(3)})`;
-    content.style.opacity = String(1 - e * 0.45);
-    content.style.transform = `scale(${(1 - e * 0.03).toFixed(4)})`;
+    content.style.willChange = "transform, opacity";
+    content.style.transform = `scale(${(1 - e * 0.05).toFixed(4)})`;
+    content.style.opacity = String(1 - e * 0.35);
+    veil.style.opacity = e.toFixed(3);
   }
 }
 
@@ -72,7 +133,13 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
     if (!el || tab < 0) return;
     const target = tab * el.clientWidth;
     if (Math.abs(el.scrollLeft - target) > 1) {
-      el.scrollTo({ left: target, behavior: placed ? "smooth" : "instant" });
+      if (!placed) {
+        el.scrollTo({ left: target, behavior: "instant" });
+      } else {
+        // A tap on the tab bar: the page changes with the transition he chose on Me → Tab switching
+        const from = Math.round(el.scrollLeft / el.clientWidth);
+        switchTab(el, target, tab, from);
+      }
     }
     if (!placed) {
       setBubble(tab);
@@ -112,25 +179,16 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
     }, 90);
   }, [router]);
 
-  return (
-    <>
-      <div
-        ref={strip}
-        onScroll={onScroll}
-        onTouchStart={() => (fingerUntil.current = Infinity)}
-        onTouchEnd={() => (fingerUntil.current = performance.now() + 700)}
-        onTouchCancel={() => (fingerUntil.current = performance.now() + 700)}
-        className={`tab-strip ${placed ? "opacity-100" : "opacity-0"}`}
-        inert={!onRoot}
-        aria-hidden={!onRoot}
-      >
-        {PANELS.map((Panel, i) => (
+  // The three tabs are built once and kept: switching tabs (or the address changing) doesn't redraw them,
+  // which removed a stutter at the end of every swipe.
+  const panels = useMemo(
+    () =>
+      PANELS.map((Panel, i) => (
           <section
             key={TAB_PATHS[i]}
             id={`tab-panel-${i}`}
             className="tab-panel"
             aria-label={["Social", "Man", "Me"][i]}
-            aria-hidden={onRoot && i !== tab ? true : undefined}
           >
             <div className="mx-auto max-w-md px-5 pb-32 pt-6">
               <PanelBoundary>
@@ -144,7 +202,27 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
               </PanelBoundary>
             </div>
           </section>
+      )),
+    [acc.status, locked],
+  );
+
+  return (
+    <>
+      <div
+        ref={strip}
+        onScroll={onScroll}
+        onTouchStart={() => (fingerUntil.current = Infinity)}
+        onTouchEnd={() => (fingerUntil.current = performance.now() + 700)}
+        onTouchCancel={() => (fingerUntil.current = performance.now() + 700)}
+        className={`tab-strip ${placed ? "opacity-100" : "opacity-0"}`}
+        inert={!onRoot}
+        aria-hidden={!onRoot}
+      >
+        {/* Frosted veils, one over each page (faded in only while pages slide) */}
+        {TAB_PATHS.map((path, i) => (
+          <div key={path} id={`tab-veil-${i}`} aria-hidden className="tab-veil" style={{ left: `${i * 100}%` }} />
         ))}
+        {panels}
       </div>
 
       {!onRoot && (

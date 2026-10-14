@@ -187,6 +187,7 @@ body {
 /* The strip: three full-screen tabs side by side. The phone's own scrolling moves it. */
 .tab-strip {
   position: fixed;
+  /* (veils are positioned inside the strip, one page-width apart) */
   inset: 0;
   display: flex;
   overflow-x: auto;
@@ -198,6 +199,24 @@ body {
   transition: opacity 0.15s ease-out;
 }
 .tab-strip::-webkit-scrollbar { display: none; }
+/* Frosted veil over a page while the tabs slide (only its opacity changes, so it's cheap) */
+.tab-veil {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(120% 70% at 50% 30%, rgb(255 255 255 / 0.55), transparent 70%),
+    color-mix(in srgb, var(--bg) 72%, transparent);
+}
+[data-theme="dark"] .tab-veil {
+  background:
+    radial-gradient(120% 70% at 50% 30%, rgb(255 255 255 / 0.06), transparent 70%),
+    color-mix(in srgb, var(--bg) 70%, transparent);
+}
 /* Each tab scrolls up and down on its own, and remembers where it was */
 .tab-panel {
   flex: 0 0 100%;
@@ -355,4 +374,24 @@ body {
 .glass-from-left { animation: glass-from-left 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 @media (prefers-reduced-motion: reduce) {
   .glass-from-right, .glass-from-left { animation: none; }
+}
+
+/* Tab switching choices (Me → Tab switching). Opacity/transform only, so they're light on phones. */
+@keyframes tab-fade-through {
+  from { opacity: 0; transform: scale(1.02); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tab-slide-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tab-slide-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: none; }
+}
+.tab-fade-through { animation: tab-fade-through 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.tab-slide-right { animation: tab-slide-right 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.tab-slide-left { animation: tab-slide-left 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-fade-through, .tab-slide-right, .tab-slide-left { animation: none; }
 }

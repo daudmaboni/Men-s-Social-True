@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Download, Droplet, EyeOff, Globe, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
+import { TAB_TRANSITIONS, setTabTransition, useTabTransition } from "@/lib/tabTransition";
 import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
@@ -100,6 +101,7 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
   const showToast = useToast();
   const theme = useThemePref();
   const accent = useAccent();
+  const transition = useTabTransition();
   return (
     <section className="divide-y divide-line rounded-3xl bg-surface ring-1 ring-line">
       <div className="p-5">
@@ -123,6 +125,25 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
             </button>
           ))}
         </div>
+        <p className="mt-4 text-xs font-semibold text-ink-soft">Tab switching</p>
+        <div className="mt-2 grid grid-cols-5 gap-1 rounded-2xl bg-bg p-1 text-[11px] font-semibold ring-1 ring-line" role="radiogroup" aria-label="Tab switching">
+          {TAB_TRANSITIONS.map((t) => (
+            <button
+              key={t.id}
+              role="radio"
+              aria-checked={transition === t.id}
+              onClick={() => {
+                setTabTransition(t.id);
+                showToast(`${t.label}: tap Social, Man or Me to try it`);
+              }}
+              className={`rounded-xl py-2 ${transition === t.id ? "bg-forest text-white" : "text-ink-soft"}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] text-ink-soft">{TAB_TRANSITIONS.find((t) => t.id === transition)?.about}</p>
+
         <p className="mt-4 text-xs font-semibold text-ink-soft">Colour</p>
         <div className="mt-2 flex gap-3" role="radiogroup" aria-label="Colour">
           {ACCENTS.map((a) => (
