@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail, Smartphone } from "lucide-react";
 import { useToast } from "@/components/motion/Toast";
 import { account, AUTH_METHODS, useAccount } from "@/lib/account/useAccount";
+import { useT } from "@/lib/i18n";
 
 type Mode = "signup" | "login" | "reset";
 
@@ -22,6 +23,7 @@ function AccountInner() {
   const params = useSearchParams();
   const showToast = useToast();
   const acc = useAccount();
+  const t = useT();
   const [mode, setMode] = useState<Mode>(params.get("mode") === "login" ? "login" : "signup");
   const [phoneOpen, setPhoneOpen] = useState(false);
 
@@ -29,7 +31,7 @@ function AccountInner() {
   const next = params.get("next");
   const afterSignIn = next && next.startsWith("/") && !next.startsWith("//") ? next : "/me";
   const done = (msg: string) => {
-    showToast(msg);
+    showToast(t(msg));
     router.push(afterSignIn);
   };
 
@@ -37,9 +39,9 @@ function AccountInner() {
     return (
       <Shell>
         <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-line">
-          <p className="font-semibold">You&apos;re signed in</p>
+          <p className="font-semibold">{t("You're signed in")}</p>
           <Link href={afterSignIn} className="mt-4 inline-block rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
-            Continue
+            {t("Continue")}
           </Link>
         </div>
       </Shell>
@@ -48,7 +50,7 @@ function AccountInner() {
   if (acc.status === "unavailable") {
     return (
       <Shell>
-        <p className="rounded-3xl bg-surface p-6 text-sm text-ink-soft ring-1 ring-line">Accounts aren&apos;t switched on yet. You can keep using the app as a guest.</p>
+        <p className="rounded-3xl bg-surface p-6 text-sm text-ink-soft ring-1 ring-line">{t("Accounts aren't switched on yet. You can keep using the app as a guest.")}</p>
       </Shell>
     );
   }
@@ -56,11 +58,13 @@ function AccountInner() {
   return (
     <Shell>
       <div>
-        <h1 className="text-2xl font-bold">{mode === "login" ? "Welcome back" : mode === "reset" ? "Reset your password" : "Create your free account"}</h1>
+        <h1 className="text-2xl font-bold">{t(mode === "login" ? "Welcome back" : mode === "reset" ? "Reset your password" : "Create your free account")}</h1>
         <p className="mt-1 text-sm text-ink-soft">
-          {mode === "reset"
-            ? "We'll email you a link to choose a new password."
-            : "Keep your points, badges and progress safe, even if you change phones. Only you can see your data."}
+          {t(
+            mode === "reset"
+              ? "We'll email you a link to choose a new password."
+              : "Keep your points, badges and progress safe, even if you change phones. Only you can see your data.",
+          )}
         </p>
       </div>
 
@@ -68,7 +72,7 @@ function AccountInner() {
         <div className="inline-flex w-full rounded-full bg-surface p-1 text-sm font-semibold ring-1 ring-line" role="tablist">
           {(["signup", "login"] as const).map((m) => (
             <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)} className={`flex-1 rounded-full py-2 ${mode === m ? "bg-forest-deep text-white" : "text-ink-soft"}`}>
-              {m === "signup" ? "Sign up" : "Log in"}
+              {t(m === "signup" ? "Sign up" : "Log in")}
             </button>
           ))}
         </div>
@@ -79,13 +83,13 @@ function AccountInner() {
           <button
             onClick={async () => {
               const r = await account.signInGoogle(afterSignIn);
-              if (r.error) showToast(r.error);
+              if (r.error) showToast(t(r.error));
             }}
             disabled={!AUTH_METHODS.google}
             className="flex w-full items-center justify-center gap-3 rounded-full bg-surface py-3.5 text-sm font-semibold ring-1 ring-line disabled:opacity-50"
           >
-            <GoogleMark /> Continue with Google
-            {!AUTH_METHODS.google && <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">Soon</span>}
+            <GoogleMark /> {t("Continue with Google")}
+            {!AUTH_METHODS.google && <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">{t("Soon")}</span>}
           </button>
           <button
             onClick={() => setPhoneOpen((o) => !o)}
@@ -93,12 +97,12 @@ function AccountInner() {
             aria-expanded={phoneOpen}
             className="flex w-full items-center justify-center gap-3 rounded-full bg-surface py-3.5 text-sm font-semibold ring-1 ring-line disabled:opacity-50"
           >
-            <Smartphone size={18} className="text-forest" /> Continue with phone number
-            {!AUTH_METHODS.phone && <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">Soon</span>}
+            <Smartphone size={18} className="text-forest" /> {t("Continue with phone number")}
+            {!AUTH_METHODS.phone && <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">{t("Soon")}</span>}
           </button>
           {phoneOpen && AUTH_METHODS.phone && <PhoneForm onDone={() => done("Signed in · your progress is saved")} />}
           <div className="flex items-center gap-3 py-2 text-xs text-ink-soft">
-            <span className="h-px flex-1 bg-line" /> or with email <span className="h-px flex-1 bg-line" />
+            <span className="h-px flex-1 bg-line" /> {t("or with email")} <span className="h-px flex-1 bg-line" />
           </div>
         </div>
       )}
@@ -107,7 +111,7 @@ function AccountInner() {
 
       <p className="flex items-start gap-2 px-1 text-xs text-ink-soft">
         <Lock size={13} className="mt-0.5 shrink-0 text-forest" />
-        Your check-ins and notes are private. Kayani staff can&apos;t read them, and we never use them for adverts.
+        {t("Your check-ins and notes are private. Kayani staff can't read them, and we never use them for adverts.")}
       </p>
     </Shell>
   );
@@ -120,6 +124,7 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
+  const t = useT();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -128,12 +133,12 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
     if (mode === "reset") {
       const r = await account.resetPassword(email);
       setBusy(false);
-      if (r.error) return setError(r.error);
+      if (r.error) return setError(t(r.error));
       return setSent("If that email has an account, a reset link is on its way. Check your inbox.");
     }
     const r = mode === "signup" ? await account.signUpEmail(email, password) : await account.signInEmail(email, password);
     setBusy(false);
-    if (r.error) return setError(r.error);
+    if (r.error) return setError(t(r.error));
     if (r.needsConfirm) return setSent("Almost done. We sent you an email: tap the link in it to finish creating your account.");
     onDone(mode === "signup" ? "Account created · your progress is saved" : "Welcome back");
   }
@@ -142,9 +147,9 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
     return (
       <div className="rounded-3xl bg-mint/60 p-5 text-sm text-forest-deep">
         <Mail size={20} className="mb-2 text-forest" />
-        {sent}
+        {t(sent)}
         <button onClick={() => { setSent(null); onMode("login"); }} className="mt-3 block font-semibold text-forest">
-          Back to log in
+          {t("Back to log in")}
         </button>
       </div>
     );
@@ -153,12 +158,12 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
   return (
     <form onSubmit={submit} className="space-y-3">
       <label className="block">
-        <span className="text-xs font-semibold text-ink-soft">Email</span>
+        <span className="text-xs font-semibold text-ink-soft">{t("Email")}</span>
         <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={input} />
       </label>
       {mode !== "reset" && (
         <label className="block">
-          <span className="text-xs font-semibold text-ink-soft">Password</span>
+          <span className="text-xs font-semibold text-ink-soft">{t("Password")}</span>
           <div className="relative">
             <input
               type={show ? "text" : "password"}
@@ -169,11 +174,11 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
               onChange={(e) => setPassword(e.target.value)}
               className={`${input} pr-11`}
             />
-            <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"} className="absolute inset-y-0 right-0 mt-1 flex w-11 items-center justify-center text-ink-soft">
+            <button type="button" onClick={() => setShow((s) => !s)} aria-label={t(show ? "Hide password" : "Show password")} className="absolute inset-y-0 right-0 mt-1 flex w-11 items-center justify-center text-ink-soft">
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          {mode === "signup" && <span className="mt-1 block text-[11px] text-ink-soft">At least 8 characters.</span>}
+          {mode === "signup" && <span className="mt-1 block text-[11px] text-ink-soft">{t("At least 8 characters.")}</span>}
         </label>
       )}
       {error && (
@@ -183,17 +188,17 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
       )}
       <button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-60">
         {busy && <Loader2 size={16} className="animate-spin" />}
-        {mode === "signup" ? "Create account" : mode === "login" ? "Log in" : "Send reset link"}
+        {t(mode === "signup" ? "Create account" : mode === "login" ? "Log in" : "Send reset link")}
       </button>
       <div className="flex justify-between text-xs font-semibold text-forest">
         {mode === "login" && (
           <button type="button" onClick={() => onMode("reset")}>
-            Forgot password?
+            {t("Forgot password?")}
           </button>
         )}
         {mode === "reset" && (
           <button type="button" onClick={() => onMode("login")}>
-            Back to log in
+            {t("Back to log in")}
           </button>
         )}
       </div>
@@ -207,6 +212,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -214,7 +220,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
     setError(null);
     const r = await account.sendPhoneCode(phone);
     setBusy(false);
-    if (r.error) return setError(r.error);
+    if (r.error) return setError(t(r.error));
     setSentTo(r.phone ?? null);
   }
   async function verify(e: React.FormEvent) {
@@ -224,7 +230,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
     setError(null);
     const r = await account.verifyPhoneCode(sentTo, code);
     setBusy(false);
-    if (r.error) return setError(r.error);
+    if (r.error) return setError(t(r.error));
     onDone();
   }
 
@@ -232,23 +238,23 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={sentTo ? verify : send} className="space-y-3 rounded-3xl bg-surface p-4 ring-1 ring-line">
       {sentTo ? (
         <label className="block">
-          <span className="text-xs font-semibold text-ink-soft">Code sent by SMS to {sentTo}</span>
+          <span className="text-xs font-semibold text-ink-soft">{t("Code sent by SMS to {phone}", { phone: sentTo })}</span>
           <input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} className={`${input} text-center text-lg tracking-[0.5em]`} />
         </label>
       ) : (
         <label className="block">
-          <span className="text-xs font-semibold text-ink-soft">Mobile number</span>
+          <span className="text-xs font-semibold text-ink-soft">{t("Mobile number")}</span>
           <input type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" value={phone} onChange={(e) => setPhone(e.target.value)} className={input} />
         </label>
       )}
       {error && <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full bg-forest py-3 text-sm font-semibold text-white disabled:opacity-60">
         {busy && <Loader2 size={16} className="animate-spin" />}
-        {sentTo ? "Confirm code" : "Send me a code"}
+        {t(sentTo ? "Confirm code" : "Send me a code")}
       </button>
       {sentTo && (
         <button type="button" onClick={() => { setSentTo(null); setCode(""); }} className="w-full text-xs font-semibold text-forest">
-          Use a different number
+          {t("Use a different number")}
         </button>
       )}
     </form>
@@ -256,10 +262,11 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  const t = useT();
   return (
     <div className="stagger space-y-5">
       <Link href="/me" className="flex items-center gap-1 text-sm text-ink-soft">
-        <ArrowLeft size={16} /> Me
+        <ArrowLeft size={16} /> {t("Me")}
       </Link>
       {children}
     </div>

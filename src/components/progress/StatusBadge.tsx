@@ -1,4 +1,7 @@
+"use client";
+
 import type { MetricStatus } from "@/lib/progress/types";
+import { useT } from "@/lib/i18n";
 
 const STYLES: Record<MetricStatus, { text: string; cls: string }> = {
   not_recorded: { text: "Not yet recorded", cls: "bg-bg text-ink-soft ring-1 ring-line" },
@@ -8,5 +11,6 @@ const STYLES: Record<MetricStatus, { text: string; cls: string }> = {
 
 export default function StatusBadge({ status, text }: { status: MetricStatus; text?: string }) {
   const s = STYLES[status];
-  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${s.cls}`}>{text ?? s.text}</span>;
+  const t = useT();
+  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${s.cls}`}>{text ?? t(s.text)}</span>;
 }

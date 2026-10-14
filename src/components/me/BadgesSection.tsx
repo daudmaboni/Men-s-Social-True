@@ -4,17 +4,20 @@ import { useState } from "react";
 import { Lock } from "lucide-react";
 import Sheet from "@/components/motion/Sheet";
 import type { Badge } from "@/lib/me/badges";
+import { useT } from "@/lib/i18n";
 
 export default function BadgesSection({ badges }: { badges: Badge[] }) {
   const [open, setOpen] = useState<Badge | null>(null);
   const earned = badges.filter((b) => b.earned).length;
+  const t = useT();
+  const name = (b: Badge) => (t.lang === "sw" ? b.titleSw : b.title);
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-bold">Badges</h2>
+        <h2 className="text-lg font-bold">{t("Badges")}</h2>
         <p className="text-xs text-ink-soft">
-          {earned} of {badges.length} earned
+          {t("{n} of {total} earned", { n: earned, total: badges.length })}
         </p>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-3">
@@ -33,7 +36,7 @@ export default function BadgesSection({ badges }: { badges: Badge[] }) {
               )}
             </span>
             <span className={`mt-1.5 text-[11px] font-semibold leading-tight ${b.earned ? "text-forest-deep" : "text-ink-soft"}`}>
-              {b.title}
+              {name(b)}
             </span>
             {!b.earned && (
               <span className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-line" aria-hidden>
@@ -44,21 +47,21 @@ export default function BadgesSection({ badges }: { badges: Badge[] }) {
         ))}
       </div>
 
-      <Sheet open={open !== null} onClose={() => setOpen(null)} title={open ? `${open.emoji}  ${open.title}` : ""}>
+      <Sheet open={open !== null} onClose={() => setOpen(null)} title={open ? `${open.emoji}  ${name(open)}` : ""}>
         {open && (
           <div className="space-y-3">
-            <p className="text-xs italic text-ink-soft">{open.titleSw}</p>
-            <p className="text-sm">{open.how}</p>
+            {t.lang === "en" && <p className="text-xs italic text-ink-soft">{open.titleSw}</p>}
+            <p className="text-sm">{t(open.how)}</p>
             <div>
               <div className="h-2.5 overflow-hidden rounded-full bg-line">
                 <div className="h-full rounded-full bg-forest" style={{ width: `${(open.current / open.target) * 100}%` }} />
               </div>
               <p className="mt-1.5 text-xs text-ink-soft">
-                {open.earned ? "Earned. Well done." : `${open.current} of ${open.target}`}
+                {open.earned ? t("Earned. Well done.") : t("{n} of {total}", { n: open.current, total: open.target })}
               </p>
             </div>
             <button onClick={() => setOpen(null)} className="w-full rounded-full bg-forest py-3 text-sm font-semibold text-white">
-              {open.earned ? "Nice" : "Let's do it"}
+              {t(open.earned ? "Nice" : "Let's do it")}
             </button>
           </div>
         )}

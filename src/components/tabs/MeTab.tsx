@@ -13,6 +13,9 @@ import { useLang } from "@/lib/me/lang";
 import { goalFor, useProgress } from "@/lib/progress/store";
 import { useSocial } from "@/lib/social/store";
 import { useAccount } from "@/lib/account/useAccount";
+import { accountLabel } from "@/lib/account/useAccount";
+import { useT } from "@/lib/i18n";
+import NotificationPrefs from "@/components/me/NotificationPrefs";
 
 export default function MeTab() {
   const f = useHomeFeed();
@@ -21,10 +24,11 @@ export default function MeTab() {
   const social = useSocial();
   const lang = useLang();
   const acc = useAccount();
+  const t = useT();
 
   if (!f.ready || !social.ready) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label="Loading">
+      <div className="space-y-4" aria-busy="true" aria-label={t("Loading")}>
         <div className="h-52 animate-pulse rounded-[28px] bg-forest-deep/15" />
         <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
       </div>
@@ -44,9 +48,11 @@ export default function MeTab() {
 
   return (
     <div className="stagger space-y-4">
-      <h1 className="sr-only">Me</h1>
+      <h1 className="sr-only">{t("Me")}</h1>
       <ProfileHero
         nickname={social.nickname}
+        profile={social.profile}
+        account={acc.status === "signedIn" ? accountLabel(acc.user) : null}
         points={f.points}
         level={f.level}
         streak={f.streak}
@@ -59,8 +65,9 @@ export default function MeTab() {
         interests={social.interests}
       />
       <SettingsCard lang={lang} discreet={feed.settings.discreet} />
+      {acc.status === "signedIn" && <NotificationPrefs />}
       <PrivacyCard acc={acc} />
-      <p className="pb-2 text-center text-[11px] text-ink-soft">Kayani Men&apos;s Social · test version</p>
+      <p className="pb-2 text-center text-[11px] text-ink-soft">{t("Kayani Men's Social · test version")}</p>
     </div>
   );
 }

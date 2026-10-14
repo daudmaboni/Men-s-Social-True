@@ -1,10 +1,13 @@
 "use client";
 
-import { Bell, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
+import InboxButton from "@/components/notifications/InboxButton";
 import { useToast } from "@/components/motion/Toast";
+import { useT } from "@/lib/i18n";
 
 export default function TopBar() {
   const showToast = useToast();
+  const t = useT();
   return (
     <header className="flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -13,19 +16,13 @@ export default function TopBar() {
       </div>
       <div className="flex gap-2">
         <button
-          aria-label="Shop"
-          onClick={() => showToast("The shop is coming soon")}
+          aria-label={t("Shop")}
+          onClick={() => showToast(t("The shop is coming soon"))}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
         >
           <ShoppingBag size={18} />
         </button>
-        <button
-          aria-label="Notifications"
-          onClick={() => showToast("No notifications yet")}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
-        >
-          <Bell size={18} />
-        </button>
+        <InboxButton />
       </div>
     </header>
   );

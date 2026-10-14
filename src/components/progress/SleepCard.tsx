@@ -12,12 +12,14 @@ import { dateKey, lastNDays } from "@/lib/progress/dates";
 import { averageRecorded, dayLatest, dayLatestValues, daysGoalMet, metricStatus, sleepMinutes, targetProgress } from "@/lib/progress/calc";
 import { duration, RATING_LABELS, score } from "@/lib/progress/format";
 import type { Period } from "@/lib/progress/types";
+import { useT } from "@/lib/i18n";
 
 type Mode = "log" | "goal" | null;
 
 export default function SleepCard({ period }: { period: Period }) {
   const { records, goals, ready } = useProgress();
   const showToast = useToast();
+  const t = useT();
   const [mode, setMode] = useState<Mode>(null);
   const [bed, setBed] = useState("22:30");
   const [wake, setWake] = useState("06:30");
@@ -58,24 +60,24 @@ export default function SleepCard({ period }: { period: Period }) {
 
   function saveLog() {
     const mins = sleepMinutes(bed, wake);
-    if (mins === null) return setError("Choose a bedtime and a wake-up time.");
-    if (mins < 60 || mins > 960) return setError("That's under 1 hour or over 16 hours. Check the times.");
+    if (mins === null) return setError(t("Choose a bedtime and a wake-up time."));
+    if (mins < 60 || mins > 960) return setError(t("That's under 1 hour or over 16 hours. Check the times."));
     const meta = { bedtime: bed, wakeTime: wake, quality: quality ?? undefined };
     if (lastNight) {
       progressStore.updateRecord(lastNight.id, mins, meta);
-      showToast("Sleep updated");
+      showToast(t("Sleep updated"));
     } else {
       progressStore.addRecord({ metric: "sleep", value: mins, unit: "min", source: "manual", meta });
-      showToast(`${duration(mins)} of sleep logged`);
+      showToast(t("{time} of sleep logged", { time: duration(mins) }));
     }
     setMode(null);
   }
 
   function saveGoal() {
     const h = Number(goalHours);
-    if (!goalHours.trim() || !Number.isFinite(h) || h < 3 || h > 12) return setError("Enter hours between 3 and 12, like 7.5");
+    if (!goalHours.trim() || !Number.isFinite(h) || h < 3 || h > 12) return setError(t("Enter hours between 3 and 12, like 7.5"));
     progressStore.setGoal("sleep", h * 60, "min");
-    showToast(`Sleep goal set to ${duration(h * 60)}`);
+    showToast(t("Sleep goal set to {time}", { time: duration(h * 60) }));
     setMode(null);
   }
 
@@ -83,7 +85,7 @@ export default function SleepCard({ period }: { period: Period }) {
     if (!lastNight) return;
     progressStore.deleteRecord(lastNight.id);
     setMode(null);
-    showToast("Sleep entry removed");
+    showToast(t("Sleep entry removed"));
   }
 
   if (!ready) return <div className="h-56 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />;
@@ -97,9 +99,9 @@ export default function SleepCard({ period }: { period: Period }) {
               <Moon size={18} />
             </span>
             <div>
-              <p className="font-semibold">Sleep</p>
+              <p className="font-semibold">{t("Sleep")}</p>
               <button onClick={openGoal} className="flex items-center gap-1 text-xs text-ink-soft">
-                Goal {goal ? duration(goal) : "not set"} <Pencil size={11} />
+                {t("Goal")} {goal ? duration(goal) : t("not set")} <Pencil size={11} />
               </button>
             </div>
           </div>
@@ -108,49 +110,49 @@ export default function SleepCard({ period }: { period: Period }) {
 
         {period === 1 ? (
           <>
-            <p className="mt-5 text-xs font-medium text-ink-soft">Last night</p>
+            <p className="mt-5 text-xs font-medium text-ink-soft">{t("Last night")}</p>
             <p className="text-3xl font-bold">
               {lastValue === null ? <span className="text-ink-soft">—</span> : duration(lastValue)}
               <span className="text-base font-medium text-ink-soft"> / {goal ? duration(goal) : "—"}</span>
             </p>
             <div className="mt-3">
-              <ProgressBar percent={pct} status={status} label="Sleep last night" />
+              <ProgressBar percent={pct} status={status} label={t("Sleep last night")} />
             </div>
             {lastNight ? (
               <p className="mt-2 text-xs text-ink-soft">
                 {lastNight.meta?.bedtime} → {lastNight.meta?.wakeTime}
-                {lastNight.meta?.quality ? ` · Quality: ${RATING_LABELS[lastNight.meta.quality - 1]}` : ""}
+                {lastNight.meta?.quality ? ` · ${t("Quality")}: ${t(RATING_LABELS[lastNight.meta.quality - 1])}` : ""}
               </p>
             ) : (
-              <p className="mt-2 text-xs text-ink-soft">Not logged yet for last night.</p>
+              <p className="mt-2 text-xs text-ink-soft">{t("Not logged yet for last night.")}</p>
             )}
             <button
               onClick={openLog}
               className="mt-4 w-full rounded-full bg-forest py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
             >
-              {lastNight ? "Edit last night" : "Log last night"}
+              {t(lastNight ? "Edit last night" : "Log last night")}
             </button>
           </>
         ) : (
           <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-            <Stat label="Average" value={avg === null ? "—" : duration(avg)} hint="recorded nights" />
-            <Stat label="Goal reached" value={`${met}`} hint={`of ${recorded} nights`} />
-            <Stat label="Quality" value={avgQuality === null ? "—" : `${score(avgQuality)}/5`} hint="average" />
+            <Stat label={t("Average")} value={avg === null ? "—" : duration(avg)} hint={t("recorded nights")} />
+            <Stat label={t("Goal reached")} value={`${met}`} hint={t("of {n} nights", { n: recorded })} />
+            <Stat label={t("Quality")} value={avgQuality === null ? "—" : `${score(avgQuality)}/5`} hint={t("average")} />
           </div>
         )}
 
         {period !== 1 && (
           <div className="mt-5 border-t border-line pt-4">
-            <p className="mb-3 text-xs font-medium text-ink-soft">Last {period} nights</p>
+            <p className="mb-3 text-xs font-medium text-ink-soft">{t("Last {n} nights", { n: period })}</p>
             <DayBars keys={keys} values={values} target={goal} format={duration} />
           </div>
         )}
       </section>
 
-      <Sheet open={mode !== null} onClose={() => setMode(null)} title={mode === "goal" ? "Sleep goal" : "Last night's sleep"}>
+      <Sheet open={mode !== null} onClose={() => setMode(null)} title={t(mode === "goal" ? "Sleep goal" : "Last night's sleep")}>
         {mode === "goal" ? (
           <>
-            <label htmlFor="sleep-goal" className="text-xs text-ink-soft">Hours per night</label>
+            <label htmlFor="sleep-goal" className="text-xs text-ink-soft">{t("Hours per night")}</label>
             <input
               id="sleep-goal"
               autoFocus
@@ -163,13 +165,13 @@ export default function SleepCard({ period }: { period: Period }) {
               placeholder="7"
               className={`mt-1 w-full rounded-2xl px-4 py-3 text-sm outline-none ring-1 focus:ring-2 ${error ? "ring-red-500" : "ring-line focus:ring-forest"}`}
             />
-            <p className="mt-2 text-xs text-ink-soft">Most adults do well with 7–9 hours. Choose what suits you.</p>
+            <p className="mt-2 text-xs text-ink-soft">{t("Most adults do well with 7–9 hours. Choose what suits you.")}</p>
           </>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3">
               <label className="text-xs text-ink-soft">
-                Went to bed
+                {t("Went to bed")}
                 <input
                   type="time"
                   value={bed}
@@ -181,7 +183,7 @@ export default function SleepCard({ period }: { period: Period }) {
                 />
               </label>
               <label className="text-xs text-ink-soft">
-                Woke up
+                {t("Woke up")}
                 <input
                   type="time"
                   value={wake}
@@ -193,8 +195,8 @@ export default function SleepCard({ period }: { period: Period }) {
                 />
               </label>
             </div>
-            <p className="mt-2 text-sm font-semibold text-forest">{preview ? `${duration(preview)} of sleep` : "—"}</p>
-            <p className="mt-4 text-xs text-ink-soft">How well did you sleep? (optional)</p>
+            <p className="mt-2 text-sm font-semibold text-forest">{preview ? t("{time} of sleep", { time: duration(preview) }) : "—"}</p>
+            <p className="mt-4 text-xs text-ink-soft">{t("How well did you sleep? (optional)")}</p>
             <div className="mt-2 grid grid-cols-5 gap-1.5">
               {RATING_LABELS.map((label, i) => (
                 <button
@@ -204,7 +206,7 @@ export default function SleepCard({ period }: { period: Period }) {
                     quality === i + 1 ? "bg-forest text-white" : "ring-1 ring-line"
                   }`}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               ))}
             </div>
@@ -213,16 +215,16 @@ export default function SleepCard({ period }: { period: Period }) {
         {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
         <div className="mt-5 flex items-center justify-between gap-2">
           {mode === "log" && lastNight ? (
-            <button onClick={remove} className="text-sm font-semibold text-red-600">Delete</button>
+            <button onClick={remove} className="text-sm font-semibold text-red-600">{t("Delete")}</button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
             <button onClick={() => setMode(null)} className="rounded-full px-5 py-2.5 text-sm font-semibold ring-1 ring-line">
-              Cancel
+              {t("Cancel")}
             </button>
             <button onClick={mode === "goal" ? saveGoal : saveLog} className="rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
-              Save
+              {t("Save")}
             </button>
           </div>
         </div>

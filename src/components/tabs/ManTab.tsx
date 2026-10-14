@@ -11,9 +11,11 @@ import { useHomeFeed } from "@/components/feed/useHomeFeed";
 import CheckInCard from "@/components/progress/CheckInCard";
 import HydrationCard from "@/components/progress/HydrationCard";
 import SleepCard from "@/components/progress/SleepCard";
+import { useT } from "@/lib/i18n";
 
 export default function ManTab() {
   const f = useHomeFeed();
+  const t = useT();
 
   if (!f.ready) {
     return (
@@ -49,7 +51,7 @@ export default function ManTab() {
         <TrendsSection />
       </div>
 
-      <p className="px-2 pt-2 text-center text-[11px] text-ink-soft">Saved privately to your account.</p>
+      <p className="px-2 pt-2 text-center text-[11px] text-ink-soft">{t("Saved privately to your account.")}</p>
     </div>
   );
 }

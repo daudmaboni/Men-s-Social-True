@@ -3,4 +3,4 @@
 const KEY = "ms_theme";
 
 /** Runs before the page paints (inline in <head>), so dark mode never flashes white. */
-export const THEME_BOOT_SCRIPT = `(function(){try{var p=localStorage.getItem("${KEY}");var d=p==="dark"||(p!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);var t=d?"dark":"light";document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;var a=localStorage.getItem("ms_accent");if(a==="blue"||a==="red")document.documentElement.dataset.accent=a;}catch(e){}})();`;
+export const THEME_BOOT_SCRIPT = `(function(){try{var p=localStorage.getItem("${KEY}");var d=p==="dark"||(p!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);var t=d?"dark":"light";document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;var a=localStorage.getItem("ms_accent");if(a==="blue"||a==="red")document.documentElement.dataset.accent=a;if(localStorage.getItem("ms_lang")==="sw")document.documentElement.lang="sw";}catch(e){}})();`;

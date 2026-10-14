@@ -3,7 +3,7 @@
 
 export type TopicId = "erection" | "ejaculation" | "libido" | "fertility" | "confidence" | "intimacy" | "wellbeing";
 
-export type ContentKind = "guide" | "article" | "video" | "quiz" | "tool" | "expert";
+export type ContentKind = "guide" | "article" | "video" | "quiz" | "tool" | "expert" | "audio" | "infographic";
 
 export type ToolId = "pelvic-floor" | "doctor-check";
 
@@ -43,8 +43,24 @@ export interface ContentItem {
   /** Kiswahili version of the body (same "## " heading rule). */
   bodySw?: string[];
   titleSw?: string;
+  /** Kiswahili summary (Content Studio). */
+  summarySw?: string;
   /** Where the content was adapted from, e.g. a Kayani Herbs Instagram post. */
   origin?: { platform: "instagram"; url: string; postedAt: string; format: "reel" | "post" | "carousel" };
+  /** Pinned by staff as the Featured card at the top of Discover (Content Studio). */
+  featured?: boolean;
+  /** A real video to play (uploaded in the Content Studio, or a link to an .mp4). */
+  videoUrl?: string;
+  /** An audio file to play (audio lessons, podcasts). */
+  audioUrl?: string;
+  /** When it went live (set by the database). */
+  publishedAt?: string;
+  /** Goes live at this time (Content Studio scheduling). */
+  publishAt?: string;
+  /** Note between writer and editor during review. */
+  reviewNote?: string;
+  /** Drafted with AI help: must be checked by a professional before it can be published. */
+  aiGenerated?: boolean;
   /** Uploaded cover photo (Content Studio). When set, it replaces the drawn cover. */
   coverImageUrl?: string;
   /** Content Studio fields */
@@ -54,7 +70,7 @@ export interface ContentItem {
   builtIn?: boolean;
 }
 
-export type ContentStatus = "draft" | "published" | "archived";
+export type ContentStatus = "draft" | "review" | "published" | "archived";
 
 export interface Topic {
   id: TopicId;

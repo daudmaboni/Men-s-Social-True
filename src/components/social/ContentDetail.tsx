@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, ExternalLink, MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
 import Cover from "./Cover";
@@ -8,12 +8,14 @@ import BookmarkButton from "./BookmarkButton";
 import { ContentRow } from "./ContentCards";
 import { DoctorCheck, PelvicFloorTrainer, QuizRunner } from "./ContentTools";
 import { useToast } from "@/components/motion/Toast";
-import { TOPICS } from "@/lib/content/library";
 import { useLibrary } from "@/lib/content/useLibrary";
 import { useLang, type Lang } from "@/lib/me/lang";
-import { getContent, KIND_LABEL } from "@/lib/content/select";
+import { getContent } from "@/lib/content/select";
 import { feedStore, useFeed } from "@/lib/feed/store";
 import { socialStore } from "@/lib/social/store";
+import { useT } from "@/lib/i18n";
+import { metaOf, topicTitle } from "@/lib/content/display";
+import { trackContent } from "@/lib/analytics/track";
 
 /** Full page for any piece of content: guide, article, video, quiz, tool or expert answer. */
 export default function ContentDetail({ id, back }: { id: string; back: { href: string; label: string } }) {
@@ -21,19 +23,37 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   const item = getContent(id, library.items);
   const feed = useFeed();
   const showToast = useToast();
+  const t = useT();
   // Opens in the language he chose (Me tab); he can still switch on the page
   const appLang = useLang();
   const [picked, setLang] = useState<Lang | null>(null);
   const lang = picked ?? appLang;
+  // Reading completion: he scrolled to the end of a guide, article or answer
+  const endRef = useRef<HTMLParagraphElement>(null);
+  const readable = item ? ["guide", "article", "expert", "infographic"].includes(item.kind) : false;
+  useEffect(() => {
+    const el = endRef.current;
+    if (!el || !readable || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        trackContent(id, "complete");
+        io.disconnect();
+      }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [id, readable]);
   // Remember he opened it, so Discover can suggest things he hasn't read yet
   const found = Boolean(item);
   useEffect(() => {
-    if (found) socialStore.recordOpen(id);
+    if (!found) return;
+    socialStore.recordOpen(id);
+    trackContent(id, "view");
   }, [found, id]);
 
   if (!item && !library.ready) {
     return (
-      <div className="space-y-4" aria-busy="true" aria-label="Loading">
+      <div className="space-y-4" aria-busy="true" aria-label={t("Loading")}>
         <div className="aspect-[16/9] animate-pulse rounded-[28px] bg-forest-deep/15" />
         <div className="h-7 w-3/4 animate-pulse rounded-full bg-line" />
         <div className="h-40 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
@@ -45,22 +65,21 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
     return (
       <div className="space-y-4">
         <Link href={back.href} className="flex items-center gap-1 text-sm text-ink-soft">
-          <ArrowLeft size={16} /> {back.label}
+          <ArrowLeft size={16} /> {t(back.label)}
         </Link>
         <div className="rounded-3xl bg-surface p-8 text-center ring-1 ring-line">
-          <p className="font-semibold">This content isn&apos;t available</p>
-          <p className="mt-1 text-sm text-ink-soft">It may have been moved or removed.</p>
+          <p className="font-semibold">{t("This content isn't available")}</p>
+          <p className="mt-1 text-sm text-ink-soft">{t("It may have been moved or removed.")}</p>
           <Link href="/social" className="mt-4 inline-block rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
-            Go to Discover
+            {t("Go to Discover")}
           </Link>
         </div>
       </div>
     );
   }
 
-  const topic = TOPICS.find((t) => t.id === item.topic);
   const sw = lang === "sw" && Boolean(item.bodySw);
-  const title = sw && item.titleSw ? item.titleSw : item.title;
+  const title = lang === "sw" && item.titleSw ? item.titleSw : item.title;
   const body = sw ? item.bodySw : item.body;
   const read = Boolean(feed.lessons[item.id]);
   const related = library.items.filter((c) => c.topic === item.topic && c.id !== item.id)
@@ -71,19 +90,41 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
     <article className="stagger space-y-5">
       <div className="flex items-center justify-between">
         <Link href={back.href} className="flex items-center gap-1 text-sm text-ink-soft">
-          <ArrowLeft size={16} /> {back.label}
+          <ArrowLeft size={16} /> {t(back.label)}
         </Link>
         <BookmarkButton contentId={item.id} />
       </div>
 
       <div className="overflow-hidden rounded-[28px]">
-        {item.kind === "video" ? (
+        {item.kind === "video" && item.videoUrl ? (
+          <video
+            src={item.videoUrl}
+            poster={item.coverImageUrl}
+            controls
+            playsInline
+            preload="metadata"
+            onEnded={() => trackContent(item.id, "complete")}
+            className="aspect-video w-full bg-black"
+          />
+        ) : item.kind === "infographic" && item.coverImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.coverImageUrl} alt={title} className="w-full bg-surface" />
+        ) : item.kind === "audio" ? (
+          <div className="space-y-3 bg-forest-deep p-4">
+            <Cover item={item} className="aspect-[2/1] w-full rounded-2xl" showPlay={false} />
+            {item.audioUrl ? (
+              <audio src={item.audioUrl} controls preload="metadata" onEnded={() => trackContent(item.id, "complete")} className="w-full" />
+            ) : (
+              <p className="text-center text-sm text-mint">{t("Audio coming soon")}</p>
+            )}
+          </div>
+        ) : item.kind === "video" ? (
           <div className="relative">
             <Cover item={item} className="aspect-video w-full" showPlay={false} />
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/30 text-white">
               <PlayCircle size={44} />
-              <p className="text-sm font-semibold">Video coming soon</p>
-              <p className="text-xs text-white/80">Key points are below</p>
+              <p className="text-sm font-semibold">{t("Video coming soon")}</p>
+              <p className="text-xs text-white/80">{t("Key points are below")}</p>
             </div>
           </div>
         ) : (
@@ -94,23 +135,23 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
       <header>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-forest">
           <Link href={`/social/topic/${item.topic}`} className="underline-offset-2 hover:underline">
-            {topic?.title}
+            {topicTitle(item.topic, t)}
           </Link>{" "}
-          · {KIND_LABEL[item.kind]} · {item.minutes} min
+          · {metaOf(item, t)}
         </p>
         <h1 className="mt-2 text-[26px] font-bold leading-tight">{title}</h1>
-        {!sw && <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{item.summary}</p>}
+        {(lang !== "sw" || item.summarySw) && <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{lang === "sw" && item.summarySw ? item.summarySw : item.summary}</p>}
         <p className="mt-3 flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[11px] leading-snug text-ink-soft ring-1 ring-line">
           <ShieldCheck size={13} className="mt-px shrink-0 text-forest" />
           <span>
             {item.source}
-            {item.fixture && " · Sample content for development"}
+            {item.fixture && ` · ${t("Sample content for development")}`}
           </span>
         </p>
         {(item.bodySw || item.origin) && (
           <div className="mt-3 flex items-center justify-between gap-2">
             {item.bodySw ? (
-              <div className="inline-flex rounded-full bg-surface p-1 text-xs font-semibold ring-1 ring-line" role="tablist" aria-label="Language">
+              <div className="inline-flex rounded-full bg-surface p-1 text-xs font-semibold ring-1 ring-line" role="tablist" aria-label={t("Language")}>
                 {(["en", "sw"] as const).map((l) => (
                   <button
                     key={l}
@@ -133,7 +174,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-xs font-semibold text-forest"
               >
-                {item.origin.format === "reel" ? "Watch on Instagram" : "View on Instagram"} <ExternalLink size={12} />
+                {t(item.origin.format === "reel" ? "Watch on Instagram" : "View on Instagram")} <ExternalLink size={12} />
               </a>
             )}
           </div>
@@ -163,7 +204,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
 
       {item.keyPoints && (
         <div className="rounded-3xl bg-surface p-5 ring-1 ring-line">
-          <h2 className="font-bold">Key points</h2>
+          <h2 className="font-bold">{t("Key points")}</h2>
           <ol className="mt-3 space-y-2">
             {item.keyPoints.map((k, i) => (
               <li key={i} className="flex gap-3 text-sm">
@@ -177,7 +218,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
         </div>
       )}
 
-      {item.quiz && <QuizRunner questions={item.quiz} />}
+      {item.quiz && <QuizRunner questions={item.quiz} onFinish={() => trackContent(item.id, "complete")} />}
       {item.tool === "pelvic-floor" && <PelvicFloorTrainer />}
       {item.tool === "doctor-check" && <DoctorCheck />}
 
@@ -186,7 +227,8 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
           onClick={() => {
             if (read) return;
             feedStore.markLessonRead(item.id);
-            showToast(`Lesson read · +${item.points ?? 10} points`);
+            trackContent(item.id, "complete");
+            showToast(t("Lesson read · +{n} points", { n: item.points ?? 10 }));
           }}
           className={`flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold transition-transform active:scale-[0.98] ${
             read ? "bg-mint text-forest" : "bg-forest text-white"
@@ -194,19 +236,19 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
         >
           {read ? (
             <>
-              <Check size={16} /> You&apos;ve read this
+              <Check size={16} /> {t("You've read this")}
             </>
           ) : (
-            `Mark as read · +${item.points ?? 10} points`
+            t("Mark as read · +{n} points", { n: item.points ?? 10 })
           )}
         </button>
       )}
 
-      <p className="px-2 text-center text-[11px] text-ink-soft">General education, not medical advice.</p>
+      <p ref={endRef} className="px-2 text-center text-[11px] text-ink-soft">{t("General education, not medical advice.")}</p>
 
       {related.length > 0 && (
         <section className="space-y-3 pt-2">
-          <h2 className="text-base font-bold">More on {topic?.title.toLowerCase()}</h2>
+          <h2 className="text-base font-bold">{t("More on {topic}", { topic: topicTitle(item.topic, t).toLowerCase() })}</h2>
           {related.map((r) => (
             <ContentRow key={r.id} item={r} />
           ))}

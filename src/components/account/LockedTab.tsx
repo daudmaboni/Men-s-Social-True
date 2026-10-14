@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Droplet, Flame, Heart, Lock, MessageCircle, Moon, ShieldCheck, Smile, Sparkles, Stethoscope, Trophy, VenetianMask } from "lucide-react";
 import { account, AUTH_METHODS } from "@/lib/account/useAccount";
 import { useToast } from "@/components/motion/Toast";
+import { useT } from "@/lib/i18n";
 
 const COPY = {
   man: {
@@ -44,11 +45,12 @@ export default function LockedTab({ tab }: { tab: "man" | "me" | "community" }) 
   const c = COPY[tab];
   const next = tab === "man" ? "/man" : tab === "me" ? "/me" : "/social?tab=community";
   const showToast = useToast();
+  const t = useT();
   const [busy, setBusy] = useState(false);
 
   return (
     <div className="space-y-5">
-      {tab !== "community" && <h1 className="sr-only">{tab === "man" ? "Man" : "Me"}</h1>}
+      {tab !== "community" && <h1 className="sr-only">{t(tab === "man" ? "Man" : "Me")}</h1>}
 
       {/* Blurred example of the real tab */}
       <div className="relative overflow-hidden rounded-[28px]" aria-hidden>
@@ -63,15 +65,15 @@ export default function LockedTab({ tab }: { tab: "man" | "me" | "community" }) 
       </div>
 
       <div className="rounded-3xl bg-surface p-5 ring-1 ring-line">
-        <h2 className="text-xl font-bold leading-snug">{c.title}</h2>
-        <p className="mt-1 text-sm text-ink-soft">{c.text}</p>
+        <h2 className="text-xl font-bold leading-snug">{t(c.title)}</h2>
+        <p className="mt-1 text-sm text-ink-soft">{t(c.text)}</p>
         <ul className="mt-4 space-y-2.5">
           {c.points.map(({ Icon, text }) => (
             <li key={text} className="flex items-center gap-3 text-sm">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-forest">
                 <Icon size={16} />
               </span>
-              {text}
+              {t(text)}
             </li>
           ))}
         </ul>
@@ -85,30 +87,29 @@ export default function LockedTab({ tab }: { tab: "man" | "me" | "community" }) 
                 const r = await account.signInGoogle(next);
                 if (r.error) {
                   setBusy(false);
-                  showToast(r.error);
+                  showToast(t(r.error));
                 }
               }}
               className="flex w-full items-center justify-center gap-3 rounded-full bg-surface py-3.5 text-sm font-semibold ring-1 ring-line transition-transform active:scale-[0.98] disabled:opacity-60"
             >
-              <GoogleMark /> Continue with Google
+              <GoogleMark /> {t("Continue with Google")}
             </button>
           )}
           <Link
             href={`/account?next=${next}`}
             className="block w-full rounded-full bg-forest py-3.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98]"
           >
-            Create free account
+            {t("Create free account")}
           </Link>
           <Link href={`/account?mode=login&next=${next}`} className="block w-full py-2 text-center text-sm font-semibold text-forest">
-            I have an account · Log in
+            {t("I have an account · Log in")}
           </Link>
         </div>
       </div>
 
       <p className="flex items-start gap-2 px-1 text-xs text-ink-soft">
         <Lock size={13} className="mt-0.5 shrink-0 text-forest" />
-        Kayani staff can&apos;t read your check-ins, and we never use them for adverts. You can keep reading everything in
-        Social without an account.
+        {t("Kayani staff can't read your check-ins, and we never use them for adverts. You can keep reading everything in Social without an account.")}
       </p>
     </div>
   );

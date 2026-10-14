@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { ContentRow } from "@/components/social/ContentCards";
 import { useLibrary } from "@/lib/content/useLibrary";
-import { isSectionId, sectionAll, SECTIONS } from "@/lib/content/select";
+import { isSectionId, OPTIONAL_SECTIONS, sectionAll, SECTIONS } from "@/lib/content/select";
+import { useT } from "@/lib/i18n";
 
 export default function TopicPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,16 +14,17 @@ export default function TopicPage() {
   const library = useLibrary().items;
   const items = valid ? sectionAll(id, library) : [];
   const section = SECTIONS.find((s) => s.id === id);
+  const t = useT();
 
   return (
     <div className="stagger space-y-4">
       <Link href="/social" className="flex items-center gap-1 text-sm text-ink-soft">
-        <ArrowLeft size={16} /> Discover
+        <ArrowLeft size={16} /> {t("Discover")}
       </Link>
 
       {/* Category navigation */}
       <div className="flex gap-2 overflow-x-auto rounded-full pb-1 [scrollbar-width:none]">
-        {SECTIONS.map((s) => (
+        {SECTIONS.filter((s) => s.id === id || !OPTIONAL_SECTIONS.includes(s.id) || sectionAll(s.id, library).length > 0).map((s) => (
           <Link
             key={s.id}
             href={`/social/topic/${s.id}`}
@@ -31,31 +33,31 @@ export default function TopicPage() {
               s.id === id ? "bg-forest-deep text-white" : "bg-surface text-ink-soft ring-1 ring-line"
             }`}
           >
-            {s.title}
+            {t(s.title)}
           </Link>
         ))}
       </div>
 
       {!valid ? (
         <div className="rounded-3xl bg-surface p-8 text-center ring-1 ring-line">
-          <p className="font-semibold">Topic not found</p>
+          <p className="font-semibold">{t("Topic not found")}</p>
           <Link href="/social" className="mt-4 inline-block rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
-            Back to Discover
+            {t("Back to Discover")}
           </Link>
         </div>
       ) : (
         <>
           <div>
-            <h1 className="text-2xl font-bold leading-tight">{section?.title}</h1>
+            <h1 className="text-2xl font-bold leading-tight">{t(section?.title ?? "")}</h1>
             <p className="mt-1 text-sm text-ink-soft">
-              {items.length} {items.length === 1 ? "item" : "items"}
-              {section?.blurb ? ` · ${section.blurb}` : ""}
+              {t(items.length === 1 ? "{n} item" : "{n} items", { n: items.length })}
+              {section?.blurb ? ` · ${t(section.blurb)}` : ""}
             </p>
           </div>
           {items.length === 0 ? (
             <div className="rounded-3xl bg-surface p-8 text-center ring-1 ring-line">
-              <p className="font-semibold">Nothing here yet</p>
-              <p className="mt-1 text-sm text-ink-soft">New content for this topic is on the way.</p>
+              <p className="font-semibold">{t("Nothing here yet")}</p>
+              <p className="mt-1 text-sm text-ink-soft">{t("New content for this topic is on the way.")}</p>
             </div>
           ) : (
             <div className="space-y-3">

@@ -7,10 +7,12 @@ import PostCard from "./PostCard";
 import ComposeSheet from "./ComposeSheet";
 import { useCommunity } from "./useCommunity";
 import { COMMUNITY_TOPICS } from "@/lib/social/community";
+import { useT } from "@/lib/i18n";
 
 export function CommunitySkeleton() {
+  const t = useT();
   return (
-    <div className="space-y-3" aria-busy="true" aria-label="Loading">
+    <div className="space-y-3" aria-busy="true" aria-label={t("Loading")}>
       {[0, 1, 2].map((i) => (
         <div key={i} className="h-36 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
       ))}
@@ -23,8 +25,16 @@ export default function Community() {
   const [topic, setTopic] = useState<string>("all");
   const [sort, setSort] = useState<"new" | "active">("active");
   const [asking, setAsking] = useState(false);
+  const t = useT();
 
   if (!c.ready) return <CommunitySkeleton />;
+  if (!c.enabled)
+    return (
+      <div className="rounded-3xl bg-surface p-8 text-center ring-1 ring-line">
+        <p className="font-semibold">{t("Community is paused right now.")}</p>
+        <p className="mt-1 text-sm text-ink-soft">{t("Please check back soon. Discover is still open.")}</p>
+      </div>
+    );
   const items = c.list(sort, topic);
 
   return (
@@ -38,8 +48,8 @@ export default function Community() {
           <PenLine size={18} />
         </span>
         <span className="flex-1">
-          <span className="block font-semibold">Ask a question</span>
-          <span className="block text-xs text-mint">Anonymous by default. Men here have been there too.</span>
+          <span className="block font-semibold">{t("Ask a question")}</span>
+          <span className="block text-xs text-mint">{t("Anonymous by default. Men here have been there too.")}</span>
         </span>
       </button>
 
@@ -47,34 +57,34 @@ export default function Community() {
       <div className="flex items-start gap-3 rounded-2xl px-4 py-3 ring-1 ring-line">
         <Stethoscope size={18} className="mt-0.5 shrink-0 text-forest" />
         <p className="text-xs text-ink-soft">
-          <span className="font-semibold text-ink">Expert Q&amp;A is coming.</span> Verified doctors aren&apos;t on the
-          app yet. Questions marked for an expert are queued for when they join. Meanwhile, see{" "}
+          <span className="font-semibold text-ink">{t("Expert Q&A is coming.")}</span>{" "}
+          {t("Verified doctors aren't on the app yet. Questions marked for an expert are queued for when they join. Meanwhile, see")}{" "}
           <Link href="/social/topic/expert" className="font-semibold text-forest underline">
-            Expert answers
+            {t("Expert answers")}
           </Link>{" "}
-          in Discover.
+          {t("in Discover.")}
         </p>
       </div>
 
       {/* Topic filter + sort */}
-      <div className="flex gap-2 overflow-x-auto rounded-full pb-1 [scrollbar-width:none]" role="tablist" aria-label="Topic">
-        {[{ id: "all", label: "All" }, ...COMMUNITY_TOPICS].map((t) => (
+      <div className="flex gap-2 overflow-x-auto rounded-full pb-1 [scrollbar-width:none]" role="tablist" aria-label={t("Topic")}>
+        {[{ id: "all", label: "All" }, ...COMMUNITY_TOPICS].map((x) => (
           <button
-            key={t.id}
+            key={x.id}
             role="tab"
-            aria-selected={topic === t.id}
-            onClick={() => setTopic(t.id)}
+            aria-selected={topic === x.id}
+            onClick={() => setTopic(x.id)}
             className={`shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
-              topic === t.id ? "bg-forest-deep text-white" : "bg-surface text-ink-soft ring-1 ring-line"
+              topic === x.id ? "bg-forest-deep text-white" : "bg-surface text-ink-soft ring-1 ring-line"
             }`}
           >
-            {t.label}
+            {t(x.label)}
           </button>
         ))}
       </div>
       <div className="flex items-center justify-between text-xs">
         <span className="text-ink-soft">
-          {items.length} {items.length === 1 ? "conversation" : "conversations"}
+          {t(items.length === 1 ? "{n} conversation" : "{n} conversations", { n: items.length })}
         </span>
         <div className="flex rounded-full bg-surface p-0.5 ring-1 ring-line">
           {(["active", "new"] as const).map((s) => (
@@ -84,7 +94,7 @@ export default function Community() {
               onClick={() => setSort(s)}
               className={`rounded-full px-3 py-1 font-semibold ${sort === s ? "bg-forest text-white" : "text-ink-soft"}`}
             >
-              {s === "active" ? "Most active" : "Newest"}
+              {t(s === "active" ? "Most active" : "Newest")}
             </button>
           ))}
         </div>
@@ -93,10 +103,10 @@ export default function Community() {
       {/* Feed */}
       {items.length === 0 ? (
         <div className="rounded-3xl bg-surface p-8 text-center ring-1 ring-line">
-          <p className="font-semibold">No conversations here yet</p>
-          <p className="mt-1 text-sm text-ink-soft">Be the first to ask. Anonymous is fine.</p>
+          <p className="font-semibold">{t("No conversations here yet")}</p>
+          <p className="mt-1 text-sm text-ink-soft">{t("Be the first to ask. Anonymous is fine.")}</p>
           <button onClick={() => setAsking(true)} className="mt-4 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
-            Ask a question
+            {t("Ask a question")}
           </button>
         </div>
       ) : (
@@ -109,8 +119,9 @@ export default function Community() {
 
       <p className="flex items-start justify-center gap-1.5 px-2 text-center text-[11px] text-ink-soft">
         <ShieldCheck size={12} className="mt-px shrink-0" />
-        Be kind. No selling, phone numbers or links. Posts marked &quot;Sample&quot; are examples. Until the server is
-        connected, your posts are saved on this phone only.
+        {c.mode === "server"
+          ? t("Be kind. No selling, phone numbers or links. Posts are shared with all members and checked by our moderators.")
+          : t('Be kind. No selling, phone numbers or links. Posts marked "Sample" are examples. Until the server is connected, your posts are saved on this phone only.')}
       </p>
 
       <ComposeSheet open={asking} onClose={() => setAsking(false)} />

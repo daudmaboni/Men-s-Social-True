@@ -10,6 +10,8 @@ import SearchPanel from "@/components/social/SearchPanel";
 import LiquidSegment from "@/components/LiquidSegment";
 import LockedTab from "@/components/account/LockedTab";
 import { useAccount } from "@/lib/account/useAccount";
+import { useT } from "@/lib/i18n";
+import InboxButton from "@/components/notifications/InboxButton";
 
 type Tab = "discover" | "community";
 
@@ -32,14 +34,15 @@ function SocialInner() {
   // Community needs an account (anonymous posting still works, but we need to know who to moderate)
   const acc = useAccount();
   const communityLocked = acc.status === "guest";
+  const t = useT();
 
   return (
     <div className="space-y-5">
       {/* One row: Discover / Community on the left, Search and Saved on the right */}
       <header className="flex items-center justify-between gap-2">
-        <h1 className="sr-only">Social</h1>
+        <h1 className="sr-only">{t("Social")}</h1>
         <LiquidSegment
-          label="Social sections"
+          label={t("Social sections")}
           value={tab}
           onChange={(t) => {
             if (t === tab) return;
@@ -47,13 +50,14 @@ function SocialInner() {
             setTab(t);
           }}
           options={[
-            { id: "discover", label: "Discover" },
-            { id: "community", label: "Community" },
+            { id: "discover", label: t("Discover") },
+            { id: "community", label: t("Community") },
           ]}
         />
         <div className="flex shrink-0 gap-2">
+          <InboxButton />
           <button
-            aria-label="Search"
+            aria-label={t("Search")}
             aria-pressed={searching}
             onClick={() => setSearching((s) => !s)}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
@@ -62,7 +66,7 @@ function SocialInner() {
           </button>
           <Link
             href="/social/saved"
-            aria-label="Saved"
+            aria-label={t("Saved")}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
           >
             <Bookmark size={18} />

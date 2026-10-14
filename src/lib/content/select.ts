@@ -2,17 +2,21 @@
 
 import type { ContentItem, ContentKind, TopicId } from "./types";
 import { LIBRARY, TOPICS } from "./library";
+import { SW } from "../i18n/sw";
 
-export type SectionId = TopicId | "expert" | "videos" | "tools";
+export type SectionId = TopicId | "expert" | "videos" | "audio" | "tools";
 
 export const SECTIONS: { id: SectionId; title: string; blurb: string }[] = [
   ...TOPICS.map((t) => ({ id: t.id as SectionId, title: t.title, blurb: "" })),
   { id: "expert", title: "Expert answers", blurb: "Real questions men ask, answered clearly." },
   { id: "videos", title: "Short videos", blurb: "Two minutes or less." },
+  { id: "audio", title: "Audio and podcasts", blurb: "Listen on the go." },
   { id: "tools", title: "Quizzes and practical tools", blurb: "Learn by doing." },
 ];
 
-const READING: ContentKind[] = ["guide", "article"];
+const READING: ContentKind[] = ["guide", "article", "infographic"];
+/** Kinds that can be pinned as the Featured card. */
+export const FEATURABLE: ContentKind[] = ["guide", "article", "video", "expert", "audio", "infographic"];
 
 export function getContent(id: string, library: ContentItem[] = LIBRARY): ContentItem | undefined {
   return library.find((c) => c.id === id);
@@ -46,6 +50,8 @@ export function sectionItems(id: SectionId, excludeId?: string, library: Content
       ? library.filter((c) => c.kind === "expert")
       : id === "videos"
         ? library.filter((c) => c.kind === "video")
+        : id === "audio"
+          ? library.filter((c) => c.kind === "audio")
         : id === "tools"
           ? library.filter((c) => c.kind === "quiz" || c.kind === "tool")
           : library.filter((c) => c.topic === id && READING.includes(c.kind));
@@ -54,7 +60,7 @@ export function sectionItems(id: SectionId, excludeId?: string, library: Content
 
 /** Everything for a topic page (all formats), or a format page. */
 export function sectionAll(id: SectionId, library: ContentItem[] = LIBRARY): ContentItem[] {
-  if (id === "expert" || id === "videos" || id === "tools") return sectionItems(id, undefined, library);
+  if (id === "expert" || id === "videos" || id === "audio" || id === "tools") return sectionItems(id, undefined, library);
   return library.filter((c) => c.topic === id).sort((a, b) => b.priority - a.priority);
 }
 
@@ -77,7 +83,7 @@ export function searchContent(query: string, library: ContentItem[] = LIBRARY): 
 
   const scored = library.map((c) => {
     const title = norm(c.title);
-    const tags = norm(c.tags.join(" ") + " " + topicTitle(c.topic) + " " + c.kind);
+    const tags = norm(c.tags.join(" ") + " " + topicTitle(c.topic) + " " + (SW[topicTitle(c.topic)] ?? "") + " " + c.kind);
     const rest = norm(
       [c.summary, c.question ?? "", c.titleSw ?? "", ...(c.body ?? []), ...(c.bodySw ?? []), ...(c.keyPoints ?? [])].join(" "),
     );
@@ -100,6 +106,8 @@ export const KIND_LABEL: Record<ContentKind, string> = {
   quiz: "Quiz",
   tool: "Tool",
   expert: "Expert answer",
+  audio: "Audio",
+  infographic: "Infographic",
 };
 
 export const CTA_LABEL: Record<ContentKind, string> = {
@@ -109,6 +117,8 @@ export const CTA_LABEL: Record<ContentKind, string> = {
   quiz: "Start quiz",
   tool: "Open tool",
   expert: "Read answer",
+  audio: "Listen",
+  infographic: "View",
 };
 
 /* ───────────── Discover home: show less, deliver more ───────────── */
@@ -141,6 +151,13 @@ function engagedTopics(p: Personal, library: ContentItem[]): Map<TopicId, number
  * isn't the same forever. Prefers things he hasn't opened yet.
  */
 export function featuredToday(p: Personal, library: ContentItem[], day = dayNumber()): ContentItem | null {
+  // Items staff pinned as Featured in the Content Studio come first (rotating daily if there are several),
+  // skipping ones he has already read when there's an unread one.
+  const pinned = library.filter((c) => c.featured && FEATURABLE.includes(c.kind));
+  const pinnedUnread = pinned.filter((c) => !p.history[c.id]);
+  const pins = pinnedUnread.length ? pinnedUnread : pinned;
+  if (pins.length) return [...pins].sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id))[day % pins.length];
+
   const candidates = library.filter((c) => READING.includes(c.kind));
   if (!candidates.length) return null;
   const score = (c: ContentItem) =>
@@ -153,6 +170,8 @@ export interface Recommendation {
   item: ContentItem;
   /** Shown under the card, so he knows why it's there. */
   reason: string;
+  /** The same reason as a translatable template ("Because you follow {topic}") and the topic's short name. */
+  why: { key: string; topic: string };
 }
 
 /**
@@ -165,12 +184,13 @@ export function recommendations(p: Personal, library: ContentItem[], exclude: st
   const isNew = p.interests.length === 0 && engaged.size === 0;
   const pool = library.filter((c) => (READING.includes(c.kind) || c.kind === "tool" || c.kind === "quiz") && !exclude.includes(c.id) && !p.history[c.id]);
 
-  const reasonFor = (c: ContentItem): { score: number; reason: string } => {
+  const reasonFor = (c: ContentItem): { score: number; reason: string; why: Recommendation["why"] } => {
     const topic = TOPICS.find((t) => t.id === c.topic)?.short ?? "";
-    if (p.interests.includes(c.topic)) return { score: c.priority + 100, reason: `Because you follow ${topic}` };
+    const r = (score: number, key: string) => ({ score, why: { key, topic }, reason: key.replace("{topic}", key.includes("read about") ? topic.toLowerCase() : topic) });
+    if (p.interests.includes(c.topic)) return r(c.priority + 100, "Because you follow {topic}");
     const e = engaged.get(c.topic) ?? 0;
-    if (e > 0) return { score: c.priority + 40 + e * 10, reason: `Because you read about ${topic.toLowerCase()}` };
-    return { score: c.priority, reason: isNew ? "A good place to start" : "Popular with men like you" };
+    if (e > 0) return r(c.priority + 40 + e * 10, "Because you read about {topic}");
+    return r(c.priority, isNew ? "A good place to start" : "Popular with men like you");
   };
 
   const ranked = pool
@@ -181,7 +201,7 @@ export function recommendations(p: Personal, library: ContentItem[], exclude: st
   const picked: typeof ranked = [];
   for (const r of ranked) if (picked.length < count && !picked.some((x) => x.item.topic === r.item.topic)) picked.push(r);
   for (const r of ranked) if (picked.length < count && !picked.includes(r)) picked.push(r);
-  return picked.map(({ item, reason }) => ({ item, reason }));
+  return picked.map(({ item, reason, why }) => ({ item, reason, why }));
 }
 
 /** One or two short videos, favouring his topics. */
@@ -204,5 +224,8 @@ export function questionToday(p: Personal, library: ContentItem[], day = dayNumb
 
 /** Every topic and format with how many items it has — for "Explore all topics". */
 export function topicTiles(library: ContentItem[]) {
-  return SECTIONS.map((s) => ({ ...s, count: sectionAll(s.id, library).length }));
+  return SECTIONS.map((s) => ({ ...s, count: sectionAll(s.id, library).length })).filter((s) => s.count > 0 || !OPTIONAL_SECTIONS.includes(s.id));
 }
+
+/** Formats that only show once the Studio has published something for them (no built-in items). */
+export const OPTIONAL_SECTIONS: SectionId[] = ["audio"];

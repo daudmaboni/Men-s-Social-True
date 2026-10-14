@@ -27,10 +27,20 @@ export interface ContentRow {
   origin: ContentItem["origin"] | null;
   in_man_feed: boolean;
   points: number;
+  published_at?: string | null;
+  /** Added by migration 0004 — may be missing on databases that haven't run it yet. */
+  featured?: boolean;
+  video_url?: string | null;
+  summary_sw?: string | null;
+  /** Added by migration 0006 */
+  publish_at?: string | null;
+  review_note?: string | null;
+  ai_generated?: boolean;
+  audio_url?: string | null;
   updated_at?: string;
 }
 
-const KINDS: ContentKind[] = ["guide", "article", "video", "quiz", "tool", "expert"];
+const KINDS: ContentKind[] = ["guide", "article", "video", "quiz", "tool", "expert", "audio", "infographic"];
 const TOPICS: TopicId[] = ["erection", "ejaculation", "libido", "fertility", "confidence", "intimacy", "wellbeing"];
 const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
 
@@ -65,6 +75,14 @@ export function rowToItem(row: Partial<ContentRow>): ContentItem | null {
     coverImageUrl: row.cover_image_url || undefined,
     origin: row.origin || undefined,
     inManFeed: Boolean(row.in_man_feed),
+    featured: Boolean(row.featured),
+    summarySw: row.summary_sw || undefined,
+    publishAt: row.publish_at || undefined,
+    publishedAt: row.published_at || undefined,
+    reviewNote: row.review_note || undefined,
+    aiGenerated: Boolean(row.ai_generated),
+    audioUrl: typeof row.audio_url === "string" && /^(https:\/\/|http:\/\/localhost|data:audio\/)/.test(row.audio_url) ? row.audio_url : undefined,
+    videoUrl: typeof row.video_url === "string" && /^(https:\/\/|http:\/\/localhost[:/]|data:video\/)/.test(row.video_url) ? row.video_url : undefined,
     points: Number(row.points) || 10,
     updatedAt: row.updated_at,
     builtIn: false,
@@ -96,6 +114,13 @@ export function itemToRow(item: ContentItem, status: ContentStatus): Omit<Conten
     origin: item.origin ?? null,
     in_man_feed: Boolean(item.inManFeed),
     points: item.points ?? 10,
+    featured: Boolean(item.featured),
+    video_url: item.videoUrl ?? null,
+    summary_sw: item.summarySw?.trim() || null,
+    publish_at: item.publishAt ?? null,
+    review_note: item.reviewNote?.trim() || null,
+    ai_generated: Boolean(item.aiGenerated),
+    audio_url: item.audioUrl ?? null,
   };
 }
 

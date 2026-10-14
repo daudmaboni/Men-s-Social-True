@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { account, accountLabel, useAccount } from "@/lib/account/useAccount";
 import { stopSync } from "@/lib/account/sync";
-
-type Lang = "en" | "sw";
+import { setLang, useLang } from "@/lib/me/lang";
 
 const copy = {
   en: {
@@ -44,25 +42,18 @@ const copy = {
 
 export default function Welcome() {
   const router = useRouter();
-  const [lang, setLang] = useState<Lang>("en");
+  // The same language setting as the rest of the app (Me → Language), so a choice here carries everywhere
+  const lang = useLang();
   const t = copy[lang];
 
   // This page always stays here (no automatic redirect). If he's already signed in,
   // the buttons change to "Continue" so he isn't asked to log in again.
   const acc = useAccount();
 
-  // Remember the language he picked last time
-  useEffect(() => {
-    try {
-      if (localStorage.getItem("ms_lang") === "sw") setLang("sw");
-    } catch {}
-  }, []);
-
   /** Every choice confirms 18+ and saves the language, then goes in as a guest or to the account screen. */
   function enter(to: string) {
     try {
       localStorage.setItem("ms_age_ok", "1");
-      localStorage.setItem("ms_lang", lang);
     } catch {}
     router.push(to);
   }

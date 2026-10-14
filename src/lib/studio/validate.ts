@@ -58,6 +58,8 @@ export function publishProblems(item: ContentItem): string[] {
     });
   }
   if (item.kind === "tool" && !item.tool) p.push("Choose which tool to show.");
+  if (item.kind === "audio" && !item.audioUrl) p.push("Upload the audio or paste a link to it.");
+  if (item.kind === "infographic" && !item.coverImageUrl) p.push("Upload the infographic image (Cover → Upload photo).");
   if ((item.bodySw ?? []).length > 0 && !item.titleSw?.trim()) p.push("Add the Kiswahili title too.");
   if (hasBlocks(checkClaims(item))) p.push("Fix the red items in the claim check.");
   return p;

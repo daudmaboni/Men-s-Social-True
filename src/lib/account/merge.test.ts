@@ -7,7 +7,7 @@ const rec = (id: string, value: number, updatedAt: string): TrackingRecord => ({
   id, userId: "local", metric: "water", value, unit: "ml", source: "manual",
   recordedAt: "2026-10-13T08:00:00Z", localDate: "2026-10-13", createdAt: "2026-10-13T08:00:00Z", updatedAt,
 });
-const emptySocial: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {} };
+const emptySocial: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {}, profile: {} };
 
 describe("merging phone data with his account", () => {
   it("keeps records from both sides and the newest edit of the same record", () => {
@@ -56,5 +56,24 @@ describe("Tanzanian phone numbers", () => {
   });
   it("rejects numbers that aren't Tanzanian mobiles", () => {
     for (const p of ["12345", "0812345678", "+254712345678", "07123456789"]) expect(normalizeTzPhone(p), p).toBeNull();
+  });
+});
+
+describe("profile merge", () => {
+  it("keeps the profile (and name) he changed last", () => {
+    const phone = { ...emptySocial, nickname: "Juma", profile: { region: "Mwanza", updatedAt: "2026-10-14T10:00:00Z" } };
+    const account = { ...emptySocial, nickname: "Old name", profile: { region: "Tanga", updatedAt: "2026-10-01T10:00:00Z" } };
+    expect(mergeSocial(phone, account)).toMatchObject({ nickname: "Juma", profile: { region: "Mwanza" } });
+    expect(mergeSocial(account, phone)).toMatchObject({ nickname: "Juma", profile: { region: "Mwanza" } });
+  });
+  it("a deleted profile stays deleted", () => {
+    const cleared = { ...emptySocial, nickname: "", profile: { updatedAt: "2026-10-14T10:00:00Z" } };
+    const older = { ...emptySocial, nickname: "Juma", profile: { region: "Tanga", updatedAt: "2026-10-01T10:00:00Z" } };
+    expect(mergeSocial(cleared, older)).toMatchObject({ nickname: "", profile: { updatedAt: "2026-10-14T10:00:00Z" } });
+  });
+  it("accounts saved before profiles existed still merge", () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { profile, ...old } = emptySocial;
+    expect(mergeSocial({ ...emptySocial, nickname: "Juma" }, { ...old, nickname: "J" }).nickname).toBe("Juma");
   });
 });

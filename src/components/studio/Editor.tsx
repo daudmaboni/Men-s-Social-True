@@ -3,13 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   ArrowLeft,
   Archive,
   CheckCircle2,
+  Clock,
+  Copy,
+  Film,
+  History,
+  Mic,
   ImagePlus,
+  MapPin,
   Loader2,
   OctagonX,
   Plus,
@@ -17,8 +22,11 @@ import {
   X,
 } from "lucide-react";
 import Preview from "./Preview";
+import { useStudio } from "@/components/admin/AdminShell";
+import type { Version } from "@/lib/content/repo";
 import { Notice } from "./StudioGate";
-import { STATUS_STYLE } from "./ContentList";
+import { displayStatus, STATUS_LABEL, STATUS_STYLE } from "@/lib/admin/contentStatus";
+import { Confirm, Drawer, btn } from "@/components/admin/ui";
 import { useToast } from "@/components/motion/Toast";
 import { LIBRARY, TOPICS } from "@/lib/content/library";
 import { getContentRepo } from "@/lib/content/repo";
@@ -31,6 +39,9 @@ import type {
   ToolId,
 } from "@/lib/content/types";
 import { checkClaims } from "@/lib/studio/claims";
+import { placesOf, placeById, presetFor, type PlaceId } from "@/lib/studio/places";
+import { FEATURABLE } from "@/lib/content/select";
+import type { TopicId } from "@/lib/content/types";
 import {
   blankItem,
   fromLines,
@@ -49,6 +60,8 @@ const KINDS: ContentKind[] = [
   "video",
   "quiz",
   "tool",
+  "audio",
+  "infographic",
 ];
 const TONES: ContentItem["cover"]["tone"][] = [
   "forest",
@@ -99,13 +112,25 @@ type Loaded =
   | { base: ContentItem; status: ContentStatus | null; copyOfBuiltIn: boolean }
   | "missing";
 
-export default function Editor({ id }: { id: string | null }) {
+export default function Editor({
+  id,
+  preset,
+  copyOf,
+}: {
+  id: string | null;
+  preset?: { place: PlaceId | null; topic: TopicId | null };
+  /** Duplicate: start a new item from this one */
+  copyOf?: string | null;
+}) {
+  const studio = useStudio();
+  const canPublish = studio.can("content.publish");
+  const fresh = () => presetFor(blankItem(), preset?.place ?? null, preset?.topic ?? null);
   const router = useRouter();
   const showToast = useToast();
   const repo = getContentRepo();
 
   const [loaded, setLoaded] = useState<Loaded | null>(
-    id ? null : { base: blankItem(), status: null, copyOfBuiltIn: false },
+    id || copyOf ? null : { base: fresh(), status: null, copyOfBuiltIn: false },
   );
   const [takenIds, setTakenIds] = useState<Set<string>>(
     new Set(LIBRARY.map((c) => c.id)),
@@ -119,6 +144,11 @@ export default function Editor({ id }: { id: string | null }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
+  const audioInput = useRef<HTMLInputElement>(null);
+  const [versions, setVersions] = useState<Version[] | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Load: from the database first, otherwise a built-in item to copy
   useEffect(() => {
@@ -128,6 +158,20 @@ export default function Editor({ id }: { id: string | null }) {
         setTakenIds(
           new Set([...LIBRARY.map((c) => c.id), ...all.map((c) => c.id)]),
         );
+        const taken = new Set([...LIBRARY.map((c) => c.id), ...all.map((c) => c.id)]);
+        if (!id && copyOf) {
+          // Duplicate: same content, new address, saved as a new draft
+          const src = all.find((c) => c.id === copyOf) ?? LIBRARY.find((c) => c.id === copyOf);
+          if (!src) return setLoaded("missing");
+          let newId = slugify(src.title + " copy");
+          for (let n = 2; taken.has(newId); n++) newId = slugify(src.title + " copy " + n);
+          setLoaded({
+            base: { ...src, id: newId, title: src.title + " (copy)", status: "draft", featured: undefined, publishAt: undefined, reviewNote: undefined, fixture: false, builtIn: false, updatedAt: undefined },
+            status: null,
+            copyOfBuiltIn: false,
+          });
+          return;
+        }
         if (!id) return;
         const mine = all.find((c) => c.id === id);
         const builtIn = LIBRARY.find((c) => c.id === id);
@@ -151,18 +195,30 @@ export default function Editor({ id }: { id: string | null }) {
         else setLoaded("missing");
       })
       .catch((e: Error) => setLoadError(e.message));
-  }, [id, repo]);
+  }, [id, repo, copyOf]);
 
   useEffect(() => {
     if (!loaded || loaded === "missing") return;
     setDraft(loaded.base);
     setTexts(textsOf(loaded.base));
+    // A Kiswahili translation handed over from Admin → AI: filled in, not saved, marked AI-assisted
+    try {
+      const key = `ms_ai_sw:${loaded.base.id}`;
+      const raw = sessionStorage.getItem(key);
+      if (raw) {
+        sessionStorage.removeItem(key);
+        const sw = JSON.parse(raw) as { titleSw?: string; summarySw?: string; bodySw?: string[] };
+        setDraft((d) => ({ ...d, titleSw: sw.titleSw || d.titleSw, summarySw: sw.summarySw || d.summarySw, aiGenerated: true }));
+        if (Array.isArray(sw.bodySw)) setTexts((t) => ({ ...t, bodySw: fromParagraphs(sw.bodySw) }));
+        showToast("Kiswahili from AI filled in · check it, then save");
+      }
+    } catch {}
     setSavedJson(
       loaded.status
         ? JSON.stringify(compose(loaded.base, textsOf(loaded.base)))
         : "",
     );
-  }, [loaded]);
+  }, [loaded, showToast]);
 
   // The item as it will be saved
   const item: ContentItem = useMemo(
@@ -174,6 +230,8 @@ export default function Editor({ id }: { id: string | null }) {
   const isNew = status === null;
   const claims = useMemo(() => checkClaims(item), [item]);
   const problems = useMemo(() => publishProblems(item), [item]);
+  // AI-assisted items need the professional check before they go live (the database refuses otherwise)
+  const aiUnchecked = Boolean(item.aiGenerated) && item.review !== "reviewed";
   const idTaken =
     isNew &&
     !(loaded !== "missing" && loaded?.copyOfBuiltIn) &&
@@ -211,8 +269,9 @@ export default function Editor({ id }: { id: string | null }) {
       return setError(
         `The web address "${item.id}" is already used. Change it below the title.`,
       );
-    if (next === "published" && problems.length)
-      return setError("Not ready to publish yet. See the checklist.");
+    if ((next === "published" || next === "review") && problems.length)
+      return setError(next === "review" ? "Not ready for review yet. See the checklist." : "Not ready to publish yet. See the checklist.");
+    const scheduled = next === "published" && item.publishAt && new Date(item.publishAt) > new Date();
     setBusy(next);
     try {
       const saved = await repo.save(item, next);
@@ -225,13 +284,17 @@ export default function Editor({ id }: { id: string | null }) {
       setDraft(merged);
       setLoaded({ base: merged, status: next, copyOfBuiltIn: loadedCopy() });
       showToast(
-        next === "published"
-          ? status === "published"
-            ? "Live version updated"
-            : "Published"
-          : next === "archived"
-            ? "Archived"
-            : "Draft saved",
+        scheduled
+          ? `Scheduled for ${new Date(item.publishAt!).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
+          : next === "published"
+            ? status === "published"
+              ? "Live version updated"
+              : "Published"
+            : next === "review"
+              ? "Sent for review"
+              : next === "archived"
+                ? "Archived"
+                : "Draft saved",
       );
       if (isNew)
         router.replace(`/studio/edit?id=${encodeURIComponent(item.id)}`);
@@ -242,17 +305,50 @@ export default function Editor({ id }: { id: string | null }) {
     }
   }
 
+  async function openHistory() {
+    setShowHistory(true);
+    setVersions(null);
+    try {
+      setVersions(await repo.listVersions(item.id));
+    } catch (e) {
+      setShowHistory(false);
+      setError((e as Error).message);
+    }
+  }
+
+  function loadVersion(v: Version) {
+    // Keeps this item's address; you review the old text, then save or publish it again
+    const restored = { ...v.item, id: item.id, status: item.status, updatedAt: item.updatedAt };
+    setDraft(restored);
+    setTexts(textsOf(restored));
+    setShowHistory(false);
+    showToast("Older version loaded · save to keep it");
+  }
+
+  async function uploadAudio(file: File | undefined) {
+    if (!file) return;
+    if (!ID_RULE.test(item.id)) return setError("Add a title first, then the audio.");
+    setError(null);
+    setBusy("audio");
+    try {
+      set("audioUrl", await repo.uploadAudio(file, item.id));
+      showToast("Audio added · save to keep it");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+      if (audioInput.current) audioInput.current.value = "";
+    }
+  }
+
   async function remove() {
-    if (
-      !window.confirm(`Delete "${item.title}" for good? This can't be undone.`)
-    )
-      return;
+    setConfirmDelete(false);
     setBusy("delete");
     try {
       await repo.remove(item.id);
       setSavedJson(JSON.stringify(item));
       showToast("Deleted");
-      router.push("/studio");
+      router.push("/studio/content");
     } catch (e) {
       setError((e as Error).message);
       setBusy(null);
@@ -273,6 +369,23 @@ export default function Editor({ id }: { id: string | null }) {
     } finally {
       setBusy(null);
       if (fileInput.current) fileInput.current.value = "";
+    }
+  }
+
+  async function uploadVideo(file: File | undefined) {
+    if (!file) return;
+    if (!ID_RULE.test(item.id))
+      return setError("Add a title first, then the video.");
+    setError(null);
+    setBusy("video");
+    try {
+      set("videoUrl", await repo.uploadVideo(file, item.id));
+      showToast("Video added · save to keep it");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(null);
+      if (videoInput.current) videoInput.current.value = "";
     }
   }
 
@@ -297,21 +410,38 @@ export default function Editor({ id }: { id: string | null }) {
   const warns = claims.filter((c) => c.level === "warn");
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href="/studio"
+          href="/studio/content"
           className="flex items-center gap-1 text-sm text-ink-soft"
         >
           <ArrowLeft size={16} /> All content
         </Link>
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${status ? STATUS_STYLE[status] : "bg-bg text-ink-soft ring-line"}`}
-        >
-          {status ? status[0].toUpperCase() + status.slice(1) : "Not saved yet"}
-          {dirty && status ? " · unsaved changes" : ""}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {status && (
+            <>
+              <button type="button" onClick={openHistory} className={btn.small}>
+                <History size={13} /> History
+              </button>
+              <Link href={`/studio/edit?copy=${encodeURIComponent(item.id)}`} className={btn.small}>
+                <Copy size={13} /> Duplicate
+              </Link>
+            </>
+          )}
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${status ? STATUS_STYLE[displayStatus({ status, publishAt: loaded.base.publishAt })] : "bg-bg text-ink-soft ring-line"}`}
+          >
+            {status ? STATUS_LABEL[displayStatus({ status, publishAt: loaded.base.publishAt })] : "Not saved yet"}
+            {dirty && status ? " · unsaved changes" : ""}
+          </span>
+        </div>
       </div>
+      {status === "review" && loaded.base.reviewNote && (
+        <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <b>Review note:</b> {loaded.base.reviewNote}
+        </p>
+      )}
 
       {loaded.copyOfBuiltIn && (
         <p className="rounded-2xl bg-mint/60 px-4 py-3 text-sm text-forest-deep">
@@ -408,6 +538,17 @@ export default function Editor({ id }: { id: string | null }) {
                 onChange={(e) => set("summary", e.target.value)}
               />
             </Field>
+            <Field
+              label="Summary (Kiswahili)"
+              hint="Optional. Shown when a man uses the app in Kiswahili."
+            >
+              <textarea
+                lang="sw"
+                className={`${input} min-h-20`}
+                value={item.summarySw ?? ""}
+                onChange={(e) => set("summarySw", e.target.value || undefined)}
+              />
+            </Field>
           </Section>
 
           {/* Content by type */}
@@ -417,7 +558,11 @@ export default function Editor({ id }: { id: string | null }) {
                 ? "Question and answer"
                 : item.kind === "video"
                   ? "Video"
-                  : item.kind === "quiz"
+                  : item.kind === "audio"
+                    ? "Audio"
+                    : item.kind === "infographic"
+                      ? "Infographic"
+                      : item.kind === "quiz"
                     ? "Quiz"
                     : "Text"
             }
@@ -431,10 +576,116 @@ export default function Editor({ id }: { id: string | null }) {
                 />
               </Field>
             )}
+            {item.kind === "infographic" && (
+              <p className="rounded-2xl bg-mint/60 px-4 py-3 text-xs text-forest-deep">
+                The infographic is the <b>cover photo</b> (upload it under Cover below). It&apos;s shown full size on the page; the text
+                underneath is optional.
+              </p>
+            )}
+            {item.kind === "audio" && (
+              <div className="space-y-3">
+                {item.audioUrl && <audio src={item.audioUrl} controls preload="metadata" className="w-full" />}
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => audioInput.current?.click()}
+                    disabled={busy === "audio"}
+                    className="flex items-center gap-2 rounded-full bg-forest px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {busy === "audio" ? <Loader2 size={16} className="animate-spin" /> : <Mic size={16} />}
+                    {busy === "audio" ? "Uploading…" : item.audioUrl ? "Change audio" : "Upload audio"}
+                  </button>
+                  {item.audioUrl && (
+                    <button type="button" onClick={() => set("audioUrl", undefined)} className="flex items-center gap-1 text-sm font-semibold text-ink-soft">
+                      <X size={14} /> Remove audio
+                    </button>
+                  )}
+                  <input ref={audioInput} type="file" accept="audio/*" className="hidden" onChange={(e) => uploadAudio(e.target.files?.[0])} />
+                  <span className="text-xs text-ink-soft">MP3, M4A, AAC, OGG or WAV, under 40 MB.</span>
+                </div>
+                <Field label="Or paste an audio link" hint="A direct https link to an .mp3 or .m4a file.">
+                  <input
+                    className={input}
+                    type="url"
+                    placeholder="https://…/episode.mp3"
+                    value={item.audioUrl ?? ""}
+                    onChange={(e) => set("audioUrl", e.target.value.trim() || undefined)}
+                  />
+                </Field>
+                <Field label="Key points" hint="One per line. Shown under the player.">
+                  <textarea className={`${input} min-h-28`} value={texts.keyPoints} onChange={(e) => setText("keyPoints", e.target.value)} />
+                </Field>
+              </div>
+            )}
+            {item.kind === "video" && (
+              <div className="space-y-3">
+                {item.videoUrl && (
+                  <video
+                    src={item.videoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="aspect-video w-full rounded-2xl bg-black"
+                  />
+                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => videoInput.current?.click()}
+                    disabled={busy === "video"}
+                    className="flex items-center gap-2 rounded-full bg-forest px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {busy === "video" ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Film size={16} />
+                    )}
+                    {busy === "video"
+                      ? "Uploading…"
+                      : item.videoUrl
+                        ? "Change video"
+                        : "Upload video"}
+                  </button>
+                  {item.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => set("videoUrl", undefined)}
+                      className="flex items-center gap-1 text-sm font-semibold text-ink-soft"
+                    >
+                      <X size={14} /> Remove video
+                    </button>
+                  )}
+                  <input
+                    ref={videoInput}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    className="hidden"
+                    onChange={(e) => uploadVideo(e.target.files?.[0])}
+                  />
+                  <span className="text-xs text-ink-soft">
+                    MP4, WebM or MOV, under 50 MB. Short is best: 2 minutes or less.
+                  </span>
+                </div>
+                <Field
+                  label="Or paste a video link"
+                  hint="A direct https link to an .mp4 file. Instagram links go in the post's origin, not here."
+                >
+                  <input
+                    className={input}
+                    type="url"
+                    placeholder="https://…/video.mp4"
+                    value={item.videoUrl ?? ""}
+                    onChange={(e) =>
+                      set("videoUrl", e.target.value.trim() || undefined)
+                    }
+                  />
+                </Field>
+              </div>
+            )}
             {item.kind === "video" && (
               <Field
                 label="Key points"
-                hint="One per line. The video upload comes in a later step."
+                hint="One per line. Shown under the video."
               >
                 <textarea
                   className={`${input} min-h-28`}
@@ -487,6 +738,101 @@ export default function Editor({ id }: { id: string | null }) {
                 onChange={(e) => setText("bodySw", e.target.value)}
               />
             </Field>
+          </Section>
+
+          {/* Where men see it */}
+          <Section title="Where it shows">
+            <ul className="flex flex-wrap gap-2">
+              {placesOf(item).map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-center gap-1 rounded-full bg-mint/70 px-3 py-1.5 text-xs font-semibold text-forest-deep"
+                >
+                  <MapPin size={12} />
+                  {p.id === "topics"
+                    ? `Topic: ${TOPICS.find((t) => t.id === item.topic)?.title}`
+                    : p.title}
+                </li>
+              ))}
+            </ul>
+            {FEATURABLE.includes(item.kind) && (
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1 accent-forest"
+                  checked={Boolean(item.featured)}
+                  onChange={(e) => set("featured", e.target.checked || undefined)}
+                />
+                <span>
+                  <b>Pin as the Featured card on Discover</b>
+                  <span className="block text-xs text-ink-soft">
+                    {placeById("featured").add}
+                  </span>
+                </span>
+              </label>
+            )}
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 accent-forest"
+                checked={Boolean(item.inManFeed)}
+                onChange={(e) => set("inManFeed", e.target.checked)}
+              />
+              <span>
+                <b>Show as a daily lesson on the Man tab</b>
+                <span className="block text-xs text-ink-soft">
+                  He earns the points below when he marks it as read.
+                </span>
+              </span>
+            </label>
+          </Section>
+
+          {/* Publishing: schedule, review, AI */}
+          <Section title="Publishing">
+            <Field
+              label="Go live at (optional)"
+              hint={
+                item.publishAt && new Date(item.publishAt) > new Date()
+                  ? "Scheduled: men see it from this time. Leave empty to go live as soon as it's published."
+                  : "Leave empty to go live as soon as it's published. Pick a future time to schedule it."
+              }
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="datetime-local"
+                  className={`${input} max-w-xs`}
+                  value={item.publishAt ? toLocalInput(item.publishAt) : ""}
+                  onChange={(e) => set("publishAt", e.target.value ? new Date(e.target.value).toISOString() : undefined)}
+                />
+                {item.publishAt && (
+                  <button type="button" onClick={() => set("publishAt", undefined)} className="text-xs font-semibold text-ink-soft">
+                    Clear
+                  </button>
+                )}
+              </div>
+            </Field>
+            <Field label="Note for review (optional)" hint="What the writer or editor should know. Shown at the top while it's in review.">
+              <textarea
+                className={`${input} min-h-16`}
+                maxLength={500}
+                value={item.reviewNote ?? ""}
+                onChange={(e) => set("reviewNote", e.target.value || undefined)}
+              />
+            </Field>
+            <label className="flex items-start gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 accent-forest"
+                checked={Boolean(item.aiGenerated)}
+                onChange={(e) => set("aiGenerated", e.target.checked || undefined)}
+              />
+              <span>
+                <b>Drafted with AI help</b>
+                <span className="block text-xs text-ink-soft">
+                  It can only be published once &ldquo;Checked by a qualified health professional&rdquo; is ticked below. The database enforces this.
+                </span>
+              </span>
+            </label>
           </Section>
 
           {/* Look */}
@@ -621,20 +967,6 @@ export default function Editor({ id }: { id: string | null }) {
               <input
                 type="checkbox"
                 className="mt-1 accent-forest"
-                checked={Boolean(item.inManFeed)}
-                onChange={(e) => set("inManFeed", e.target.checked)}
-              />
-              <span>
-                <b>Show as a daily lesson on the Man tab</b>
-                <span className="block text-xs text-ink-soft">
-                  He earns the points above when he marks it as read.
-                </span>
-              </span>
-            </label>
-            <label className="flex items-start gap-3 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1 accent-forest"
                 checked={item.review === "reviewed"}
                 onChange={(e) =>
                   set("review", e.target.checked ? "reviewed" : "draft")
@@ -680,7 +1012,9 @@ export default function Editor({ id }: { id: string | null }) {
               </ul>
             )}
             <p className="pt-1 font-bold">Ready to publish?</p>
-            {problems.length === 0 ? (
+            {aiUnchecked && problems.length === 0 ? (
+              <p className="text-xs text-amber-700 dark:text-amber-300">Drafted with AI help: tick &ldquo;Checked by a qualified health professional&rdquo; before publishing.</p>
+            ) : problems.length === 0 ? (
               <p className="flex items-center gap-2 text-sm text-forest">
                 <CheckCircle2 size={16} /> Yes, everything needed is there.
               </p>
@@ -696,74 +1030,119 @@ export default function Editor({ id }: { id: string | null }) {
         </aside>
       </div>
 
-      {/* Actions — rendered at page level so the page's entry animation can't move it */}
-      {createPortal(
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-5 py-3">
-            {error ? (
-              <p role="alert" className="mr-auto max-w-md text-sm text-red-700">
-                {error}
-              </p>
-            ) : (
-              <p className="mr-auto hidden text-xs text-ink-soft sm:block">
-                {status === "published"
-                  ? "Men can see this now."
-                  : "Only staff can see drafts."}
-              </p>
-            )}
-            {status && status !== "published" && (
-              <button onClick={remove} disabled={!!busy} className={ghost}>
-                <Trash2 size={14} /> Delete
+      {/* Actions: stick to the bottom of the editor while scrolling */}
+      <div className="sticky bottom-0 z-20 -mx-4 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="flex flex-wrap items-center gap-2">
+          {error ? (
+            <p role="alert" className="mr-auto max-w-md text-sm text-red-700">
+              {error}
+            </p>
+          ) : (
+            <p className="mr-auto hidden text-xs text-ink-soft sm:block">
+              {status === "published"
+                ? item.publishAt && new Date(item.publishAt) > new Date()
+                  ? "Scheduled. Men see it from the time you set."
+                  : "Men can see this now."
+                : status === "review"
+                  ? canPublish
+                    ? "Waiting for your review."
+                    : "Waiting for an editor to review."
+                  : canPublish
+                    ? "Only staff can see drafts."
+                    : "Writers submit for review; an editor publishes."}
+            </p>
+          )}
+          {status && status !== "published" && (canPublish || status !== "archived") && (
+            <button onClick={() => setConfirmDelete(true)} disabled={!!busy} className={ghost}>
+              <Trash2 size={14} /> Delete
+            </button>
+          )}
+          {status === "published" && canPublish && (
+            <>
+              <button onClick={() => save("archived")} disabled={!!busy} className={ghost}>
+                <Archive size={14} /> Archive
               </button>
-            )}
-            {status === "published" && (
-              <>
-                <button
-                  onClick={() => save("archived")}
-                  disabled={!!busy}
-                  className={ghost}
-                >
-                  <Archive size={14} /> Archive
-                </button>
-                <button
-                  onClick={() => save("draft")}
-                  disabled={!!busy}
-                  className={ghost}
-                >
-                  Unpublish
-                </button>
-              </>
-            )}
-            {status !== "published" && (
-              <button
-                onClick={() => save("draft")}
-                disabled={!!busy || (!dirty && status === "draft")}
-                className={ghost}
-              >
-                {busy === "draft" && (
-                  <Loader2 size={14} className="animate-spin" />
-                )}
-                {status === "archived" ? "Restore as draft" : "Save draft"}
+              <button onClick={() => save("draft")} disabled={!!busy} className={ghost}>
+                Unpublish
               </button>
-            )}
+            </>
+          )}
+          {status !== "published" && (
+            <button onClick={() => save("draft")} disabled={!!busy || (!dirty && status === "draft")} className={ghost}>
+              {busy === "draft" && <Loader2 size={14} className="animate-spin" />}
+              {status === "archived" ? "Restore as draft" : status === "review" ? "Back to draft" : "Save draft"}
+            </button>
+          )}
+          {status !== "published" && status !== "archived" && (status !== "review" || dirty) && (
+            <button onClick={() => save("review")} disabled={!!busy || problems.length > 0} className={canPublish ? ghost : primaryBtn}>
+              {busy === "review" && <Loader2 size={14} className="animate-spin" />}
+              {status === "review" ? "Save review changes" : "Submit for review"}
+            </button>
+          )}
+          {canPublish ? (
             <button
               onClick={() => save("published")}
-              disabled={
-                !!busy ||
-                problems.length > 0 ||
-                (status === "published" && !dirty)
-              }
-              className="flex items-center gap-1.5 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-40"
+              disabled={!!busy || problems.length > 0 || aiUnchecked || (status === "published" && !dirty)}
+              title={aiUnchecked ? "AI-assisted: tick “Checked by a qualified health professional” first" : undefined}
+              className={primaryBtn}
             >
-              {busy === "published" && (
-                <Loader2 size={14} className="animate-spin" />
-              )}
-              {status === "published" ? "Update live version" : "Publish"}
+              {busy === "published" && <Loader2 size={14} className="animate-spin" />}
+              {item.publishAt && new Date(item.publishAt) > new Date()
+                ? status === "published"
+                  ? "Update schedule"
+                  : "Schedule"
+                : status === "published"
+                  ? "Update live version"
+                  : "Publish"}
             </button>
-          </div>
-        </div>,
-        document.body,
-      )}
+          ) : (
+            status === "published" && <p className="text-xs text-ink-soft">Live content can only be changed by an editor or owner.</p>
+          )}
+        </div>
+      </div>
+
+      <Confirm
+        open={confirmDelete}
+        title={`Delete "${item.title}"?`}
+        confirmLabel="Delete for good"
+        danger
+        typeToConfirm="delete"
+        onConfirm={remove}
+        onClose={() => setConfirmDelete(false)}
+      >
+        It&apos;s removed from the Studio{status === "published" ? " and from the app" : ""}. This can&apos;t be undone. Earlier versions are deleted too.
+        To keep it out of the app but keep a copy, use Archive instead.
+      </Confirm>
+
+      <Drawer open={showHistory} title="Version history" onClose={() => setShowHistory(false)}>
+        {versions === null ? (
+          <p className="flex items-center gap-2 text-sm text-ink-soft">
+            <Loader2 size={16} className="animate-spin" /> Loading…
+          </p>
+        ) : versions.length === 0 ? (
+          <p className="text-sm text-ink-soft">No earlier versions yet. Each time you save a change, the previous version is kept here (the last 30).</p>
+        ) : (
+          <ul className="space-y-2">
+            {versions.map((v) => (
+              <li key={v.id} className="rounded-xl p-3 ring-1 ring-line">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{v.item.title}</p>
+                    <p className="text-[11px] text-ink-soft">
+                      <Clock size={11} className="mr-1 inline" />
+                      {new Date(v.savedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · was {v.status}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs text-ink-soft">{v.item.summary}</p>
+                  </div>
+                  <button onClick={() => loadVersion(v)} className={btn.small}>
+                    Load
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Drawer>
     </div>
   );
 }
@@ -911,6 +1290,13 @@ function Chip({
   );
 }
 
+/** ISO time → value for <input type="datetime-local"> in local time */
+const toLocalInput = (iso: string) => {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 const clamp = (v: string, min: number, max: number, fallback: number) => {
   const n = Math.round(Number(v));
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
@@ -918,5 +1304,7 @@ const clamp = (v: string, min: number, max: number, fallback: number) => {
 
 const input =
   "w-full rounded-2xl bg-bg px-4 py-2.5 text-sm outline-none ring-1 ring-line focus:ring-2 focus:ring-forest disabled:opacity-60";
+const primaryBtn =
+  "flex items-center gap-1.5 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-40";
 const ghost =
   "flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold text-ink ring-1 ring-line disabled:opacity-40";

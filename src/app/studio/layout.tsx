@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { ToastProvider } from "@/components/motion/Toast";
+import AdminShell from "@/components/admin/AdminShell";
 
-// The Studio is for Kayani staff only: keep it out of search engines and away from the bottom tabs.
+// The Admin Control Center is for Kayani staff only: keep it out of search engines and away from the bottom tabs.
 export const metadata: Metadata = {
-  title: "Content Studio · Men's Social",
+  title: "Admin Control Center · Men's Social",
   robots: { index: false, follow: false },
 };
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
-      <main className="mx-auto min-h-dvh max-w-6xl px-5 pb-16 pt-6">{children}</main>
+      <AdminShell>{children}</AdminShell>
     </ToastProvider>
   );
 }

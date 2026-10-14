@@ -1,4 +1,7 @@
+"use client";
+
 import type { MetricStatus } from "@/lib/progress/types";
+import { useT } from "@/lib/i18n";
 
 /** Honest progress bar: striped when nothing is recorded, never a fake 0% or 100%. */
 export default function ProgressBar({
@@ -10,9 +13,10 @@ export default function ProgressBar({
   status: MetricStatus;
   label: string;
 }) {
+  const t = useT();
   if (status === "not_recorded" || percent === null) {
     return (
-      <div className="hatch h-3 w-full rounded-full" role="img" aria-label={`${label}: not yet recorded`} />
+      <div className="hatch h-3 w-full rounded-full" role="img" aria-label={`${label}: ${t("not yet recorded")}`} />
     );
   }
   return (

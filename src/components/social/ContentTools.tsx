@@ -3,23 +3,29 @@
 import { useEffect, useState } from "react";
 import { Check, Pause, Play, RotateCcw, X } from "lucide-react";
 import type { QuizQuestion } from "@/lib/content/types";
+import { useT } from "@/lib/i18n";
 
 /* ───────────── Quiz ───────────── */
-export function QuizRunner({ questions }: { questions: QuizQuestion[] }) {
+export function QuizRunner({ questions, onFinish }: { questions: QuizQuestion[]; onFinish?: () => void }) {
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const t = useT();
   const done = i >= questions.length;
+  useEffect(() => {
+    if (done) onFinish?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   if (done) {
     return (
       <div className="rounded-3xl bg-forest-deep p-6 text-center text-white">
-        <p className="text-sm text-mint">Your score</p>
+        <p className="text-sm text-mint">{t("Your score")}</p>
         <p className="mt-1 text-4xl font-bold">
           {score} / {questions.length}
         </p>
         <p className="mt-2 text-sm text-mint">
-          {score === questions.length ? "Excellent — you know your facts." : "Good effort. Every answer above explains why."}
+          {t(score === questions.length ? "Excellent — you know your facts." : "Good effort. Every answer above explains why.")}
         </p>
         <button
           onClick={() => {
@@ -29,7 +35,7 @@ export function QuizRunner({ questions }: { questions: QuizQuestion[] }) {
           }}
           className="mt-4 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-forest-deep"
         >
-          <RotateCcw size={15} /> Try again
+          <RotateCcw size={15} /> {t("Try again")}
         </button>
       </div>
     );
@@ -41,9 +47,9 @@ export function QuizRunner({ questions }: { questions: QuizQuestion[] }) {
     <div className="rounded-3xl bg-surface p-5 ring-1 ring-line">
       <div className="flex items-center justify-between text-xs text-ink-soft">
         <span>
-          Question {i + 1} of {questions.length}
+          {t("Question {n} of {total}", { n: i + 1, total: questions.length })}
         </span>
-        <span>Score {score}</span>
+        <span>{t("Score {n}", { n: score })}</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-mint">
         <div className="h-full rounded-full bg-forest transition-[width] duration-500" style={{ width: `${(i / questions.length) * 100}%` }} />
@@ -81,7 +87,7 @@ export function QuizRunner({ questions }: { questions: QuizQuestion[] }) {
       {answered && (
         <div className="page-enter mt-4">
           <p className="text-sm">
-            <span className="font-semibold">{picked === q.answer ? "Correct. " : "Not quite. "}</span>
+            <span className="font-semibold">{t(picked === q.answer ? "Correct." : "Not quite.")} </span>
             {q.explain}
           </p>
           <button
@@ -91,7 +97,7 @@ export function QuizRunner({ questions }: { questions: QuizQuestion[] }) {
             }}
             className="mt-4 w-full rounded-full bg-forest py-3 text-sm font-semibold text-white"
           >
-            {i + 1 === questions.length ? "See my score" : "Next question"}
+            {t(i + 1 === questions.length ? "See my score" : "Next question")}
           </button>
         </div>
       )}
@@ -107,6 +113,7 @@ const TOTAL = REPS * HOLD * 2;
 export function PelvicFloorTrainer() {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0); // everything else is worked out from this
+  const tr = useT();
 
   useEffect(() => {
     if (!running) return;
@@ -134,12 +141,12 @@ export function PelvicFloorTrainer() {
         aria-live="polite"
       >
         <div>
-          <p className="text-lg font-bold">{finished ? "Done" : running ? phase : elapsed ? "Paused" : "Ready"}</p>
+          <p className="text-lg font-bold">{tr(finished ? "Done" : running ? phase : elapsed ? "Paused" : "Ready")}</p>
           {!finished && running && <p className="text-3xl font-bold tabular-nums">{left}</p>}
         </div>
       </div>
       <p className="mt-4 text-sm text-ink-soft">
-        {finished ? "Great work. Once or twice a day is plenty to start." : `Rep ${rep} of ${REPS}`}
+        {finished ? tr("Great work. Once or twice a day is plenty to start.") : tr("Rep {n} of {total}", { n: rep, total: REPS })}
       </p>
       <div className="mt-4 flex justify-center gap-2">
         {finished ? (
@@ -147,21 +154,21 @@ export function PelvicFloorTrainer() {
             onClick={() => setElapsed(0)}
             className="inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white"
           >
-            <RotateCcw size={15} /> Again
+            <RotateCcw size={15} /> {tr("Again")}
           </button>
         ) : (
           <button
             onClick={() => setRunning((r) => !r)}
             className="inline-flex items-center gap-2 rounded-full bg-forest px-6 py-2.5 text-sm font-semibold text-white"
           >
-            {running ? <Pause size={15} /> : <Play size={15} />} {running ? "Pause" : elapsed ? "Resume" : "Start"}
+            {running ? <Pause size={15} /> : <Play size={15} />} {tr(running ? "Pause" : elapsed ? "Resume" : "Start")}
           </button>
         )}
       </div>
       <ul className="mt-5 space-y-1 text-left text-xs text-ink-soft">
-        <li>• Squeeze as if stopping yourself passing wind. Keep breathing.</li>
-        <li>• Don&apos;t tighten your stomach, legs or bottom.</li>
-        <li>• Stop if you feel pain, and speak to a doctor.</li>
+        <li>• {tr("Squeeze as if stopping yourself passing wind. Keep breathing.")}</li>
+        <li>• {tr("Don't tighten your stomach, legs or bottom.")}</li>
+        <li>• {tr("Stop if you feel pain, and speak to a doctor.")}</li>
       </ul>
     </div>
   );
@@ -182,12 +189,13 @@ export function DoctorCheck() {
   const complete = answers.every((a) => a !== null);
   const urgent = answers[3] === true;
   const score = answers.reduce((s, a, i) => s + (a ? CHECKS[i].weight : 0), 0);
+  const t = useT();
 
   return (
     <div className="space-y-3">
       {CHECKS.map((c, i) => (
         <div key={c.q} className="rounded-2xl bg-surface p-4 ring-1 ring-line">
-          <p className="text-sm font-medium">{c.q}</p>
+          <p className="text-sm font-medium">{t(c.q)}</p>
           <div className="mt-2 flex gap-2">
             {[true, false].map((v) => (
               <button
@@ -198,7 +206,7 @@ export function DoctorCheck() {
                   answers[i] === v ? "bg-forest text-white" : "ring-1 ring-line"
                 }`}
               >
-                {v ? "Yes" : "No"}
+                {t(v ? "Yes" : "No")}
               </button>
             ))}
           </div>
@@ -210,17 +218,19 @@ export function DoctorCheck() {
           className={`page-enter rounded-3xl p-5 ${urgent ? "bg-red-50 text-red-900 ring-1 ring-red-200" : "bg-forest-deep text-white"}`}
         >
           <p className="font-bold">
-            {urgent ? "Please see a doctor soon" : score >= 2 ? "A check-up is a good idea" : "Keep an eye on it"}
+            {t(urgent ? "Please see a doctor soon" : score >= 2 ? "A check-up is a good idea" : "Keep an eye on it")}
           </p>
           <p className={`mt-1 text-sm ${urgent ? "" : "text-mint"}`}>
-            {urgent
-              ? "Chest pain or breathlessness should be checked by a doctor soon. If the pain is severe or sudden, go to a hospital straight away."
-              : score >= 2
-                ? "Based on your answers, talking to a doctor could help find the cause and the right support. It's common and confidential."
-                : "Small changes in sleep, stress and exercise often help. If things don't improve in a few weeks, see a doctor."}
+            {t(
+              urgent
+                ? "Chest pain or breathlessness should be checked by a doctor soon. If the pain is severe or sudden, go to a hospital straight away."
+                : score >= 2
+                  ? "Based on your answers, talking to a doctor could help find the cause and the right support. It's common and confidential."
+                  : "Small changes in sleep, stress and exercise often help. If things don't improve in a few weeks, see a doctor.",
+            )}
           </p>
           <p className={`mt-3 text-[11px] ${urgent ? "" : "text-mint/80"}`}>
-            This is a simple guide, not a diagnosis. Your answers aren&apos;t saved.
+            {t("This is a simple guide, not a diagnosis. Your answers aren't saved.")}
           </p>
         </div>
       )}

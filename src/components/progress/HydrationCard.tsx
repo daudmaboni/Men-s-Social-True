@@ -20,6 +20,7 @@ import {
 } from "@/lib/progress/calc";
 import { litres } from "@/lib/progress/format";
 import type { Period, RecordSource, TrackingRecord } from "@/lib/progress/types";
+import { useT } from "@/lib/i18n";
 
 const QUICK = [
   { ml: 250, label: "Glass", Icon: GlassWater },
@@ -39,6 +40,7 @@ type SheetMode = { kind: "custom" } | { kind: "edit"; record: TrackingRecord } |
 export default function HydrationCard({ period }: { period: Period }) {
   const { records, goals, ready } = useProgress();
   const showToast = useToast();
+  const t = useT();
   const [sheet, setSheet] = useState<SheetMode>(null);
   const [input, setInput] = useState("");
   const [error, setError] = useState("");
@@ -63,7 +65,7 @@ export default function HydrationCard({ period }: { period: Period }) {
 
   function quickAdd(ml: number) {
     progressStore.addRecord({ metric: "water", value: ml, unit: "ml", source: "quick_add" });
-    showToast(`+${ml} ml water logged`);
+    showToast(t("+{n} ml water logged", { n: ml }));
   }
 
   function openSheet(mode: SheetMode) {
@@ -77,17 +79,17 @@ export default function HydrationCard({ period }: { period: Period }) {
   function submit() {
     const n = Number(input);
     const max = sheet?.kind === "goal" ? 10000 : 5000;
-    if (!input.trim() || !Number.isFinite(n) || n <= 0) return setError("Enter an amount in ml, like 300");
-    if (n > max) return setError(`That's more than ${litres(max)}. Check the amount.`);
+    if (!input.trim() || !Number.isFinite(n) || n <= 0) return setError(t("Enter an amount in ml, like 300"));
+    if (n > max) return setError(t("That's more than {amount}. Check the amount.", { amount: litres(max) }));
     if (sheet?.kind === "custom") {
       progressStore.addRecord({ metric: "water", value: n, unit: "ml", source: "manual" });
-      showToast(`+${Math.round(n)} ml water logged`);
+      showToast(t("+{n} ml water logged", { n: Math.round(n) }));
     } else if (sheet?.kind === "edit") {
       progressStore.updateRecord(sheet.record.id, n);
-      showToast("Entry updated");
+      showToast(t("Entry updated"));
     } else if (sheet?.kind === "goal") {
       progressStore.setGoal("water", n, "ml");
-      showToast(`Daily goal set to ${litres(n)}`);
+      showToast(t("Daily goal set to {amount}", { amount: litres(n) }));
     }
     setSheet(null);
   }
@@ -95,7 +97,7 @@ export default function HydrationCard({ period }: { period: Period }) {
   function remove(record: TrackingRecord) {
     progressStore.deleteRecord(record.id);
     setSheet(null);
-    showToast(`Removed ${record.value} ml`);
+    showToast(t("Removed {n} ml", { n: record.value }));
   }
 
   if (!ready) {
@@ -112,9 +114,9 @@ export default function HydrationCard({ period }: { period: Period }) {
               <Droplet size={18} />
             </span>
             <div>
-              <p className="font-semibold">Water</p>
+              <p className="font-semibold">{t("Water")}</p>
               <button onClick={() => openSheet({ kind: "goal" })} className="flex items-center gap-1 text-xs text-ink-soft">
-                Daily goal {goal ? litres(goal) : "not set"} <Pencil size={11} />
+                {t("Daily goal")} {goal ? litres(goal) : t("not set")} <Pencil size={11} />
               </button>
             </div>
           </div>
@@ -133,14 +135,14 @@ export default function HydrationCard({ period }: { period: Period }) {
               <span className="text-base font-medium text-ink-soft"> / {goal ? litres(goal) : "—"}</span>
             </p>
             <div className="mt-3">
-              <ProgressBar percent={pct} status={status} label="Water today" />
+              <ProgressBar percent={pct} status={status} label={t("Water today")} />
             </div>
             <p className="mt-2 text-xs text-ink-soft">
               {status === "not_recorded"
-                ? "Nothing recorded yet today."
+                ? t("Nothing recorded yet today.")
                 : status === "goal_achieved"
-                  ? "Goal reached today. Well done."
-                  : `${Math.round(pct ?? 0)}% · ${litres(Math.max((goal ?? 0) - (todayTotal ?? 0), 0))} to go`}
+                  ? t("Goal reached today. Well done.")
+                  : `${Math.round(pct ?? 0)}% · ${t("{amount} to go", { amount: litres(Math.max((goal ?? 0) - (todayTotal ?? 0), 0)) })}`}
             </p>
 
             {/* Quick add */}
@@ -153,7 +155,7 @@ export default function HydrationCard({ period }: { period: Period }) {
                 >
                   <Icon size={18} />
                   <span className="text-xs font-semibold">+{ml} ml</span>
-                  <span className="text-[10px] text-ink-soft">{label}</span>
+                  <span className="text-[10px] text-ink-soft">{t(label)}</span>
                 </button>
               ))}
               <button
@@ -161,8 +163,8 @@ export default function HydrationCard({ period }: { period: Period }) {
                 className="flex flex-col items-center gap-1 rounded-2xl py-3 ring-1 ring-line transition-transform active:scale-[0.96]"
               >
                 <Plus size={18} />
-                <span className="text-xs font-semibold">Custom</span>
-                <span className="text-[10px] text-ink-soft">Any amount</span>
+                <span className="text-xs font-semibold">{t("Custom")}</span>
+                <span className="text-[10px] text-ink-soft">{t("Any amount")}</span>
               </button>
             </div>
 
@@ -177,10 +179,10 @@ export default function HydrationCard({ period }: { period: Period }) {
                     >
                       <span>
                         {r.value} ml
-                        <span className="ml-2 text-[11px] text-ink-soft">{SOURCE_LABEL[r.source]}</span>
+                        <span className="ml-2 text-[11px] text-ink-soft">{t(SOURCE_LABEL[r.source])}</span>
                       </span>
                       <span className="text-xs text-ink-soft">
-                        {new Date(r.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {new Date(r.recordedAt).toLocaleTimeString(t.locale, { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </button>
                   </li>
@@ -191,7 +193,7 @@ export default function HydrationCard({ period }: { period: Period }) {
                       onClick={() => setShowAll(!showAll)}
                       className="w-full pt-2.5 text-left text-xs font-semibold text-forest"
                     >
-                      {showAll ? "Show less" : `Show all ${todayEntries.length} entries`}
+                      {showAll ? t("Show less") : t("Show all {n} entries", { n: todayEntries.length })}
                     </button>
                   </li>
                 )}
@@ -202,12 +204,12 @@ export default function HydrationCard({ period }: { period: Period }) {
           <>
             {/* Period summary */}
             <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-              <Stat label="Daily average" value={avg === null ? "—" : litres(Math.round(avg))} hint="recorded days" />
-              <Stat label="Goal reached" value={`${met}`} hint={`of ${recordedDays} recorded`} />
-              <Stat label="Streak" value={`${streak}`} hint={streak === 1 ? "day" : "days"} />
+              <Stat label={t("Daily average")} value={avg === null ? "—" : litres(Math.round(avg))} hint={t("recorded days")} />
+              <Stat label={t("Goal reached")} value={`${met}`} hint={t("of {n} recorded", { n: recordedDays })} />
+              <Stat label={t("Streak")} value={`${streak}`} hint={t(streak === 1 ? "day" : "days")} />
             </div>
             {recordedDays === 0 && (
-              <p className="mt-3 text-xs text-ink-soft">No water recorded in the last {period} days.</p>
+              <p className="mt-3 text-xs text-ink-soft">{t("No water recorded in the last {n} days.", { n: period })}</p>
             )}
           </>
         )}
@@ -215,7 +217,7 @@ export default function HydrationCard({ period }: { period: Period }) {
         {/* Chart (trends view only — the daily view stays short) */}
         {period !== 1 && (
           <div className="mt-5 border-t border-line pt-4">
-            <p className="mb-3 text-xs font-medium text-ink-soft">Last {period} days</p>
+            <p className="mb-3 text-xs font-medium text-ink-soft">{t("Last {n} days", { n: period })}</p>
             <DayBars keys={keys} values={totals} target={goal} format={litres} />
           </div>
         )}
@@ -225,10 +227,10 @@ export default function HydrationCard({ period }: { period: Period }) {
       <Sheet
         open={sheet !== null}
         onClose={() => setSheet(null)}
-        title={sheet?.kind === "goal" ? "Daily water goal" : sheet?.kind === "edit" ? "Edit entry" : "Add water"}
+        title={t(sheet?.kind === "goal" ? "Daily water goal" : sheet?.kind === "edit" ? "Edit entry" : "Add water")}
       >
         <label htmlFor="water-ml" className="text-xs text-ink-soft">
-          Amount in ml
+          {t("Amount in ml")}
         </label>
         <input
           id="water-ml"
@@ -247,22 +249,22 @@ export default function HydrationCard({ period }: { period: Period }) {
         />
         {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
         {sheet?.kind === "goal" && (
-          <p className="mt-2 text-xs text-ink-soft">A common starting point is 2,000–3,000 ml. Choose what suits you.</p>
+          <p className="mt-2 text-xs text-ink-soft">{t("A common starting point is 2,000–3,000 ml. Choose what suits you.")}</p>
         )}
         <div className="mt-5 flex items-center justify-between gap-2">
           {sheet?.kind === "edit" ? (
             <button onClick={() => remove(sheet.record)} className="text-sm font-semibold text-red-600">
-              Delete
+              {t("Delete")}
             </button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
             <button onClick={() => setSheet(null)} className="rounded-full px-5 py-2.5 text-sm font-semibold ring-1 ring-line">
-              Cancel
+              {t("Cancel")}
             </button>
             <button onClick={submit} className="rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
-              Save
+              {t("Save")}
             </button>
           </div>
         </div>

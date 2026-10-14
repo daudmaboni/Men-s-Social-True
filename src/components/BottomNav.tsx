@@ -15,6 +15,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { MessageCircle, Sparkles, UserRound } from "lucide-react";
 import { isTabRoot, stripPosition, TAB_PATHS, tabFor } from "@/lib/tabs";
 import { isSettled, shapeFor, stepSpring, type SpringState } from "@/lib/liquid";
+import { useT } from "@/lib/i18n";
 
 const tabs = [
   { href: TAB_PATHS[0], label: "Social", Icon: MessageCircle },
@@ -37,6 +38,7 @@ export default function BottomNav() {
   const router = useRouter();
   const active = tabFor(pathname);
   const onRoot = isTabRoot(pathname);
+  const t = useT();
 
   const bar = useRef<HTMLDivElement>(null);
   const glass = useRef<HTMLDivElement>(null);
@@ -238,7 +240,7 @@ export default function BottomNav() {
                   }}
                   className="block rounded-[24px] text-ink-soft"
                 >
-                  <TabFace Icon={Icon} label={label} active={false} />
+                  <TabFace Icon={Icon} label={t(label)} active={false} />
                 </Link>
               </li>
             );
@@ -251,7 +253,7 @@ export default function BottomNav() {
             <div ref={lens} className="absolute inset-y-0 left-0 will-change-transform">
               <div className="grid h-full grid-cols-3 px-1.5 text-forest-deep">
                 {tabs.map(({ href, label, Icon }) => (
-                  <TabFace key={href} Icon={Icon} label={label} active />
+                  <TabFace key={href} Icon={Icon} label={t(label)} active />
                 ))}
               </div>
             </div>

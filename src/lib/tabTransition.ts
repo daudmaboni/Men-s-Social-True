@@ -4,14 +4,12 @@
 
 import { useSyncExternalStore } from "react";
 
-export type TabTransition = "fade" | "instant" | "slide" | "frosted" | "reveal";
+export type TabTransition = "fade" | "instant" | "slide";
 
 export const TAB_TRANSITIONS: { id: TabTransition; label: string; about: string }[] = [
   { id: "fade", label: "Fade", about: "The new page fades in and settles. Calm and quick." },
   { id: "instant", label: "Instant", about: "Switches straight away, like most iPhone apps." },
   { id: "slide", label: "Slide", about: "A short slide in from the side you're heading to." },
-  { id: "frosted", label: "Frosted", about: "Glides in through frosted glass, like Discover ⇄ Community." },
-  { id: "reveal", label: "Reveal", about: "The new page grows out in a circle from the tab you tapped." },
 ];
 
 const KEY = "ms_tab_transition";

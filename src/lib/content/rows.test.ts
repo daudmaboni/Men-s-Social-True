@@ -43,3 +43,22 @@ describe("merging built-in and published content", () => {
     expect(merged.some((c) => c.id === sample.id)).toBe(false);
   });
 });
+
+describe("featured and video columns (migration 0004)", () => {
+  it("round-trips the Featured pin and a video link", () => {
+    const item = rowToItem({ id: "vid-1", title: "A video", kind: "video", topic: "wellbeing", featured: true, video_url: "https://x.supabase.co/v.mp4" })!;
+    expect(item.featured).toBe(true);
+    expect(item.videoUrl).toBe("https://x.supabase.co/v.mp4");
+    const row = itemToRow(item, "published");
+    expect(row.featured).toBe(true);
+    expect(row.video_url).toBe("https://x.supabase.co/v.mp4");
+  });
+  it("works with older databases that don't have the columns", () => {
+    const item = rowToItem({ id: "old-1", title: "Old", kind: "guide", topic: "wellbeing" })!;
+    expect(item.featured).toBe(false);
+    expect(item.videoUrl).toBeUndefined();
+  });
+  it("ignores unsafe video links", () => {
+    expect(rowToItem({ id: "bad-1", title: "Bad", kind: "video", topic: "wellbeing", video_url: "javascript:alert(1)" })!.videoUrl).toBeUndefined();
+  });
+});

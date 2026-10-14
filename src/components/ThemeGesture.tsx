@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { pinchResult, setThemePref, type Theme } from "@/lib/theme";
 import { useToast } from "@/components/motion/Toast";
+import { translate } from "@/lib/i18n";
+import { currentLang } from "@/lib/me/lang";
 
 type Hint = { x: number; y: number; theme: Theme | null; scale: number };
 
@@ -43,7 +45,7 @@ export default function ThemeGesture() {
       if (last?.theme) {
         const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
         setThemePref(last.theme, { x: last.x, y: last.y });
-        if (current !== last.theme) showToast(last.theme === "dark" ? "Dark mode on" : "Light mode on");
+        if (current !== last.theme) showToast(translate(currentLang(), last.theme === "dark" ? "Dark mode on" : "Light mode on"));
       }
     };
     // iPhone Safari zoom gesture

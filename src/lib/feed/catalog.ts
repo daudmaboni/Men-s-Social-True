@@ -89,6 +89,10 @@ export interface Lesson {
   summary: string;
   body: string[]; // paragraphs
   points: number;
+  /** Kiswahili title and text, when the content has them */
+  titleSw?: string;
+  summarySw?: string;
+  bodySw?: string[];
 }
 
 // Daily lessons on the Man tab come from the shared content library (same items as in Discover).
@@ -114,6 +118,9 @@ export function lessonsFrom(items: ContentItem[]): Lesson[] {
       summary: c.summary,
       body: c.body ?? [],
       points: c.points ?? 10,
+      titleSw: c.titleSw,
+      summarySw: c.summarySw,
+      bodySw: c.bodySw,
     }));
 }
 

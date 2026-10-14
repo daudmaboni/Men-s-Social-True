@@ -8,11 +8,13 @@ import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
 import { account, accountLabel, type AccountState } from "@/lib/account/useAccount";
 import { flushSync, stopSync, syncStatus } from "@/lib/account/sync";
+import { useT } from "@/lib/i18n";
 
 const SERVER = { status: "idle" as const, lastSaved: null };
 
 export default function AccountCard({ acc }: { acc: AccountState }) {
   const showToast = useToast();
+  const t = useT();
   const router = useRouter();
   const sync = useSyncExternalStore(syncStatus.subscribe, syncStatus.get, () => SERVER);
   const [sheet, setSheet] = useState<"signout" | "delete" | null>(null);
@@ -27,17 +29,17 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
         <div className="flex gap-3">
           <UserPlus size={18} className="mt-0.5 shrink-0 text-forest" />
           <div className="min-w-0 flex-1">
-            <p className="font-semibold">You&apos;re a guest</p>
+            <p className="font-semibold">{t("You're a guest")}</p>
             <p className="mt-1 text-sm text-ink-soft">
-              Your progress is saved on this phone only. Create a free account to keep it safe, even if you change phones.
+              {t("Your progress is saved on this phone only. Create a free account to keep it safe, even if you change phones.")}
             </p>
             {acc.status === "guest" && (
               <div className="mt-4 flex gap-2">
                 <Link href="/account" className="flex-1 rounded-full bg-forest py-3 text-center text-sm font-semibold text-white">
-                  Create account
+                  {t("Create account")}
                 </Link>
                 <Link href="/account?mode=login" className="flex-1 rounded-full py-3 text-center text-sm font-semibold ring-1 ring-line">
-                  Log in
+                  {t("Log in")}
                 </Link>
               </div>
             )}
@@ -54,7 +56,7 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
     await account.signOut();
     setBusy(false);
     setSheet(null);
-    showToast("Signed out");
+    showToast(t("Signed out"));
     router.replace("/social?tab=discover"); // back to Social → Discover, the part guests can use
   }
 
@@ -65,7 +67,8 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
     const r = await account.deleteAccount();
     if (r.error) {
       setBusy(false);
-      return setError(r.error);
+      // A database problem is not something he can fix: say so plainly
+      return setError(/foreign key|violates|constraint/i.test(r.error) ? t("Couldn't delete your account right now. Please try again later or contact Kayani support.") : t(r.error));
     }
     stopSync({ clearPhone: true });
     window.location.href = "/";
@@ -73,16 +76,16 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
 
   const savedText =
     sync.status === "syncing"
-      ? "Saving…"
+      ? t("Saving…")
       : sync.status === "offline"
-        ? "Offline. Changes will save when you're back online."
+        ? t("Offline. Changes will save when you're back online.")
         : sync.status === "error"
-          ? "Couldn't save just now. We'll try again."
-          : "Your progress is saved to your account.";
+          ? t("Couldn't save just now. We'll try again.")
+          : t("Your progress is saved to your account.");
 
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
-      <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">Your account</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">{t("Your account")}</p>
       <p className="mt-1 truncate font-semibold">{accountLabel(acc.user)}</p>
       <p className={`mt-2 flex items-center gap-1.5 text-xs ${sync.status === "offline" || sync.status === "error" ? "text-amber-800" : "text-forest"}`}>
         {sync.status === "syncing" ? <Loader2 size={14} className="animate-spin" /> : sync.status === "offline" || sync.status === "error" ? <CloudOff size={14} /> : <CloudCheck size={14} />}
@@ -90,34 +93,33 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
       </p>
       <div className="mt-4 flex gap-2">
         <button onClick={() => setSheet("signout")} className="flex flex-1 items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-semibold ring-1 ring-line">
-          <LogOut size={14} /> Sign out
+          <LogOut size={14} /> {t("Sign out")}
         </button>
         <button onClick={() => setSheet("delete")} className="flex flex-1 items-center justify-center gap-1.5 rounded-full py-2.5 text-sm font-semibold text-red-700 ring-1 ring-line">
-          <UserX size={14} /> Delete account
+          <UserX size={14} /> {t("Delete account")}
         </button>
       </div>
 
-      <Sheet open={sheet === "signout"} onClose={() => setSheet(null)} title="Sign out?">
+      <Sheet open={sheet === "signout"} onClose={() => setSheet(null)} title={t("Sign out?")}>
         <p className="text-sm text-ink-soft">
-          Your progress stays safe in your account. It will be removed from this phone, so nobody else using it can see it.
+          {t("Your progress stays safe in your account. It will be removed from this phone, so nobody else using it can see it.")}
         </p>
         <button onClick={signOut} disabled={busy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-forest py-3 text-sm font-semibold text-white disabled:opacity-60">
-          {busy && <Loader2 size={14} className="animate-spin" />} Sign out
+          {busy && <Loader2 size={14} className="animate-spin" />} {t("Sign out")}
         </button>
       </Sheet>
 
-      <Sheet open={sheet === "delete"} onClose={() => setSheet(null)} title="Delete your account?">
+      <Sheet open={sheet === "delete"} onClose={() => setSheet(null)} title={t("Delete your account?")}>
         <p className="text-sm text-ink-soft">
-          This deletes your login and everything saved in it: points, badges, check-ins, sleep and water records. It can&apos;t be
-          undone.
+          {t("This deletes your login and everything saved in it: points, badges, check-ins, sleep and water records. It can't be undone.")}
         </p>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button onClick={() => setSheet(null)} className="rounded-full py-3 text-sm font-semibold ring-1 ring-line">
-            Keep it
+            {t("Keep it")}
           </button>
           <button onClick={deleteAccount} disabled={busy} className="flex items-center justify-center gap-2 rounded-full bg-red-700 py-3 text-sm font-semibold text-white disabled:opacity-60">
-            {busy && <Loader2 size={14} className="animate-spin" />} Delete
+            {busy && <Loader2 size={14} className="animate-spin" />} {t("Delete")}
           </button>
         </div>
       </Sheet>

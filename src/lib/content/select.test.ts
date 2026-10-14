@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LIBRARY } from "./library";
-import { featuredToday, orderSections, pickFeatured, questionToday, quickVideos, recommendations, searchContent, sectionAll, sectionItems, SECTIONS, topicTiles, type Personal } from "./select";
+import { featuredToday, OPTIONAL_SECTIONS, orderSections, pickFeatured, questionToday, quickVideos, recommendations, searchContent, sectionAll, sectionItems, SECTIONS, topicTiles, type Personal } from "./select";
 import type { ContentItem } from "./types";
 
 describe("content library", () => {
@@ -28,9 +28,10 @@ describe("content library", () => {
       if (c.kind === "tool") expect(c.tool).toBeTruthy();
     }
   });
-  it("fills all ten topic pages (7 topics incl. Fertility + 3 formats)", () => {
-    expect(SECTIONS).toHaveLength(10);
-    for (const s of SECTIONS) expect(sectionItems(s.id).length, s.id).toBeGreaterThan(0);
+  it("fills all ten built-in topic pages (7 topics incl. Fertility + 3 formats); Audio waits for Studio content", () => {
+    expect(SECTIONS).toHaveLength(11);
+    for (const s of SECTIONS.filter((x) => !OPTIONAL_SECTIONS.includes(x.id))) expect(sectionItems(s.id).length, s.id).toBeGreaterThan(0);
+    expect(topicTiles(LIBRARY).some((t) => t.id === "audio")).toBe(false);
   });
 });
 
@@ -128,5 +129,28 @@ describe("Discover home: show less, deliver more", () => {
     expect(tiles.find((t) => t.id === "fertility")?.count).toBeGreaterThan(0);
     const reachable = new Set(tiles.flatMap((t) => sectionAll(t.id, LIBRARY).map((c) => c.id)));
     expect(LIBRARY.every((c) => reachable.has(c.id))).toBe(true);
+  });
+});
+
+describe("Featured pins from the Content Studio", () => {
+  const base = { interests: [], bookmarks: {}, history: {} };
+  const lib = LIBRARY.map((c) => ({ ...c }));
+  const pin = (id: string, extra: object = {}) => ({ ...lib.find((c) => c.kind === "guide")!, id, featured: true, priority: 50, ...extra });
+
+  it("a pinned item is always the featured card", () => {
+    const pinned = pin("pinned-one");
+    for (let d = 0; d < 5; d++) expect(featuredToday(base, [...lib, pinned], d)?.id).toBe("pinned-one");
+  });
+  it("several pins take turns day by day", () => {
+    const shown = new Set([0, 1, 2, 3].map((d) => featuredToday(base, [...lib, pin("pin-a"), pin("pin-b")], d)?.id));
+    expect(shown).toEqual(new Set(["pin-a", "pin-b"]));
+  });
+  it("prefers a pin he hasn't read", () => {
+    const p = { ...base, history: { "pin-a": "2026-10-01" } };
+    for (let d = 0; d < 4; d++) expect(featuredToday(p, [...lib, pin("pin-a"), pin("pin-b")], d)?.id).toBe("pin-b");
+  });
+  it("a pinned video or expert answer can be featured, a quiz can't", () => {
+    expect(featuredToday(base, [...lib, pin("pin-video", { kind: "video" })], 0)?.id).toBe("pin-video");
+    expect(featuredToday(base, [...lib, pin("pin-quiz", { kind: "quiz" })], 0)?.id).not.toBe("pin-quiz");
   });
 });

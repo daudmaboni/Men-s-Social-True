@@ -5,6 +5,7 @@ import CheckInCard from "@/components/progress/CheckInCard";
 import HydrationCard from "@/components/progress/HydrationCard";
 import SleepCard from "@/components/progress/SleepCard";
 import type { Period } from "@/lib/progress/types";
+import { useT } from "@/lib/i18n";
 
 const METRICS = [
   { id: "mood", label: "Energy & mood" },
@@ -22,15 +23,16 @@ const PERIODS: { value: Exclude<Period, 1>; label: string }[] = [
 export default function TrendsSection() {
   const [metric, setMetric] = useState<(typeof METRICS)[number]["id"]>("mood");
   const [period, setPeriod] = useState<Exclude<Period, 1>>(7);
+  const t = useT();
 
   return (
     <section id="trends" className="scroll-mt-4 space-y-3">
       <div>
-        <h2 className="text-lg font-bold">Your trends</h2>
-        <p className="text-xs text-ink-soft">Built only from what you have logged.</p>
+        <h2 className="text-lg font-bold">{t("Your trends")}</h2>
+        <p className="text-xs text-ink-soft">{t("Built only from what you have logged.")}</p>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="What to show">
+      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label={t("What to show")}>
         {METRICS.map((m) => (
           <button
             key={m.id}
@@ -41,12 +43,12 @@ export default function TrendsSection() {
               metric === m.id ? "bg-forest-deep text-white" : "bg-surface text-ink-soft ring-1 ring-line"
             }`}
           >
-            {m.label}
+            {t(m.label)}
           </button>
         ))}
       </div>
 
-      <div className="flex rounded-full bg-surface p-1 ring-1 ring-line" role="tablist" aria-label="Period">
+      <div className="flex rounded-full bg-surface p-1 ring-1 ring-line" role="tablist" aria-label={t("Period")}>
         {PERIODS.map((p) => (
           <button
             key={p.value}
@@ -57,7 +59,7 @@ export default function TrendsSection() {
               period === p.value ? "bg-forest text-white" : "text-ink-soft"
             }`}
           >
-            {p.label}
+            {t(p.label)}
           </button>
         ))}
       </div>

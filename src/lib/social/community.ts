@@ -1,6 +1,7 @@
 // Community rules and helpers. Pure functions — easy to test, reused when the server arrives.
 
 import type { TopicId } from "../content/types";
+import { translate } from "../i18n/translate";
 
 export type CommunityTopic = TopicId | "general";
 
@@ -39,6 +40,10 @@ export interface Post {
   fixture?: boolean; // sample post for development
   mine?: boolean;
   baseReactions?: Partial<Record<ReactionKind, number>>;
+  /** Shared Community (server): pinned/featured by moderators; hidden/removed = only he still sees it */
+  pinned?: boolean;
+  featured?: boolean;
+  status?: "visible" | "hidden" | "removed";
 }
 
 export interface Reply {
@@ -50,6 +55,7 @@ export interface Reply {
   fixture?: boolean;
   mine?: boolean;
   baseReactions?: Partial<Record<ReactionKind, number>>;
+  status?: "visible" | "hidden" | "removed";
 }
 
 export const REPORT_REASONS = [
@@ -73,15 +79,15 @@ export function checkPost(title: string, body: string): string | null {
   const t = title.trim();
   const b = body.trim();
   if (t.length < LIMITS.titleMin) return "Write your question in a few more words.";
-  if (t.length > LIMITS.titleMax) return `Keep the question under ${LIMITS.titleMax} characters. Add details below.`;
-  if (b.length > LIMITS.bodyMax) return `Details can be up to ${LIMITS.bodyMax} characters.`;
+  if (t.length > LIMITS.titleMax) return "Keep the question under 120 characters. Add details below.";
+  if (b.length > LIMITS.bodyMax) return "Details can be up to 1000 characters.";
   return checkText(`${t} ${b}`);
 }
 
 export function checkReply(body: string): string | null {
   const b = body.trim();
   if (b.length < LIMITS.replyMin) return "Write a reply first.";
-  if (b.length > LIMITS.replyMax) return `Replies can be up to ${LIMITS.replyMax} characters.`;
+  if (b.length > LIMITS.replyMax) return "Replies can be up to 600 characters.";
   return checkText(b);
 }
 
@@ -112,13 +118,14 @@ export function activityScore(replies: number, reactions: number): number {
   return replies * 3 + reactions;
 }
 
-export function timeAgo(iso: string, now: Date = new Date()): string {
+export function timeAgo(iso: string, now: Date = new Date(), lang: "en" | "sw" = "en"): string {
   const s = Math.max(0, (now.getTime() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  if (s < 7 * 86400) return `${Math.floor(s / 86400)}d ago`;
-  return new Date(iso).toLocaleDateString("en", { day: "numeric", month: "short" });
+  const t = (en: string, n?: number) => translate(lang, en, { n: n ?? 0 });
+  if (s < 60) return t("just now");
+  if (s < 3600) return t("{n}m ago", Math.floor(s / 60));
+  if (s < 86400) return t("{n}h ago", Math.floor(s / 3600));
+  if (s < 7 * 86400) return t("{n}d ago", Math.floor(s / 86400));
+  return new Date(iso).toLocaleDateString(lang === "sw" ? "sw-TZ" : "en", { day: "numeric", month: "short" });
 }
 
 export function topicLabel(id: CommunityTopic): string {

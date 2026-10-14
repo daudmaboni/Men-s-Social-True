@@ -32,8 +32,11 @@ export function lastNDays(n: number, now: Date = new Date(), timeZone?: string):
   return Array.from({ length: n }, (_, i) => shiftKey(today, i - (n - 1)));
 }
 
-/** "M", "T", "W"… for a day key. */
-export function weekdayLetter(key: string): string {
+/** "M", "T", "W"… for a day key (Kiswahili: "Jpl", "Jt", "Jn"…, since every day starts with J). */
+export function weekdayLetter(key: string, lang: "en" | "sw" = "en"): string {
   const [y, m, d] = key.split("-").map(Number);
-  return ["S", "M", "T", "W", "T", "F", "S"][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return lang === "sw"
+    ? ["Jpl", "Jt", "Jn", "Jtn", "Alh", "Ij", "Jms"][day]
+    : ["S", "M", "T", "W", "T", "F", "S"][day];
 }

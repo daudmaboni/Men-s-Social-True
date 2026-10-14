@@ -4,6 +4,7 @@
 
 import type { FeedDB } from "../feed/store";
 import type { SocialDB } from "../social/store";
+import { cleanProfile, newestProfile } from "../me/profile";
 import type { Goal, TrackingRecord } from "../progress/types";
 
 export type ProgressDB = { records: TrackingRecord[]; goals: Goal[] };
@@ -54,18 +55,25 @@ export function mergeFeed(local: FeedDB, remote: Partial<FeedDB> | null): FeedDB
 }
 
 export function mergeSocial(local: SocialDB, remote: Partial<SocialDB> | null): SocialDB {
-  const r: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {}, ...remote };
+  const r: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {}, profile: {}, ...remote };
   const reactions: SocialDB["reactions"] = { ...r.reactions };
   for (const [id, kinds] of Object.entries(local.reactions)) reactions[id] = [...new Set([...(reactions[id] ?? []), ...kinds])];
+  // Name and profile travel together: whichever side he edited last wins (an older phone can't undo a deletion)
+  const localProfile = local.profile ?? {};
+  const remoteProfile = cleanProfile(r.profile);
+  const profile = newestProfile(localProfile, remoteProfile);
+  const nickname =
+    localProfile.updatedAt || remoteProfile.updatedAt ? (profile === localProfile ? local.nickname : r.nickname) : local.nickname || r.nickname;
   return {
     bookmarks: { ...r.bookmarks, ...local.bookmarks },
     interests: [...new Set([...r.interests, ...local.interests])],
-    nickname: local.nickname || r.nickname,
+    nickname,
     posts: byIdNewest(r.posts, local.posts, (p) => p.createdAt),
     replies: byIdNewest(r.replies, local.replies, (p) => p.createdAt),
     reactions,
     reports: { ...r.reports, ...local.reports },
     history: { ...r.history, ...local.history },
+    profile,
   };
 }
 

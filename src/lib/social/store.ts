@@ -5,6 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { TopicId } from "../content/types";
+import { cleanProfile, type Profile } from "../me/profile";
 import { toggleReaction, type CommunityTopic, type Post, type ReactionKind, type Reply } from "./community";
 
 export interface SocialDB {
@@ -17,11 +18,13 @@ export interface SocialDB {
   reports: Record<string, { reason: string; at: string }>; // reported items (hidden for him, queued for moderators)
   /** Guides and answers he opened (contentId → last opened). Used to recommend what he hasn't read yet. */
   history: Record<string, string>;
+  /** His photo, age range and region (all optional). His name is `nickname`. */
+  profile: Profile;
 }
 export type SocialState = SocialDB & { ready: boolean };
 
 const KEY = "ms_social_v1";
-const EMPTY: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {} };
+const EMPTY: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {}, profile: {} };
 const SERVER_STATE: SocialState = { ...EMPTY, ready: false };
 let cache: SocialState | null = null;
 const listeners = new Set<() => void>();
@@ -46,6 +49,7 @@ function load(): SocialState {
         reactions: obj(p.reactions, {}),
         reports: obj(p.reports, {}),
         history: obj(p.history, {}),
+        profile: cleanProfile(p.profile),
       };
     }
   } catch {
@@ -111,6 +115,17 @@ export const socialStore = {
 
   setNickname(nickname: string) {
     save({ ...load(), nickname: nickname.trim().slice(0, 24) });
+  },
+
+  /** Save his edited profile (name + photo, age range, region). Empty values remove that detail. */
+  saveProfile(name: string, profile: Omit<Profile, "updatedAt">) {
+    const next = cleanProfile({ ...profile, updatedAt: new Date().toISOString() });
+    save({ ...load(), nickname: name.trim().slice(0, 24), profile: next });
+  },
+
+  /** Delete all his profile details (his points, posts and records stay). */
+  clearProfile() {
+    save({ ...load(), nickname: "", profile: { updatedAt: new Date().toISOString() } });
   },
 
   addPost(input: { topic: CommunityTopic; title: string; body: string; anonymous: boolean; wantsExpert: boolean }): Post {

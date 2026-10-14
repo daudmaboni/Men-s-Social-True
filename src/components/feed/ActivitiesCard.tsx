@@ -7,16 +7,18 @@ import { useToast } from "@/components/motion/Toast";
 import { feedStore } from "@/lib/feed/store";
 import type { Activity } from "@/lib/feed/catalog";
 import type { HomeFeed } from "./useHomeFeed";
+import { useT } from "@/lib/i18n";
 
 export default function ActivitiesCard({ f }: { f: HomeFeed }) {
   const showToast = useToast();
+  const t = useT();
   const [burst, setBurst] = useState<{ id: string; points: number; key: number } | null>(null);
 
   function done(a: Activity) {
     feedStore.setChoice(a.id, "done");
     setBurst({ id: a.id, points: a.points, key: Date.now() });
     setTimeout(() => setBurst(null), 950);
-    showToast(f.isNew ? "Nice! Your points are saved on this phone." : `+${a.points} points`);
+    showToast(f.isNew ? t("Nice! Your points are saved on this phone.") : t("+{n} points", { n: a.points }));
   }
 
   // Check-in, water and sleep have their own cards on this screen, so only show the rest here
@@ -26,9 +28,9 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
   return (
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
       <div className="flex items-center justify-between">
-        <p className="font-semibold">Today&apos;s activities</p>
+        <p className="font-semibold">{t("Today's activities")}</p>
         <span className="text-xs text-ink-soft">
-          {listDone} of {list.length} done
+          {t("{done} of {total} done", { done: listDone, total: list.length })}
         </span>
       </div>
 
@@ -49,14 +51,14 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={`text-sm font-medium ${closed ? "text-ink-soft line-through decoration-line" : ""}`}>
-                    {title}
+                    {t(title)}
                   </p>
                   <p className="text-[11px] text-ink-soft">
                     {s === "skipped"
-                      ? "Skipped today"
+                      ? t("Skipped today")
                       : s === "later"
-                        ? "Saved for later today"
-                        : `${a.detail} · +${a.points} points`}
+                        ? t("Saved for later today")
+                        : `${t(a.detail)} · ${t("+{n} points", { n: a.points })}`}
                   </p>
 
                   {/* Actions */}
@@ -66,27 +68,27 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
                         onClick={() => done(a)}
                         className="rounded-full bg-forest px-3.5 py-1.5 text-xs font-semibold text-white transition-transform active:scale-95"
                       >
-                        Done
+                        {t("Done")}
                       </button>
                       {s !== "later" && (
                         <button
                           onClick={() => {
                             feedStore.setChoice(a.id, "later");
-                            showToast("Saved for later today");
+                            showToast(t("Saved for later today"));
                           }}
                           className="rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 ring-line"
                         >
-                          Later
+                          {t("Later")}
                         </button>
                       )}
                       <button
                         onClick={() => {
                           feedStore.setChoice(a.id, "skipped");
-                          showToast("Skipped. No problem.");
+                          showToast(t("Skipped. No problem."));
                         }}
                         className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-ink-soft"
                       >
-                        Skip
+                        {t("Skip")}
                       </button>
                     </div>
                   )}
@@ -95,7 +97,7 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
                       onClick={() => feedStore.clearChoice(a.id)}
                       className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-forest"
                     >
-                      <Undo2 size={11} /> Undo
+                      <Undo2 size={11} /> {t("Undo")}
                     </button>
                   )}
                   {!closed && <Why text={a.why} />}

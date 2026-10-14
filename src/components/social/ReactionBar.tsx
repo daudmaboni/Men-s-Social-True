@@ -1,7 +1,8 @@
 "use client";
 
 import { reactionCount, REACTIONS, type ReactionKind } from "@/lib/social/community";
-import { socialStore, useSocial } from "@/lib/social/store";
+import { useCommunity } from "./useCommunity";
+import { useT } from "@/lib/i18n";
 
 export default function ReactionBar({
   targetId,
@@ -12,8 +13,9 @@ export default function ReactionBar({
   base?: Partial<Record<ReactionKind, number>>;
   compact?: boolean;
 }) {
-  const { reactions } = useSocial();
-  const mine = reactions[targetId];
+  const c = useCommunity();
+  const mine = c.myReactions[targetId];
+  const t = useT();
   return (
     <div className="flex flex-wrap gap-1.5">
       {REACTIONS.map((r) => {
@@ -23,18 +25,18 @@ export default function ReactionBar({
           <button
             key={r.kind}
             aria-pressed={on}
-            aria-label={`${r.label}${n ? `, ${n}` : ""}`}
+            aria-label={`${t(r.label)}${n ? `, ${n}` : ""}`}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              socialStore.react(targetId, r.kind);
+              void c.react(targetId, r.kind);
             }}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all active:scale-95 ${
               on ? "bg-mint text-forest-deep ring-1 ring-mint-strong" : "text-ink-soft ring-1 ring-line"
             }`}
           >
             <span aria-hidden="true">{r.emoji}</span>
-            {!compact && <span>{r.label}</span>}
+            {!compact && <span>{t(r.label)}</span>}
             {n > 0 && <span className="tabular-nums">{n}</span>}
           </button>
         );

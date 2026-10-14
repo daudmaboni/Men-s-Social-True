@@ -8,6 +8,9 @@ export type Lang = "en" | "sw";
 const KEY = "ms_lang";
 const listeners = new Set<() => void>();
 
+/** The language right now (for code outside React screens). */
+export const currentLang = (): Lang => read();
+
 function read(): Lang {
   try {
     return localStorage.getItem(KEY) === "sw" ? "sw" : "en";
@@ -20,6 +23,7 @@ export function setLang(lang: Lang) {
   try {
     localStorage.setItem(KEY, lang);
   } catch {}
+  if (typeof document !== "undefined") document.documentElement.lang = lang;
   listeners.forEach((l) => l());
 }
 
