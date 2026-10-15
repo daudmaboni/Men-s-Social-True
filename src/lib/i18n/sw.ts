@@ -16,6 +16,17 @@ export const SW: Record<string, string> = {
   "Saved privately to your account.": "Imehifadhiwa kwa faragha kwenye akaunti yako.",
   "Shop": "Duka",
   "The shop is coming soon": "Duka linakuja hivi karibuni",
+  // Step 31: account page
+  "Back": "Rudi",
+  "Continue with email": "Endelea na barua pepe",
+  "Log in to see your points, badges and progress.": "Ingia uone pointi, beji na maendeleo yako.",
+  "Already have an account?": "Tayari una akaunti?",
+  "Don't have an account?": "Huna akaunti?",
+  "Create one": "Fungua moja",
+  "Other ways to sign up": "Njia nyingine za kujisajili",
+  "Other ways to log in": "Njia nyingine za kuingia",
+  "Kayani staff?": "Wafanyakazi wa Kayani?",
+  "Open the Studio": "Fungua Studio",
   // Step 30: passwords and sign-in safety
   "At least 8 characters, with letters and numbers.": "Angalau herufi 8, zenye herufi na namba.",
   "At least {n} characters, with letters and numbers.": "Angalau herufi {n}, zenye herufi na namba.",

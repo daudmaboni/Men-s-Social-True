@@ -96,7 +96,7 @@ export default function LockedTab({ tab }: { tab: "man" | "me" | "community" }) 
             </button>
           )}
           <Link
-            href={`/account?next=${next}`}
+            href={`/account?mode=signup&next=${next}`}
             className="block w-full rounded-full bg-forest py-3.5 text-center text-sm font-semibold text-white transition-transform active:scale-[0.98]"
           >
             {t("Create free account")}

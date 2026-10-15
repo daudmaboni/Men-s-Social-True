@@ -134,7 +134,7 @@ export default function Welcome() {
               {t.start}
             </button>
             <button
-              onClick={() => enter("/account?next=/social")}
+              onClick={() => enter("/account?mode=signup&next=/social")}
               className="mt-2 w-full rounded-full bg-mint py-3.5 text-sm font-semibold text-forest-deep transition-transform active:scale-[0.98]"
             >
               {t.create}
