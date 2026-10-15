@@ -8,6 +8,7 @@ import { getSupabase, supabaseConfigured } from "../supabase/client";
 import { normalizeTzPhone } from "./merge";
 import { currentLang } from "../me/lang";
 import { checkPassword } from "../security/password";
+import { markOAuthPending } from "./known";
 import { cooldown, formatWait, recordFailure, recordSuccess, waitSeconds } from "../security/loginGuard";
 
 export type AccountState =
@@ -122,6 +123,7 @@ export const account = {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
     const safe = next.startsWith("/") && !next.startsWith("//") ? next : "/me";
+    markOAuthPending(); // so we can greet him ("Welcome back" or "Account ready") when Google sends him back
     const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}${safe}` } });
     return { error: error ? friendly(error.message) : null };
   },

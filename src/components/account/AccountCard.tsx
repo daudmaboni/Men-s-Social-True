@@ -7,6 +7,7 @@ import { CloudCheck, CloudOff, Loader2, LogOut, UserPlus, UserX } from "lucide-r
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
 import { account, accountLabel, type AccountState } from "@/lib/account/useAccount";
+import { forgetAccount } from "@/lib/account/known";
 import { flushSync, stopSync, syncStatus } from "@/lib/account/sync";
 import { useT } from "@/lib/i18n";
 
@@ -71,6 +72,7 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
       return setError(/foreign key|violates|constraint/i.test(r.error) ? t("Couldn't delete your account right now. Please try again later or contact Kayani support.") : t(r.error));
     }
     stopSync({ clearPhone: true });
+    forgetAccount(); // the Welcome page shouldn't say "Welcome back" for a deleted account
     window.location.href = "/";
   }
 

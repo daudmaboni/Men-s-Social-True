@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { account, accountLabel, useAccount } from "@/lib/account/useAccount";
-import { stopSync } from "@/lib/account/sync";
+import { useEffect, useState } from "react";
+import { account, AUTH_METHODS, useAccount } from "@/lib/account/useAccount";
+import { forgetAccount, knownAccount, type KnownAccount } from "@/lib/account/known";
 import { setLang, useLang } from "@/lib/me/lang";
 import { NIPATE_NINI_IDS } from "@/lib/content/nipate-nini";
 import { ChevronRight, HeartPulse, Leaf, Salad, Sprout, Target, type LucideIcon } from "lucide-react";
@@ -54,9 +55,12 @@ const copy = {
     guest: "Enter as guest",
     guestNote: "No sign-up needed · read all guides, videos and quizzes",
     login: "I have an account · Log in",
-    continue: "Continue",
-    signedInAs: "Signed in as",
     notYou: "Not you?",
+    welcomeBack: "Welcome back",
+    welcomeBackNote: "You've signed in on this phone before",
+    logInAgain: "Log in",
+    google: "Continue with Google",
+    newAccount: "Create a new account",
     privacy: "No sign-up needed to look around. Your data stays private.",
     offersTitle: "What do I get?",
     offersNote: "Free guides. Tap one to read — no sign-up needed.",
@@ -73,9 +77,12 @@ const copy = {
     guest: "Ingia kama mgeni",
     guestNote: "Huhitaji kujisajili · soma miongozo, video na maswali yote",
     login: "Nina akaunti · Ingia",
-    continue: "Endelea",
-    signedInAs: "Umeingia kama",
     notYou: "Si wewe?",
+    welcomeBack: "Karibu tena",
+    welcomeBackNote: "Umewahi kuingia kwenye simu hii",
+    logInAgain: "Ingia",
+    google: "Endelea na Google",
+    newAccount: "Fungua akaunti mpya",
     privacy: "Huhitaji kujisajili ili kuangalia. Taarifa zako ni siri.",
     offersTitle: "Nipate Nini?",
     offersNote: "Miongozo ya bure. Gusa mmoja usome — huhitaji kujisajili.",
@@ -88,15 +95,23 @@ export default function Welcome() {
   const lang = useLang();
   const t = copy[lang];
 
-  // This page always stays here (no automatic redirect). If he's already signed in,
-  // the buttons change to "Continue" so he isn't asked to log in again.
+  // A man who is already signed in never needs this page: open the app on Man straight away.
+  // A man who has signed in on this phone before (now signed out) is greeted with "Welcome back".
   const acc = useAccount();
+  const [known, setKnown] = useState<KnownAccount | null>(null);
+  useEffect(() => setKnown(knownAccount()), []);
+  useEffect(() => {
+    if (acc.status === "signedIn") router.replace("/man");
+  }, [acc.status, router]);
 
   /** Every choice confirms 18+ and saves the language, then goes in as a guest or to the account screen. */
-  function enter(to: string) {
+  function enterOnly() {
     try {
       localStorage.setItem("ms_age_ok", "1");
     } catch {}
+  }
+  function enter(to: string) {
+    enterOnly();
     router.push(to);
   }
 
@@ -146,27 +161,60 @@ export default function Welcome() {
       {/* Age check + three ways in */}
       <section className="rise rise-3 mt-4 rounded-3xl bg-surface p-5 ring-1 ring-line lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-8">
         <p className="text-sm text-ink-soft">{t.ageQuestion}</p>
-        {acc.status === "signedIn" ? (
+        {acc.status === "loading" || acc.status === "signedIn" ? (
+          <div className="mt-4 h-[148px] animate-pulse rounded-3xl bg-line/40" aria-label="Loading" />
+        ) : known ? (
           <>
-            <button
-              onClick={() => enter("/social")}
-              className="mt-4 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
-            >
-              {t.continue}
-            </button>
-            <p className="mt-3 text-center text-xs text-ink-soft">
-              {t.signedInAs} {accountLabel(acc.user)} ·{" "}
+            {/* He has an account: logging in comes first */}
+            <div className="mt-4 rounded-2xl bg-mint/60 px-4 py-3">
+              <p className="text-sm font-semibold text-forest-deep">
+                {t.welcomeBack}
+                {known.hint ? `, ${known.hint}` : ""}
+              </p>
+              <p className="text-xs text-forest">
+                {t.welcomeBackNote} ·{" "}
+                <button
+                  onClick={() => {
+                    forgetAccount();
+                    setKnown(null);
+                  }}
+                  className="font-semibold underline"
+                >
+                  {t.notYou}
+                </button>
+              </p>
+            </div>
+            {known.method === "google" && AUTH_METHODS.google ? (
               <button
                 onClick={async () => {
-                  // Another man on this phone: remove the signed-in man's data from it, then sign out
-                  stopSync({ clearPhone: true });
-                  await account.signOut();
+                  enterOnly();
+                  await account.signInGoogle("/man");
                 }}
-                className="font-semibold text-forest"
+                className="mt-3 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
               >
-                {t.notYou}
+                {t.google}
               </button>
-            </p>
+            ) : (
+              <button
+                onClick={() => enter("/account?mode=login&next=/man")}
+                className="mt-3 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
+              >
+                {t.logInAgain}
+              </button>
+            )}
+            <button
+              onClick={() => enter("/social")}
+              className="mt-2 w-full rounded-full bg-mint py-3 text-forest-deep transition-transform active:scale-[0.98]"
+            >
+              <span className="block text-sm font-semibold">{t.guest}</span>
+              <span className="block text-[11px] text-forest">{t.guestNote}</span>
+            </button>
+            <button
+              onClick={() => enter("/account?mode=signup&next=/man")}
+              className="mt-2 w-full py-2.5 text-sm font-semibold text-forest-deep"
+            >
+              {t.newAccount}
+            </button>
           </>
         ) : (
           <>

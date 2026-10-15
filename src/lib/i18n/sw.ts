@@ -675,4 +675,8 @@ export const SW: Record<string, string> = {
   "Private reminders that fit your day": "Vikumbusho vya siri vinavyoendana na siku yako",
   "Ask questions in the Community, anonymously": "Uliza maswali kwenye Jumuiya, bila kujulikana",
   "Use a nickname if you like. Nobody sees your name or your records.": "Tumia jina la utani ukipenda. Hakuna anayeona jina lako wala rekodi zako.",
+  // Step 38: greeting after Google sign-in
+  "Your free account is ready. Welcome!": "Akaunti yako ya bure iko tayari. Karibu!",
+  "Welcome back, {name}!": "Karibu tena, {name}!",
+  "Welcome back!": "Karibu tena!",
 };
