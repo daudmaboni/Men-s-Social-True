@@ -403,3 +403,55 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .tab-fade-through, .tab-slide-right, .tab-slide-left { animation: none; }
 }
+
+/* ===== Sign-in screens: one frosted-glass card over soft brand-colour light ===== */
+.auth-light {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 34% at 12% 14%, rgb(var(--a-strong-rgb) / 0.55), transparent 72%),
+    radial-gradient(38% 30% at 92% 26%, rgb(var(--a-deep-rgb) / 0.35), transparent 72%),
+    radial-gradient(50% 38% at 70% 92%, rgb(var(--a-strong-rgb) / 0.35), transparent 72%),
+    radial-gradient(40% 30% at 8% 88%, rgb(var(--a-mint-rgb) / 0.9), transparent 72%),
+    var(--bg);
+}
+.glass-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.52));
+  -webkit-backdrop-filter: blur(26px) saturate(1.7);
+  backdrop-filter: blur(26px) saturate(1.7);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 24px 60px rgb(var(--a-deep-rgb) / 0.16),
+    0 2px 8px rgb(var(--a-deep-rgb) / 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.glass-chip {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgb(var(--a-deep-rgb) / 0.08);
+}
+[data-theme="dark"] .auth-light {
+  background:
+    radial-gradient(42% 34% at 12% 14%, rgb(var(--a-strong-rgb) / 0.22), transparent 72%),
+    radial-gradient(38% 30% at 92% 26%, color-mix(in srgb, var(--a-forest-dark) 45%, transparent), transparent 72%),
+    radial-gradient(50% 38% at 70% 92%, rgb(var(--a-strong-rgb) / 0.14), transparent 72%),
+    var(--bg);
+}
+[data-theme="dark"] .glass-card {
+  background: linear-gradient(180deg, rgba(32, 48, 42, 0.62), rgba(17, 28, 24, 0.5));
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .glass-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-card { background: rgba(255, 255, 255, 0.95); }
+  [data-theme="dark"] .glass-card { background: rgba(19, 31, 27, 0.97); }
+}

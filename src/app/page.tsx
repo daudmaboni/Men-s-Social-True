@@ -85,9 +85,10 @@ export default function Welcome() {
       </header>
 
       {/* On a computer: the hero on the left, the way in on the right */}
-      <div className="lg:my-auto lg:grid lg:grid-cols-[1.25fr_1fr] lg:items-stretch lg:gap-6 lg:py-10">
+      {/* Phone and computer: the content sits in the middle of the screen (my-auto) */}
+      <div className="my-auto py-6 lg:grid lg:grid-cols-[1.25fr_1fr] lg:items-stretch lg:gap-6 lg:py-10">
       {/* Hero card */}
-      <section className="rise rise-2 mt-8 rounded-3xl bg-forest-deep p-6 text-white lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-12">
+      <section className="rise rise-2 rounded-3xl bg-forest-deep p-6 text-white lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-12">
         <p className="text-sm text-mint-strong">Kayani Men&apos;s Social</p>
         <h1 className="mt-2 text-[28px] font-bold leading-tight lg:text-[44px]">{t.tagline}</h1>
         <ul className="mt-6 space-y-3 lg:mt-8 lg:space-y-4">
@@ -141,7 +142,7 @@ export default function Welcome() {
             </button>
             <button
               onClick={() => enter("/account?mode=login&next=/social")}
-              className="mt-2 w-full py-2.5 text-sm font-semibold text-forest"
+              className="mt-2 w-full rounded-full bg-white py-3.5 text-sm font-semibold text-forest-deep shadow-sm ring-1 ring-black/5 transition-transform active:scale-[0.98]"
             >
               {t.login}
             </button>
@@ -151,7 +152,7 @@ export default function Welcome() {
 
       </div>
 
-      <p className="rise rise-4 mt-auto pt-8 lg:mt-0 lg:pt-0 text-center text-xs text-ink-soft">{t.privacy}</p>
+      <p className="rise rise-4 pt-2 text-center text-xs text-ink-soft">{t.privacy}</p>
     </main>
   );
 }

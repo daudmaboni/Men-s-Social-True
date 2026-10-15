@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Copy, Eye, EyeOff, KeyRound, Loader2, LogOut, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react";
 import Captcha, { captchaOn, type CaptchaHandle } from "@/components/security/Captcha";
+import AuthScreen from "@/components/auth/AuthScreen";
 import type { AdminState } from "@/lib/studio/useAdmin";
 import { staffName } from "@/lib/studio/username";
 import type { AdminRole } from "@/lib/admin/perms";
@@ -30,46 +31,51 @@ export function GateScreen({
   onStartSetup: () => Promise<SetupResult>;
   onVerify: (factorId: string, code: string) => Promise<string | null>;
 }) {
+  // One frosted-glass card in the middle of the screen; X goes back to the men's log-in page
+  const signedIn = state.status === "notAdmin" || state.status === "mfaSetup" || state.status === "mfaCode";
   return (
-    <main className="mx-auto min-h-dvh max-w-6xl px-5 pb-16 pt-6">
-      <div className="rise space-y-6">
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-sm font-bold text-mint">MS</div>
-            <div>
-              <p className="text-sm font-bold leading-tight">Admin Control Center</p>
-              <p className="text-[11px] text-ink-soft">Men&apos;s Social · staff only</p>
-            </div>
-          </div>
-          {(state.status === "notAdmin" || state.status === "mfaSetup" || state.status === "mfaCode") && (
-            <button onClick={onSignOut} className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-ink-soft ring-1 ring-line">
-              <LogOut size={14} /> Sign out
-            </button>
-          )}
-        </header>
-
+    <AuthScreen closeHref="/account" closeLabel="Back to the app log-in" title="Admin Control Center" subtitle="Men's Social · staff only">
+      <div className="space-y-4">
         {state.status === "loading" && (
-          <div className="flex justify-center py-20 text-ink-soft" aria-busy="true" aria-label="Loading">
+          <div className="flex justify-center py-12 text-ink-soft" aria-busy="true" aria-label="Loading">
             <Loader2 className="animate-spin" />
           </div>
         )}
         {state.status === "unconfigured" && (
-          <Notice title="Supabase isn't connected">
+          <Message title="Supabase isn't connected">
             Add <code>.env.local</code> with <code>NEXT_PUBLIC_SUPABASE_URL</code> and <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> next to
             package.json, then stop and restart <code>npx next dev</code>.
-          </Notice>
+          </Message>
         )}
-        {state.status === "error" && <Notice title="Something went wrong">{state.message}</Notice>}
+        {state.status === "error" && <Message title="Something went wrong">{state.message}</Message>}
         {state.status === "signedOut" && <LoginForm onSignIn={onSignIn} />}
         {state.status === "mfaSetup" && <SetupTwoStep email={state.email} onStart={onStartSetup} onVerify={onVerify} />}
         {state.status === "mfaCode" && <CodeForm email={state.email} factorId={state.factorId} onVerify={onVerify} />}
         {state.status === "notAdmin" && (
-          <Notice title="No admin access">
+          <Message title="No admin access">
             {staffName(state.email)} is signed in, but isn&apos;t an admin. Ask an owner to add this account in Settings → Admins.
-          </Notice>
+          </Message>
+        )}
+        {signedIn && (
+          <button onClick={onSignOut} className="mx-auto flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-ink-soft">
+            <LogOut size={14} /> Sign out
+          </button>
         )}
       </div>
-    </main>
+    </AuthScreen>
+  );
+}
+
+/** A message inside the sign-in card. */
+function Message({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-3 rounded-2xl bg-bg/60 p-4">
+      <ShieldAlert size={18} className="mt-0.5 shrink-0 text-forest" />
+      <div>
+        <p className="font-semibold">{title}</p>
+        <div className="mt-1 text-sm text-ink-soft">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -94,8 +100,8 @@ function LoginForm({ onSignIn }: { onSignIn: (login: string, password: string, c
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-sm space-y-4 rounded-3xl bg-surface p-6 ring-1 ring-line">
-      <div>
+    <form onSubmit={submit} className="space-y-4">
+      <div className="text-center">
         <h1 className="text-xl font-bold">Sign in</h1>
         <p className="mt-1 text-sm text-ink-soft">For Kayani staff who run Men&apos;s Social.</p>
       </div>
@@ -111,7 +117,7 @@ function LoginForm({ onSignIn }: { onSignIn: (login: string, password: string, c
           required
           value={login}
           onChange={(e) => setLogin(e.target.value)}
-          className="mt-1 w-full rounded-2xl bg-bg px-4 py-3 text-sm outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
+          className="mt-1 w-full rounded-2xl bg-surface px-4 py-3 text-sm outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
         />
       </label>
       <label className="block">
@@ -123,7 +129,7 @@ function LoginForm({ onSignIn }: { onSignIn: (login: string, password: string, c
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-2xl bg-bg px-4 py-3 pr-11 text-sm outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
+            className="w-full rounded-2xl bg-surface px-4 py-3 pr-11 text-sm outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
           />
           <button
             type="button"
@@ -167,7 +173,7 @@ function SetupTwoStep({ email, onStart, onVerify }: { email: string; onStart: ()
   }, [onStart]);
 
   return (
-    <div className="mx-auto max-w-md space-y-4 rounded-3xl bg-surface p-6 ring-1 ring-line">
+    <div className="space-y-4">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-mint text-forest">
           <ShieldCheck size={20} />
@@ -240,8 +246,8 @@ function SetupTwoStep({ email, onStart, onVerify }: { email: string; onStart: ()
 /** Every sign-in after set-up: the code from the app. */
 function CodeForm({ email, factorId, onVerify }: { email: string; factorId: string; onVerify: (factorId: string, code: string) => Promise<string | null> }) {
   return (
-    <div className="mx-auto max-w-sm space-y-4 rounded-3xl bg-surface p-6 ring-1 ring-line">
-      <div>
+    <div className="space-y-4">
+      <div className="text-center">
         <h1 className="text-xl font-bold">Enter your code</h1>
         <p className="mt-1 text-sm text-ink-soft">
           Open your authenticator app and type the 6-digit code for Men&apos;s Social ({staffName(email)}).
@@ -281,7 +287,7 @@ function CodeInput({ factorId, onVerify, button }: { factorId: string; onVerify:
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          className="mt-1 w-full rounded-2xl bg-bg px-4 py-3 text-center text-xl tracking-[0.5em] outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
+          className="mt-1 w-full rounded-2xl bg-surface px-4 py-3 text-center text-xl tracking-[0.5em] outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
         />
       </label>
       {error && (

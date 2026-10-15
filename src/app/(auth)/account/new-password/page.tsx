@@ -7,6 +7,7 @@ import { useToast } from "@/components/motion/Toast";
 import { account, useAccount } from "@/lib/account/useAccount";
 import { useT } from "@/lib/i18n";
 import PasswordMeter from "@/components/security/PasswordMeter";
+import AuthScreen from "@/components/auth/AuthScreen";
 
 /** He arrives here from the "reset your password" email link. */
 export default function NewPasswordPage() {
@@ -29,12 +30,13 @@ export default function NewPasswordPage() {
   }
 
   return (
+    <AuthScreen closeHref="/me" closeLabel={t("Close")}>
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">{t("Choose a new password")}</h1>
+      <h1 className="text-center text-2xl font-bold">{t("Choose a new password")}</h1>
       {acc.status === "loading" ? (
         <Loader2 className="mx-auto animate-spin text-ink-soft" />
       ) : acc.status !== "signedIn" ? (
-        <p className="rounded-3xl bg-surface p-5 text-sm text-ink-soft ring-1 ring-line">
+        <p className="text-center text-sm text-ink-soft">
           {t('This link has expired. Go to Me → Log in → "Forgot password?" to get a new one.')}
         </p>
       ) : (
@@ -57,5 +59,6 @@ export default function NewPasswordPage() {
         </form>
       )}
     </div>
+    </AuthScreen>
   );
 }

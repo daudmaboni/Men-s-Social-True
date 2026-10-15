@@ -11,7 +11,8 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+/** sidebar: the page has the desktop sidebar on the left, so the toast centres on the space beside it. */
+export function ToastProvider({ children, sidebar = true }: { children: React.ReactNode; sidebar?: boolean }) {
   const [toast, setToast] = useState<ToastState>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -32,7 +33,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         <div
           key={toast.id}
           role="status"
-          className={`fixed bottom-24 left-1/2 z-50 lg:bottom-8 lg:left-[calc(50%+8rem)] whitespace-nowrap rounded-full bg-forest-deep px-5 py-2.5 text-sm font-medium text-white shadow-lg ${
+          className={`fixed bottom-24 left-1/2 z-50 lg:bottom-8 ${sidebar ? "lg:left-[calc(50%+8rem)]" : ""} whitespace-nowrap rounded-full bg-forest-deep px-5 py-2.5 text-sm font-medium text-white shadow-lg ${
             toast.leaving ? "toast-out" : "toast-in"
           }`}
         >

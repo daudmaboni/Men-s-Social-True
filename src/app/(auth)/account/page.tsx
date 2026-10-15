@@ -8,6 +8,7 @@ import { useToast } from "@/components/motion/Toast";
 import { account, AUTH_METHODS, useAccount } from "@/lib/account/useAccount";
 import { useT } from "@/lib/i18n";
 import PasswordMeter from "@/components/security/PasswordMeter";
+import AuthScreen from "@/components/auth/AuthScreen";
 import Captcha, { captchaOn, type CaptchaHandle } from "@/components/security/Captcha";
 
 type Mode = "signup" | "login" | "reset";
@@ -43,7 +44,7 @@ function AccountInner() {
   if (acc.status === "signedIn") {
     return (
       <Shell>
-        <div className="rounded-3xl bg-surface p-6 text-center ring-1 ring-line">
+        <div className="py-2 text-center">
           <p className="font-semibold">{t("You're signed in")}</p>
           <Link href={afterSignIn} className="mt-4 inline-block rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
             {t("Continue")}
@@ -55,7 +56,7 @@ function AccountInner() {
   if (acc.status === "unavailable") {
     return (
       <Shell>
-        <p className="rounded-3xl bg-surface p-6 text-sm text-ink-soft ring-1 ring-line">{t("Accounts aren't switched on yet. You can keep using the app as a guest.")}</p>
+        <p className="py-2 text-center text-sm text-ink-soft">{t("Accounts aren't switched on yet. You can keep using the app as a guest.")}</p>
       </Shell>
     );
   }
@@ -68,8 +69,8 @@ function AccountInner() {
 
   return (
     <Shell back={view === "choose" ? null : () => { setView("choose"); if (mode === "reset") setMode("login"); }} backLabel={signup ? "Other ways to sign up" : "Other ways to log in"}>
-      <div>
-        <h1 className="text-2xl font-bold lg:text-3xl">{t(mode === "reset" ? "Reset your password" : signup ? "Create your free account" : "Welcome back")}</h1>
+      <div className="text-center">
+        <h1 className="text-2xl font-bold">{t(mode === "reset" ? "Reset your password" : signup ? "Create your free account" : "Welcome back")}</h1>
         <p className="mt-1 text-sm text-ink-soft">
           {t(
             mode === "reset"
@@ -310,22 +311,20 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** Narrow, centred column on every screen size (on a computer the form doesn't stretch across the page). */
+/** A frosted-glass card in the middle of the screen (phone and computer). X goes back to the welcome page. */
 function Shell({ children, back, backLabel }: { children: React.ReactNode; back?: (() => void) | null; backLabel?: string }) {
   const t = useT();
   return (
-    <div className="stagger mx-auto max-w-md space-y-5 lg:pt-6">
-      {back ? (
-        <button onClick={back} className="flex items-center gap-1 text-sm text-ink-soft">
-          <ArrowLeft size={16} /> {t(backLabel ?? "Back")}
-        </button>
-      ) : (
-        <Link href="/me" className="flex items-center gap-1 text-sm text-ink-soft">
-          <ArrowLeft size={16} /> {t("Me")}
-        </Link>
-      )}
-      {children}
-    </div>
+    <AuthScreen closeHref="/" closeLabel={t("Close")}>
+      <div className="stagger space-y-5">
+        {back && (
+          <button onClick={back} className="-mb-1 flex items-center gap-1 text-sm text-ink-soft">
+            <ArrowLeft size={16} /> {t(backLabel ?? "Back")}
+          </button>
+        )}
+        {children}
+      </div>
+    </AuthScreen>
   );
 }
 
