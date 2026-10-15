@@ -63,7 +63,7 @@ const copy = {
     google: "Continue with Google",
     newAccount: "Create a new account",
     privacy: "No sign-up needed to look around. Your data stays private.",
-    offersTitle: "You learn",
+    offersTitle: "What You Will Learn",
     offersNote: "Free guides. Tap one to read — no sign-up needed.",
     swipeHint: "Swipe to see what you'll learn",
     read: "Read the guide",

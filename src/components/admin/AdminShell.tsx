@@ -13,7 +13,6 @@ import {
   ChevronsRight,
   FileText,
   LayoutDashboard,
-  LogOut,
   Menu,
   MessagesSquare,
   Settings,
@@ -26,7 +25,8 @@ import { GateScreen, type StudioAdmin } from "@/components/studio/StudioGate";
 import { useAdmin } from "@/lib/studio/useAdmin";
 import { staffName } from "@/lib/studio/username";
 import { can, ROLES, type Perm } from "@/lib/admin/perms";
-import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
+import AccountMenu, { AccentChoice, ThemeChoice } from "@/components/admin/AccountMenu";
+import SwipeDrawer from "@/components/admin/SwipeDrawer";
 
 type Ctx = { admin: StudioAdmin; can: (p: Perm) => boolean; refresh: () => void };
 const StudioContext = createContext<Ctx | null>(null);
@@ -135,8 +135,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </div>
           <nav aria-label="Admin navigation" className="flex-1 overflow-y-auto px-3">{navList(collapsed)}</nav>
           <div className="space-y-3 border-t border-line p-3">
-            {!collapsed && <Appearance />}
-            <AccountRow name={name} role={roleLabel} compact={collapsed} onSignOut={signOut} />
+            <AccountMenu name={name} role={roleLabel} email={admin.email} compact={collapsed} onSignOut={signOut} />
             <button
               onClick={toggleCollapsed}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -157,25 +156,23 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-xs font-bold text-mint">MS</div>
         </header>
 
-        {/* Phone / tablet drawer */}
-        {drawer && (
-          <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-            <button className="absolute inset-0 bg-black/40" aria-label="Close menu" onClick={() => setDrawer(false)} />
-            <div className="page-enter absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-surface shadow-xl">
+        {/* Phone / tablet drawer: close by dragging it left, tapping X, or tapping beside it */}
+        <SwipeDrawer open={drawer} onClose={() => setDrawer(false)} label="Menu">
+          {(close) => (
+            <>
               <div className="flex items-center justify-between px-4 py-4">
                 <p className="text-sm font-bold">Control Center</p>
-                <button onClick={() => setDrawer(false)} aria-label="Close menu" className="flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-line">
+                <button onClick={close} aria-label="Close menu" className="flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-line">
                   <X size={16} />
                 </button>
               </div>
-              <nav aria-label="Admin menu" className="flex-1 overflow-y-auto px-3">{navList(false)}</nav>
+              <nav aria-label="Admin menu" className="flex-1 touch-pan-y overflow-y-auto px-3">{navList(false)}</nav>
               <div className="space-y-3 border-t border-line p-3">
-                <Appearance />
-                <AccountRow name={name} role={roleLabel} compact={false} onSignOut={signOut} />
+                <AccountMenu name={name} role={roleLabel} email={admin.email} onSignOut={signOut} onNavigate={close} />
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </SwipeDrawer>
 
         <main className="min-w-0 flex-1 px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pt-8">
           <div className="mx-auto max-w-6xl">
@@ -197,62 +194,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   );
 }
 
-function AccountRow({ name, role, compact, onSignOut }: { name: string; role: string; compact: boolean; onSignOut: () => void }) {
-  return (
-    <div className={`flex items-center gap-2 ${compact ? "flex-col" : ""}`}>
-      <Link href="/studio/settings" className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-bg ${compact ? "justify-center" : ""}`} title={`${name} · ${role}`}>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-xs font-bold text-forest-deep">
-          {name.slice(0, 2).toUpperCase()}
-        </span>
-        {!compact && (
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold">{name}</span>
-            <span className="block truncate text-[11px] text-ink-soft">{role}</span>
-          </span>
-        )}
-      </Link>
-      <button onClick={onSignOut} aria-label="Sign out" title="Sign out" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-bg">
-        <LogOut size={15} />
-      </button>
-    </div>
-  );
-}
-
-/** Same appearance settings as the men's app (shared on this device): light / dark / auto and colour. */
+/** Same appearance settings as the men's app (shared on this device): light / dark / auto and colour. Used on Settings. */
 export function Appearance() {
-  const theme = useThemePref();
-  const accent = useAccent();
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-3 rounded-full bg-bg p-0.5 text-[11px] font-semibold ring-1 ring-line" role="radiogroup" aria-label="Appearance">
-        {(["light", "dark", "auto"] as ThemePref[]).map((m) => (
-          <button
-            key={m}
-            role="radio"
-            aria-checked={theme === m}
-            onClick={(e) => setThemePref(m, { x: e.clientX, y: e.clientY })}
-            className={`rounded-full py-1.5 capitalize ${theme === m ? "bg-forest text-white" : "text-ink-soft"}`}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-      <div className="flex items-center justify-between px-1" role="radiogroup" aria-label="Colour">
-        <span className="text-[11px] font-semibold text-ink-soft">Colour</span>
-        <span className="flex gap-1.5">
-          {ACCENTS.map((a) => (
-            <button
-              key={a.id}
-              role="radio"
-              aria-checked={accent === a.id}
-              aria-label={a.label}
-              onClick={(e) => setAccent(a.id, { x: e.clientX, y: e.clientY })}
-              className={`h-6 w-6 rounded-full ring-offset-2 ring-offset-surface ${accent === a.id ? "ring-2 ring-ink" : ""}`}
-              style={{ background: a.swatch }}
-            />
-          ))}
-        </span>
-      </div>
+    <div className="space-y-3">
+      <ThemeChoice />
+      <AccentChoice />
     </div>
   );
 }

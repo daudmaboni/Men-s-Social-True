@@ -557,3 +557,19 @@ button:disabled { cursor: not-allowed; }
 /* Covers the screen while signing out, so no other page flashes before the Welcome page */
 .leaving-cover { position: fixed; inset: 0; z-index: 2147483647; background: var(--bg); }
 [data-theme="dark"] .leaving-cover { background: var(--a-bg-dark); }
+
+/* Studio account menu: pops up from the account row */
+@keyframes menu-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.menu-pop { animation: menu-pop 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: bottom left; }
+@media (prefers-reduced-motion: reduce) { .menu-pop { animation: none; } }
+
+/* Studio phone menu: slides in from the left (dragging / X / tapping beside it slides it back out) */
+@keyframes drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+.drawer-in { animation: drawer-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .drawer-in { animation: none; } }
