@@ -108,7 +108,7 @@ export default function AnalyticsPage() {
             </NotConnected>
           )}
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <Panel title="Content views per day">
               <DailyColumns data={d.views_series} label="Views" unit="views" />
             </Panel>
@@ -162,12 +162,12 @@ export default function AnalyticsPage() {
             )}
           </Panel>
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <Panel title="Views by topic">{content.byTopic.length ? <RankBars rows={content.byTopic.sort((a, b) => b.n - a.n)} unit="views" /> : <p className="text-sm text-ink-soft">No views yet.</p>}</Panel>
             <Panel title="Views by format" sub="With how many were finished">{content.byKind.length ? <RankBars rows={content.byKind.sort((a, b) => b.n - a.n)} unit="views" /> : <p className="text-sm text-ink-soft">No views yet.</p>}</Panel>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <Panel
               title="What men search for"
               sub={`Last ${n} days`}
@@ -198,7 +198,7 @@ export default function AnalyticsPage() {
             </Panel>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <Panel title="Notifications" sub="Last 10 sent">
               {!camps.data ? (
                 <p className="text-sm text-ink-soft">{camps.error ?? "Loading…"}</p>

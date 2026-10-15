@@ -6,6 +6,7 @@ import { account, AUTH_METHODS, useAccount } from "@/lib/account/useAccount";
 import { forgetAccount, knownAccount, type KnownAccount } from "@/lib/account/known";
 import { setLang, useLang } from "@/lib/me/lang";
 import { NIPATE_NINI_IDS } from "@/lib/content/nipate-nini";
+import SwipeRow from "@/components/motion/SwipeRow";
 import { ChevronRight, HeartPulse, Leaf, Salad, Sprout, Target, type LucideIcon } from "lucide-react";
 
 /** "Nipate Nini?" — what he gets from the app. Each card opens its guide. */
@@ -62,8 +63,10 @@ const copy = {
     google: "Continue with Google",
     newAccount: "Create a new account",
     privacy: "No sign-up needed to look around. Your data stays private.",
-    offersTitle: "What do I get?",
+    offersTitle: "You learn",
     offersNote: "Free guides. Tap one to read — no sign-up needed.",
+    swipeHint: "Swipe to see what you'll learn",
+    read: "Read the guide",
   },
   sw: {
     tagline: "Mwenzako wa siri kwa afya ya mwanaume",
@@ -84,8 +87,10 @@ const copy = {
     google: "Endelea na Google",
     newAccount: "Fungua akaunti mpya",
     privacy: "Huhitaji kujisajili ili kuangalia. Taarifa zako ni siri.",
-    offersTitle: "Nipate Nini?",
+    offersTitle: "Utajifunza",
     offersNote: "Miongozo ya bure. Gusa mmoja usome — huhitaji kujisajili.",
+    swipeHint: "Telezesha kuona utakachojifunza",
+    read: "Soma mwongozo",
   },
 } as const;
 
@@ -95,13 +100,13 @@ export default function Welcome() {
   const lang = useLang();
   const t = copy[lang];
 
-  // A man who is already signed in never needs this page: open the app on Man straight away.
+  // A man who is already signed in never needs this page: open the app on Social straight away.
   // A man who has signed in on this phone before (now signed out) is greeted with "Welcome back".
   const acc = useAccount();
   const [known, setKnown] = useState<KnownAccount | null>(null);
   useEffect(() => setKnown(knownAccount()), []);
   useEffect(() => {
-    if (acc.status === "signedIn") router.replace("/man");
+    if (acc.status === "signedIn") router.replace("/social");
   }, [acc.status, router]);
 
   /** Every choice confirms 18+ and saves the language, then goes in as a guest or to the account screen. */
@@ -188,7 +193,7 @@ export default function Welcome() {
               <button
                 onClick={async () => {
                   enterOnly();
-                  await account.signInGoogle("/man");
+                  await account.signInGoogle("/social");
                 }}
                 className="mt-3 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
               >
@@ -196,7 +201,7 @@ export default function Welcome() {
               </button>
             ) : (
               <button
-                onClick={() => enter("/account?mode=login&next=/man")}
+                onClick={() => enter("/account?mode=login&next=/social")}
                 className="mt-3 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
               >
                 {t.logInAgain}
@@ -210,7 +215,7 @@ export default function Welcome() {
               <span className="block text-[11px] text-forest">{t.guestNote}</span>
             </button>
             <button
-              onClick={() => enter("/account?mode=signup&next=/man")}
+              onClick={() => enter("/account?mode=signup&next=/social")}
               className="mt-2 w-full py-2.5 text-sm font-semibold text-forest-deep"
             >
               {t.newAccount}
@@ -220,7 +225,7 @@ export default function Welcome() {
           <>
             {/* Guests can read everything on Discover; Man, Me and Community ask for an account */}
             <button
-              onClick={() => enter("/account?mode=signup&next=/man")}
+              onClick={() => enter("/account?mode=signup&next=/social")}
               className="mt-4 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
             >
               {t.create}
@@ -233,7 +238,7 @@ export default function Welcome() {
               <span className="block text-[11px] text-forest">{t.guestNote}</span>
             </button>
             <button
-              onClick={() => enter("/account?mode=login&next=/man")}
+              onClick={() => enter("/account?mode=login&next=/social")}
               className="mt-2 w-full py-2.5 text-sm font-semibold text-forest-deep"
             >
               {t.login}
@@ -250,28 +255,30 @@ export default function Welcome() {
           {t.offersTitle}
         </h2>
         <p className="mt-1 text-sm text-ink-soft">{t.offersNote}</p>
-        <ul className="mt-3 grid gap-2 lg:mt-4 lg:grid-cols-5 lg:gap-3">
-          {OFFERS.map(({ id, Icon, ...o }) => {
-            const [title, line] = o[lang];
-            return (
-              <li key={id}>
+        {/* One card at a time: he swipes to see the next thing he'll learn */}
+        <div className="mt-3 lg:mt-4">
+          <SwipeRow id="welcome-learn" hint={t.swipeHint} label={t.offersTitle} slideClass="w-[calc(100%-0.5rem)] sm:w-[60%] lg:w-[calc((100%-2.25rem)/4)]">
+            {OFFERS.map(({ id, Icon, ...o }) => {
+              const [title, line] = o[lang];
+              return (
                 <button
+                  key={id}
                   onClick={() => enter(`/social/c/${id}`)}
-                  className="flex w-full items-center gap-3 rounded-2xl bg-surface p-3.5 text-left ring-1 ring-line transition-transform active:scale-[0.98] lg:h-full lg:flex-col lg:items-start lg:p-5"
+                  className="flex h-full min-h-[190px] w-full flex-col rounded-3xl bg-surface p-5 text-left ring-1 ring-line transition-transform active:scale-[0.98]"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-mint text-forest-deep">
-                    <Icon size={22} aria-hidden />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-mint text-forest-deep">
+                    <Icon size={24} aria-hidden />
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">{title}</span>
-                    <span className="mt-0.5 block text-xs text-ink-soft">{line}</span>
+                  <span className="mt-4 block text-base font-bold leading-snug">{title}</span>
+                  <span className="mt-1 block flex-1 text-sm text-ink-soft">{line}</span>
+                  <span className="mt-4 flex items-center gap-1 text-sm font-semibold text-forest">
+                    {t.read} <ChevronRight size={16} aria-hidden />
                   </span>
-                  <ChevronRight size={18} className="shrink-0 text-ink-soft lg:hidden" aria-hidden />
                 </button>
-              </li>
-            );
-          })}
-        </ul>
+              );
+            })}
+          </SwipeRow>
+        </div>
       </section>
 
       <p className="rise rise-4 pt-2 text-center text-xs text-ink-soft">{t.privacy}</p>

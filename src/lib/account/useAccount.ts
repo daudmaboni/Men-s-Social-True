@@ -75,7 +75,7 @@ export const account = {
     if (!sb) return { error: "Accounts aren't available yet." };
     const bad = weak(password, email);
     if (bad) return bad;
-    const { data, error } = await sb.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${location.origin}/me`, captchaToken } });
+    const { data, error } = await sb.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${location.origin}/social`, captchaToken } });
     if (error) return { error: friendly(error.message) };
     // Supabase hides "already registered" by returning a user with no identities
     if (data.user && data.user.identities?.length === 0) return { error: friendly("already registered") };
@@ -119,10 +119,10 @@ export const account = {
   },
 
   /** Google sends him back to `next` (the tab or page he started from). */
-  async signInGoogle(next = "/me"): Promise<Result> {
+  async signInGoogle(next = "/social"): Promise<Result> {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
-    const safe = next.startsWith("/") && !next.startsWith("//") ? next : "/me";
+    const safe = next.startsWith("/") && !next.startsWith("//") ? next : "/social";
     markOAuthPending(); // so we can greet him ("Welcome back" or "Account ready") when Google sends him back
     const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}${safe}` } });
     return { error: error ? friendly(error.message) : null };

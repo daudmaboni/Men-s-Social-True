@@ -154,7 +154,7 @@ export default function HomepagePage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* Sections */}
         <ol className="space-y-3" aria-label="Discover sections, in order">
           {work.sections.map((s, i) => {
@@ -319,7 +319,7 @@ function SectionEditor({ section: s, library, onChange }: { section: SectionConf
       <p className="text-xs text-ink-soft">{info.what}</p>
 
       {s.id !== "featured" && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="text-xs font-semibold text-ink-soft">
             Title (English)
             <input value={s.title?.en ?? ""} onChange={(e) => words("title", "en", e.target.value)} placeholder={info.name} maxLength={60} className={`${input} mt-1 font-normal text-ink`} />
@@ -330,7 +330,7 @@ function SectionEditor({ section: s, library, onChange }: { section: SectionConf
           </label>
         </div>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="text-xs font-semibold text-ink-soft">
           {s.id === "featured" ? "Line under the card (English)" : "Description (English)"}
           <input value={s.subtitle?.en ?? ""} onChange={(e) => words("subtitle", "en", e.target.value)} placeholder="Automatic" maxLength={120} className={`${input} mt-1 font-normal text-ink`} />

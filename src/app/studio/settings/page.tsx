@@ -3,6 +3,7 @@
 // Admin → Settings: profile, appearance, admins and roles, feature switches, system health,
 // security (sessions) and the audit log. Owner-only actions are refused by the database for other roles.
 
+import { leaveTo } from "@/lib/ui/leave";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, CircleAlert, CircleDashed, Loader2, Plus, Search, Trash2 } from "lucide-react";
@@ -78,7 +79,7 @@ function Profile() {
   const role = ROLES.find((r) => r.id === studio.admin.role);
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <Panel title="Your profile">
         <dl className="mb-4 grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -182,7 +183,7 @@ function Admins() {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
       <Panel title="Admins" sub={owner ? "Add, change or remove admins. There's always at least one owner." : "Only owners can change admins."}>
         {error && (
           <div className="mb-3">
@@ -479,11 +480,10 @@ function Audit() {
 }
 
 function Security() {
-  const showToast = useToast();
   const session = useLoad(async () => (await getSupabase()?.auth.getSession())?.data.session ?? null, []);
   const [confirm, setConfirm] = useState(false);
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <Panel title="Your session">
         {session.data ? (
           <dl className="space-y-2 text-sm">
@@ -520,9 +520,9 @@ function Security() {
         danger
         onClose={() => setConfirm(false)}
         onConfirm={async () => {
-          await getSupabase()?.auth.signOut({ scope: "global" });
-          showToast("Signed out on all devices");
-          setConfirm(false);
+          await leaveTo("/", async () => {
+            await getSupabase()?.auth.signOut({ scope: "global" });
+          });
         }}
       >
         You&apos;ll need to sign in again here and on any other device.

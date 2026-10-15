@@ -104,7 +104,7 @@ export default function NotificationsPage() {
     <div className="space-y-5">
       <PageHeader title="Notifications" sub="Messages to men's in-app inbox (the bell). Each man can switch types off on his Me page." />
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Panel title={form.id ? "Edit draft" : "New message"} actions={form.id ? <button className={btn.small} onClick={() => setForm(blank)}>New instead</button> : undefined}>
           <div className="space-y-3">
             <label className="block text-xs font-semibold text-ink-soft">
@@ -127,7 +127,7 @@ export default function NotificationsPage() {
               <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} maxLength={300} className={`${input} mt-1 min-h-24 font-normal text-ink`} placeholder="Short and friendly. No private health words — it may be seen on his screen." />
               <span className="mt-1 block text-right font-normal">{form.body.length}/300</span>
             </label>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="block text-xs font-semibold text-ink-soft">
                 Opens
                 <select value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} className={`${input} mt-1 font-normal text-ink`}>

@@ -133,7 +133,7 @@ function Assistant({ ready, items, canEdit }: { ready: boolean; items: ContentIt
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <Panel title="Ask the assistant">
         <div className="space-y-3">
           <label className="block text-xs font-semibold text-ink-soft">
@@ -149,7 +149,7 @@ function Assistant({ ready, items, canEdit }: { ready: boolean; items: ContentIt
           </label>
           {action === "draft" ? (
             <>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block text-xs font-semibold text-ink-soft">
                   Topic
                   <select value={topic} onChange={(e) => setTopic(e.target.value as TopicId)} className={`${input} mt-1 font-normal text-ink`}>
@@ -320,7 +320,7 @@ function Checks({ items, error }: { items: ContentItem[] | null; error: string |
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Topic gaps" sub="Live items per topic and format. Thin topics are where new content helps most.">
           <table className="w-full text-sm">
             <tbody className="divide-y divide-line">
@@ -424,7 +424,7 @@ function Sources({ canManage }: { canManage: boolean }) {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <Panel title="Approved knowledge sources" sub="The AI is told to rely on these. Add trusted references (e.g. WHO, NHS, Tanzania Ministry of Health pages).">
         {canManage && (
           <div className="mb-3 space-y-2">

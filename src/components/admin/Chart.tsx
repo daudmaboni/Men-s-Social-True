@@ -24,7 +24,7 @@ export default function DailyColumns({ data, label, unit, height = 160 }: { data
   const total = data.reduce((s, d) => s + d.n, 0);
   // Draw at the real width so labels stay 10px on phones instead of shrinking with the picture
   const box = useRef<HTMLDivElement>(null);
-  const [W, setW] = useState(640);
+  const [W, setW] = useState(320);
   useEffect(() => {
     const el = box.current;
     if (!el || typeof ResizeObserver === "undefined") return;
@@ -69,8 +69,9 @@ export default function DailyColumns({ data, label, unit, height = 160 }: { data
           </table>
         </div>
       ) : (
-        <div className="relative" ref={box}>
-          <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full" role="img" aria-label={`${label} per day, total ${total}`}>
+        // The chart follows the box's width (never the other way round), so it can't push the page wider than the phone
+        <div className="relative w-full min-w-0 overflow-hidden" ref={box}>
+          <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} className="block" role="img" aria-label={`${label} per day, total ${total}`}>
             {ticks.map((t) => {
               const y = padT + plotH - (t / max) * plotH;
               return (

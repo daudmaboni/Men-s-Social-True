@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase, supabaseConfigured } from "../supabase/client";
+import { leaveTo } from "../ui/leave";
 import { toLoginEmail } from "./username";
 import { isRole, type AdminRole } from "../admin/perms";
 import { formatWait, recordFailure, recordSuccess, waitSeconds } from "../security/loginGuard";
@@ -92,8 +93,11 @@ export function useAdmin() {
     return error.message;
   }, []);
 
+  // Back to the Welcome page, with the screen covered so the Studio log-in doesn't flash first
   const signOut = useCallback(async () => {
-    await getSupabase()?.auth.signOut();
+    await leaveTo("/", async () => {
+      await getSupabase()?.auth.signOut();
+    });
   }, []);
 
   // ---- Second step (authenticator app) ----

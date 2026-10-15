@@ -58,7 +58,7 @@ export default function InboxButton() {
         {inbox.items.length === 0 ? (
           <p className="text-sm text-ink-soft">{t("No notifications yet")}</p>
         ) : (
-          <ul className="-mx-1 max-h-[60dvh] space-y-2 overflow-y-auto px-1">
+          <ul className="-m-1 max-h-[60dvh] space-y-2 overflow-y-auto overscroll-contain p-1">
             {inbox.items.map((i) => (
               <li key={i.id}>
                 <button onClick={() => tap(i)} className={`w-full rounded-2xl p-3 text-left ring-1 ${i.opened ? "ring-line" : "bg-mint/50 ring-mint-strong/40"} ${i.kind === "warning" ? "ring-amber-300" : ""}`}>

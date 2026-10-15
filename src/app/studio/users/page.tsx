@@ -162,7 +162,7 @@ export default function UsersPage() {
       )}
 
       {/* Audience: totals only, groups under 5 hidden */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel title="Topics men follow" sub={`Counts only. Topics followed by fewer than ${adoption.data?.min_group ?? 5} men are hidden to protect privacy.`}>
           {adoption.error ? (
             <p className="text-sm text-ink-soft">{adoption.error}</p>

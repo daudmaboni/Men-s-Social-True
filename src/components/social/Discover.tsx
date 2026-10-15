@@ -5,10 +5,12 @@
 // (Admin → Homepage). Personalization stays: picks first, then what suits each man.
 // 1. Featured insight · 2. For you · 3. Quick learning · 4. A question men often ask · 5. Explore all topics
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, MessageCircle, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronRight, MessageCircle, SlidersHorizontal } from "lucide-react";
 import FeaturedCard from "./FeaturedCard";
+import SwipeRow from "@/components/motion/SwipeRow";
 import { ContentCard, ContentRow, contentHref } from "./ContentCards";
 import InterestsSheet from "./InterestsSheet";
 import { TOPICS } from "@/lib/content/library";
@@ -43,6 +45,42 @@ export default function Discover() {
 /** The Discover page itself. Also used by Admin → Homepage to preview a layout before publishing. */
 export function DiscoverView({ me, items, config, preview = false }: { me: Personal; items: ContentItem[]; config: HomepageConfig; preview?: boolean }) {
   const [pickTopics, setPickTopics] = useState(false);
+  const [topicsOpen, setTopicsOpen] = useState(false);
+  const topicsRef = useRef<HTMLElement>(null);
+
+  // The open topics list folds itself away once he has scrolled on and most of it is off the screen
+  // (and its heading is out of view). The page doesn't jump: if the list was above, the scroll is corrected.
+  useEffect(() => {
+    if (!topicsOpen || preview) return;
+    const el = topicsRef.current;
+    if (!el) return;
+    const scroller = scrollParent(el);
+    const target: EventTarget = scroller === document.scrollingElement ? window : scroller;
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      const r = el.getBoundingClientRect();
+      const vp = scroller === document.scrollingElement ? { top: 0, bottom: window.innerHeight } : scroller.getBoundingClientRect();
+      const head = (el.firstElementChild as HTMLElement | null)?.getBoundingClientRect();
+      const headSeen = head ? head.bottom > vp.top && head.top < vp.bottom : true;
+      const seen = Math.max(0, Math.min(r.bottom, vp.bottom) - Math.max(r.top, vp.top));
+      if (headSeen || seen / r.height >= 0.25) return;
+      const before = el.offsetHeight;
+      const above = r.top < vp.top;
+      el.querySelector<HTMLElement>(".expand")?.setAttribute("data-instant", "true");
+      flushSync(() => setTopicsOpen(false));
+      if (above) scroller.scrollTop -= before - el.offsetHeight;
+      requestAnimationFrame(() => el.querySelector<HTMLElement>(".expand")?.removeAttribute("data-instant"));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(check);
+    };
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      target.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [topicsOpen, preview]);
   const t = useT();
   const lang = t.lang;
   const { featured, forYou, videos, question, tiles } = resolveDiscover(config, me, items);
@@ -77,9 +115,20 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
             : me.interests.includes(featured.topic)
               ? t("Picked for you because you follow {topic}.", { topic: topicShort(featured.topic, t) })
               : t("Picked by our editors as today's most useful read.");
+        // The featured piece first, then the next most useful guides and articles he hasn't got below.
+        // He swipes through them one at a time.
+        const shown = new Set([featured.id, ...forYou.map((f) => f.item.id), question?.id]);
+        const more = items
+          .filter((c) => !shown.has(c.id) && (c.kind === "guide" || c.kind === "article") && !me.history[c.id])
+          .sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id))
+          .slice(0, 4);
         return (
           <div key={s.id}>
-            <FeaturedCard item={featured} reason={reason} />
+            <SwipeRow id="discover-featured" hint={t("Swipe to see more articles")} label={t("Featured")} slideClass="w-[calc(100%-0.5rem)] lg:w-[calc(100%-2.5rem)]">
+              {[featured, ...more].map((c, i) => (
+                <FeaturedCard key={c.id} item={c} reason={i === 0 ? reason : t("Also worth reading today.")} />
+              ))}
+            </SwipeRow>
           </div>
         );
       }
@@ -164,26 +213,50 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
       case "topics":
         if (!tiles.length) return null;
         return (
-          <section key={s.id} aria-labelledby="sec-topics" className="space-y-3">
-            <div>
-              <h2 id="sec-topics" className="text-base font-bold">
-                {title(s, "Explore all topics")}
-              </h2>
-              <p className="text-xs text-ink-soft">{sub(s, t("Every guide, answer, video and tool"))}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              {tiles.map((tile) => (
-                <Link
-                  key={tile.id}
-                  href={`/social/topic/${tile.id}`}
-                  className={`flex min-h-[72px] flex-col justify-between rounded-2xl bg-surface p-3.5 ring-1 ring-line transition-transform active:scale-[0.98] ${
-                    me.interests.includes(tile.id as never) ? "ring-forest" : ""
-                  }`}
-                >
-                  <span className="text-sm font-semibold leading-snug">{t(tile.title)}</span>
-                  <span className="mt-1 text-[11px] text-ink-soft">{t(tile.count === 1 ? "{n} item" : "{n} items", { n: tile.count })}</span>
-                </Link>
-              ))}
+          <section key={s.id} ref={topicsRef} aria-labelledby="sec-topics" className="rounded-3xl bg-surface ring-1 ring-line">
+            {/* Closed by default so the page stays short; tap to open the list */}
+            <button
+              onClick={() => setTopicsOpen((o) => !o)}
+              aria-expanded={topicsOpen}
+              aria-controls="topics-list"
+              className="flex w-full items-center justify-between gap-3 p-4 text-left"
+            >
+              <span>
+                <span id="sec-topics" className="block text-base font-bold">
+                  {title(s, "Explore all topics")}
+                </span>
+                <span className="block text-xs text-ink-soft">
+                  {sub(s, t("Every guide, answer, video and tool"))} · {t("{n} topics", { n: tiles.length })}
+                </span>
+              </span>
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mint text-forest transition-transform duration-300 ${topicsOpen ? "rotate-180" : ""}`}>
+                <ChevronDown size={18} aria-hidden />
+              </span>
+            </button>
+            <div id="topics-list" className="expand" data-open={topicsOpen}>
+              <div>
+                <ul className="space-y-1 px-2 pb-2">
+                  {tiles.map((tile, i) => (
+                    // Each row unfolds like a folded paper opening, one after another
+                    <li key={tile.id} className="fold-row" style={{ "--i": i } as React.CSSProperties}>
+                      <Link
+                        href={`/social/topic/${tile.id}`}
+                        tabIndex={topicsOpen ? 0 : -1}
+                        className="flex items-center justify-between gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-mint/50 active:bg-mint/70"
+                      >
+                        <span className="flex items-center gap-2 text-sm font-semibold">
+                          {me.interests.includes(tile.id as never) && <span className="h-2 w-2 rounded-full bg-forest" aria-hidden />}
+                          {t(tile.title)}
+                        </span>
+                        <span className="flex items-center gap-1 text-[11px] text-ink-soft">
+                          {t(tile.count === 1 ? "{n} item" : "{n} items", { n: tile.count })}
+                          <ChevronRight size={14} aria-hidden />
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </section>
         );
@@ -201,4 +274,13 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
       {!preview && <InterestsSheet open={pickTopics} onClose={() => setPickTopics(false)} current={me.interests} />}
     </div>
   );
+}
+
+/** The element that scrolls this part of the page (a tab panel, or the page itself). */
+function scrollParent(el: HTMLElement): HTMLElement {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const y = getComputedStyle(p).overflowY;
+    if ((y === "auto" || y === "scroll") && p.scrollHeight > p.clientHeight) return p;
+  }
+  return (document.scrollingElement as HTMLElement) ?? document.documentElement;
 }

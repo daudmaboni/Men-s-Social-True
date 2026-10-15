@@ -101,7 +101,7 @@ export default function OverviewPage() {
             <Stat label="Live Studio content" value={d.content.published} hint={`${d.content.drafts} ${d.content.drafts === 1 ? "draft" : "drafts"} · ${d.content.review} in review · plus ${LIBRARY.length} built-in`} />
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <div className="space-y-5">
               <Panel title="New sign-ups" sub="Accounts created per day">
                 <DailyColumns data={d.signups_series} label="Sign-ups" unit="men" />
@@ -170,11 +170,11 @@ export default function OverviewPage() {
               <Panel title="Notifications" sub={`In-app messages, last ${d.days} days`}>
                 <dl className="grid grid-cols-3 gap-3 text-sm">
                   <div>
-                    <dt className="text-xs text-ink-soft">Sent</dt>
+                    <dt className="text-xs text-ink-soft">Messages sent</dt>
                     <dd className="text-lg font-semibold tabular-nums">{d.notifications.sent}</dd>
                   </div>
                   <div>
-                    <dt className="text-xs text-ink-soft">Delivered</dt>
+                    <dt className="text-xs text-ink-soft">Reached inboxes</dt>
                     <dd className="text-lg font-semibold tabular-nums">{d.notifications.delivered}</dd>
                   </div>
                   <div>
@@ -182,7 +182,7 @@ export default function OverviewPage() {
                     <dd className="text-lg font-semibold tabular-nums">{d.notifications.opened}</dd>
                   </div>
                 </dl>
-                <p className="mt-2 text-[11px] text-ink-soft">Delivered = it appeared in his inbox when he opened the app. Phone push isn&apos;t connected yet.</p>
+                <p className="mt-2 text-[11px] text-ink-soft">One message can reach many men. Reached = it appeared in his inbox when he opened the app. Phone push isn&apos;t connected yet.</p>
               </Panel>
 
               {studio.can("audit.view") && (

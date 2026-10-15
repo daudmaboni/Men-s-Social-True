@@ -9,6 +9,7 @@
 // - Press the bar and the glass lifts; drag along the bar to scrub between tabs.
 // Everything moves by writing styles directly each frame, so React doesn't re-render while animating.
 
+import { glideTo } from "@/lib/tabGlide";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -195,7 +196,7 @@ export default function BottomNav() {
     target.current = landed;
     wakeBar();
     st.style.scrollSnapType = "";
-    st.scrollTo({ left: landed * st.clientWidth, behavior: "smooth" });
+    glideTo(st, landed * st.clientWidth); // the same glide as swiping and tapping
     if (TAB_PATHS[landed] !== pathname) router.replace(TAB_PATHS[landed], { scroll: false });
   };
 

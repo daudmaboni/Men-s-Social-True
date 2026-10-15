@@ -33,9 +33,9 @@ function AccountInner() {
   const [mode, setMode] = useState<Mode>(params.get("mode") === "signup" ? "signup" : "login");
   const [view, setView] = useState<View>("choose");
 
-  // Where to go after signing in: ?next=/man from the welcome screen, otherwise Me
+  // Where to go after signing in: ?next=… when he came from a page, otherwise Social
   const next = params.get("next");
-  const afterSignIn = next && next.startsWith("/") && !next.startsWith("//") ? next : "/me";
+  const afterSignIn = next && next.startsWith("/") && !next.startsWith("//") ? next : "/social";
   const done = (msg: string) => {
     showToast(t(msg));
     router.push(afterSignIn);

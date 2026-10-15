@@ -679,4 +679,14 @@ export const SW: Record<string, string> = {
   "Your free account is ready. Welcome!": "Akaunti yako ya bure iko tayari. Karibu!",
   "Welcome back, {name}!": "Karibu tena, {name}!",
   "Welcome back!": "Karibu tena!",
+  // Step 39: swipe rows, featured slides, topics list
+  "Go to {n}": "Nenda namba {n}",
+  "Previous": "Iliyopita",
+  "Next": "Inayofuata",
+  "Swipe to see more articles": "Telezesha kuona makala zaidi",
+  "Also worth reading today.": "Inafaa pia kusoma leo.",
+  "Show all topics": "Onyesha mada zote",
+  "Hide topics": "Ficha mada",
+  "{n} topics": "Mada {n}",
+  "Swipe": "Telezesha",
 };

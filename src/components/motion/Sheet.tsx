@@ -33,7 +33,7 @@ export default function Sheet({
 
   // Rendered at the top of the page (portal) so it covers everything, including the bottom bar
   return createPortal(
-    <div className="fixed inset-0 z-40 flex items-center justify-center px-5">
+    <div className="fixed inset-0 z-40 flex items-center justify-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <button
         aria-label={t("Close")}
         onClick={onClose}
@@ -43,7 +43,7 @@ export default function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title || undefined}
-        className="sheet-in relative max-h-[88dvh] w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl bg-surface p-5 shadow-xl"
+        className="sheet-in relative max-h-full w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl bg-surface p-5 shadow-xl"
       >
         <h2 className="text-lg font-bold">{title}</h2>
         <div className="mt-4">{children}</div>

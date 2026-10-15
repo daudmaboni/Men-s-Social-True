@@ -2,21 +2,18 @@
 
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { CloudCheck, CloudOff, Loader2, LogOut, UserPlus, UserX } from "lucide-react";
 import Sheet from "@/components/motion/Sheet";
-import { useToast } from "@/components/motion/Toast";
 import { account, accountLabel, type AccountState } from "@/lib/account/useAccount";
 import { forgetAccount } from "@/lib/account/known";
+import { leaveTo } from "@/lib/ui/leave";
 import { flushSync, stopSync, syncStatus } from "@/lib/account/sync";
 import { useT } from "@/lib/i18n";
 
 const SERVER = { status: "idle" as const, lastSaved: null };
 
 export default function AccountCard({ acc }: { acc: AccountState }) {
-  const showToast = useToast();
   const t = useT();
-  const router = useRouter();
   const sync = useSyncExternalStore(syncStatus.subscribe, syncStatus.get, () => SERVER);
   const [sheet, setSheet] = useState<"signout" | "delete" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -53,12 +50,11 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
   async function signOut() {
     setBusy(true);
     await flushSync();
-    stopSync({ clearPhone: true }); // his data stays in his account, not on this phone
-    await account.signOut();
-    setBusy(false);
-    setSheet(null);
-    showToast(t("Signed out"));
-    router.replace("/social?tab=discover"); // back to Social → Discover, the part guests can use
+    // Cover the screen, sign out, then open the Welcome page (no other page flashes in between)
+    await leaveTo("/", async () => {
+      stopSync({ clearPhone: true }); // his data stays in his account, not on this phone
+      await account.signOut();
+    });
   }
 
   async function deleteAccount() {
