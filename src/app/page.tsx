@@ -4,6 +4,42 @@ import { useRouter } from "next/navigation";
 import { account, accountLabel, useAccount } from "@/lib/account/useAccount";
 import { stopSync } from "@/lib/account/sync";
 import { setLang, useLang } from "@/lib/me/lang";
+import { NIPATE_NINI_IDS } from "@/lib/content/nipate-nini";
+import { ChevronRight, HeartPulse, Leaf, Salad, Sprout, Target, type LucideIcon } from "lucide-react";
+
+/** "Nipate Nini?" — what he gets from the app. Each card opens its guide. */
+const OFFERS: { id: string; Icon: LucideIcon; en: [string, string]; sw: [string, string] }[] = [
+  {
+    id: NIPATE_NINI_IDS.lifestyle,
+    Icon: HeartPulse,
+    en: ["Lifestyle changes", "Sleep, movement and stress habits that build your strength"],
+    sw: ["Mabadiliko ya mtindo wa maisha", "Tabia za usingizi, mazoezi na msongo zinazojenga nguvu zako"],
+  },
+  {
+    id: NIPATE_NINI_IDS.food,
+    Icon: Salad,
+    en: ["Food that helps", "What to eat and avoid for blood flow and energy"],
+    sw: ["Chakula kinachosaidia", "Ule nini na uepuke nini kwa mzunguko wa damu na nguvu"],
+  },
+  {
+    id: NIPATE_NINI_IDS.quit,
+    Icon: Target,
+    en: ["Quit masturbation", "A private, step-by-step plan — without guilt"],
+    sw: ["Acha punyeto", "Mpango wa siri, hatua kwa hatua — bila kujilaumu"],
+  },
+  {
+    id: NIPATE_NINI_IDS.herbs,
+    Icon: Leaf,
+    en: ["Herbs men use for ED", "What each herb is, how it's used and what's known"],
+    sw: ["Mitishamba ya nguvu za kiume", "Kila mmea ni nini, unavyotumika na kinachojulikana"],
+  },
+  {
+    id: NIPATE_NINI_IDS.plants,
+    Icon: Sprout,
+    en: ["Tanzanian plants", "Mlonge, tangawizi, kitunguu saumu and more — how to use them"],
+    sw: ["Mimea ya Tanzania", "Mlonge, tangawizi, kitunguu saumu na mingine — jinsi ya kuitumia"],
+  },
+];
 
 const copy = {
   en: {
@@ -21,6 +57,8 @@ const copy = {
     signedInAs: "Signed in as",
     notYou: "Not you?",
     privacy: "No sign-up needed to look around. Your data stays private.",
+    offersTitle: "What do I get?",
+    offersNote: "Free guides. Tap one to read — no sign-up needed.",
   },
   sw: {
     tagline: "Mwenzako wa siri kwa afya ya mwanaume",
@@ -37,6 +75,8 @@ const copy = {
     signedInAs: "Umeingia kama",
     notYou: "Si wewe?",
     privacy: "Huhitaji kujisajili ili kuangalia. Taarifa zako ni siri.",
+    offersTitle: "Nipate Nini?",
+    offersNote: "Miongozo ya bure. Gusa mmoja usome — huhitaji kujisajili.",
   },
 } as const;
 
@@ -151,6 +191,36 @@ export default function Welcome() {
       </section>
 
       </div>
+
+      {/* Nipate Nini? — what he gets. Opening a guide also confirms 18+ (the note above says so). */}
+      <section className="rise rise-4 pb-4" aria-labelledby="offers-title">
+        <h2 id="offers-title" className="text-xl font-bold lg:text-2xl">
+          {t.offersTitle}
+        </h2>
+        <p className="mt-1 text-sm text-ink-soft">{t.offersNote}</p>
+        <ul className="mt-3 grid gap-2 lg:mt-4 lg:grid-cols-5 lg:gap-3">
+          {OFFERS.map(({ id, Icon, ...o }) => {
+            const [title, line] = o[lang];
+            return (
+              <li key={id}>
+                <button
+                  onClick={() => enter(`/social/c/${id}`)}
+                  className="flex w-full items-center gap-3 rounded-2xl bg-surface p-3.5 text-left ring-1 ring-line transition-transform active:scale-[0.98] lg:h-full lg:flex-col lg:items-start lg:p-5"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-mint text-forest-deep">
+                    <Icon size={22} aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">{title}</span>
+                    <span className="mt-0.5 block text-xs text-ink-soft">{line}</span>
+                  </span>
+                  <ChevronRight size={18} className="shrink-0 text-ink-soft lg:hidden" aria-hidden />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       <p className="rise rise-4 pt-2 text-center text-xs text-ink-soft">{t.privacy}</p>
     </main>

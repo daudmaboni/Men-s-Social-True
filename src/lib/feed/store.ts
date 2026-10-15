@@ -5,6 +5,7 @@
 
 import { useSyncExternalStore } from "react";
 import { dateKey } from "../progress/dates";
+import { markDeleted, unmarkDeleted, type Tombstones } from "../account/tombstones";
 
 export type ChoiceStatus = "done" | "later" | "skipped";
 
@@ -13,12 +14,15 @@ export interface FeedDB {
   days: Record<string, Record<string, { status: ChoiceStatus; at: string }>>;
   /** lessons["sleep-and-energy"] = { localDate, at } */
   lessons: Record<string, { localDate: string; at: string }>;
-  settings: { discreet: boolean };
+  /** updatedAt: when he last switched discreet mode (the newest switch wins across phones). */
+  settings: { discreet: boolean; updatedAt?: string };
+  /** What he undid, and when — so another phone doesn't bring it back (see account/tombstones.ts). */
+  deleted?: Tombstones;
 }
 export type FeedState = FeedDB & { ready: boolean };
 
 const KEY = "ms_feed_v1";
-const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false } };
+const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false }, deleted: {} };
 const SERVER_STATE: FeedState = { ...EMPTY, ready: false };
 let cache: FeedState | null = null;
 const listeners = new Set<() => void>();
@@ -35,7 +39,11 @@ function load(): FeedState {
       db = {
         days: p.days && typeof p.days === "object" ? p.days : {},
         lessons: p.lessons && typeof p.lessons === "object" ? p.lessons : {},
-        settings: { discreet: Boolean(p.settings?.discreet) },
+        settings: {
+          discreet: Boolean(p.settings?.discreet),
+          ...(typeof p.settings?.updatedAt === "string" ? { updatedAt: p.settings.updatedAt } : {}),
+        },
+        deleted: p.deleted && typeof p.deleted === "object" ? p.deleted : {},
       };
     }
   } catch {
@@ -75,6 +83,7 @@ export const feedStore = {
     save({
       ...db,
       days: { ...db.days, [today]: { ...db.days[today], [activityId]: { status, at: new Date().toISOString() } } },
+      deleted: unmarkDeleted(db.deleted, `choice:${today}:${activityId}`),
     });
   },
 
@@ -84,7 +93,7 @@ export const feedStore = {
     const today = dateKey(new Date());
     const day = { ...db.days[today] };
     delete day[activityId];
-    save({ ...db, days: { ...db.days, [today]: day } });
+    save({ ...db, days: { ...db.days, [today]: day }, deleted: markDeleted(db.deleted, `choice:${today}:${activityId}`) });
   },
 
   markLessonRead(lessonId: string) {
@@ -96,7 +105,7 @@ export const feedStore = {
 
   setDiscreet(discreet: boolean) {
     const db = load();
-    save({ ...db, settings: { ...db.settings, discreet } });
+    save({ ...db, settings: { ...db.settings, discreet, updatedAt: new Date().toISOString() } });
   },
 };
 

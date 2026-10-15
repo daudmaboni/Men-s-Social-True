@@ -6,11 +6,13 @@
 
 import { useSyncExternalStore } from "react";
 import { dateKey } from "./dates";
+import { markDeleted, type Tombstones } from "../account/tombstones";
 import type { Goal, MetricType, RecordMeta, RecordSource, TrackingRecord, Unit } from "./types";
 
 const KEY = "ms_progress_v1";
 
-type DB = { records: TrackingRecord[]; goals: Goal[] };
+/** deleted: records he deleted, and when — so another phone doesn't bring them back (see account/tombstones.ts). */
+type DB = { records: TrackingRecord[]; goals: Goal[]; deleted?: Tombstones };
 export type ProgressState = DB & { ready: boolean };
 
 // Starting goals — the man can change them.
@@ -25,7 +27,7 @@ function withDefaults(goals: Goal[]): Goal[] {
   return [...goals, ...missing];
 }
 
-const SERVER_STATE: ProgressState = { records: [], goals: DEFAULT_GOALS, ready: false };
+const SERVER_STATE: ProgressState = { records: [], goals: DEFAULT_GOALS, deleted: {}, ready: false };
 let cache: ProgressState | null = null;
 const listeners = new Set<() => void>();
 /** Told only about HIS changes (not about data arriving from his account), so they can be saved to it. */
@@ -33,7 +35,7 @@ const changeListeners = new Set<() => void>();
 
 function load(): ProgressState {
   if (cache) return cache;
-  let db: DB = { records: [], goals: DEFAULT_GOALS };
+  let db: DB = { records: [], goals: DEFAULT_GOALS, deleted: {} };
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
@@ -41,6 +43,7 @@ function load(): ProgressState {
       db = {
         records: Array.isArray(parsed.records) ? parsed.records : [],
         goals: withDefaults(Array.isArray(parsed.goals) ? parsed.goals : []),
+        deleted: parsed.deleted && typeof parsed.deleted === "object" ? parsed.deleted : {},
       };
     }
   } catch {
@@ -113,7 +116,7 @@ export const progressStore = {
     if (!Number.isFinite(input.value) || input.value <= 0) return null;
     const record = makeRecord(input);
     const db = load();
-    save({ records: [...db.records, record], goals: db.goals });
+    save({ ...db, records: [...db.records, record] });
     return record;
   },
 
@@ -121,6 +124,7 @@ export const progressStore = {
     if (!Number.isFinite(value) || value <= 0) return;
     const db = load();
     save({
+      ...db,
       records: db.records.map((r) =>
         r.id === id
           ? {
@@ -132,14 +136,13 @@ export const progressStore = {
             }
           : r,
       ),
-      goals: db.goals,
     });
   },
 
   deleteRecord(id: string): TrackingRecord | undefined {
     const db = load();
     const removed = db.records.find((r) => r.id === id);
-    save({ records: db.records.filter((r) => r.id !== id), goals: db.goals });
+    save({ ...db, records: db.records.filter((r) => r.id !== id), deleted: removed ? markDeleted(db.deleted, `rec:${id}`) : db.deleted });
     return removed;
   },
 
@@ -148,13 +151,10 @@ export const progressStore = {
     if (!Number.isFinite(input.value) || input.value <= 0) return;
     const record = makeRecord(input);
     const db = load();
-    save({
-      records: [
-        ...db.records.filter((r) => !(r.metric === record.metric && r.localDate === record.localDate)),
-        record,
-      ],
-      goals: db.goals,
-    });
+    const same = (r: TrackingRecord) => r.metric === record.metric && r.localDate === record.localDate;
+    let deleted = db.deleted;
+    for (const old of db.records.filter(same)) deleted = markDeleted(deleted, `rec:${old.id}`);
+    save({ ...db, records: [...db.records.filter((r) => !same(r)), record], deleted });
   },
 
   setGoal(metric: MetricType, target: number, unit: Unit) {
@@ -163,7 +163,7 @@ export const progressStore = {
     const now = new Date().toISOString();
     const exists = db.goals.some((g) => g.metric === metric);
     save({
-      records: db.records,
+      ...db,
       goals: exists
         ? db.goals.map((g) => (g.metric === metric ? { ...g, target: Math.round(target), updatedAt: now } : g))
         : [...db.goals, { metric, target: Math.round(target), unit, period: "day", direction: "increase", updatedAt: now }],

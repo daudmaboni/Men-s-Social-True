@@ -6,6 +6,7 @@
 import { useSyncExternalStore } from "react";
 import type { TopicId } from "../content/types";
 import { cleanProfile, type Profile } from "../me/profile";
+import { markDeleted, unmarkDeleted, type Tombstones } from "../account/tombstones";
 import { toggleReaction, type CommunityTopic, type Post, type ReactionKind, type Reply } from "./community";
 
 export interface SocialDB {
@@ -20,11 +21,17 @@ export interface SocialDB {
   history: Record<string, string>;
   /** His photo, age range and region (all optional). His name is `nickname`. */
   profile: Profile;
+  /** When he last changed his topic list (the newest list wins across phones). */
+  interestsAt?: string;
+  /** "postId:kind" → when he added that reaction. */
+  reactedAt?: Record<string, string>;
+  /** What he deleted or undid, and when — so another phone doesn't bring it back (see account/tombstones.ts). */
+  deleted?: Tombstones;
 }
 export type SocialState = SocialDB & { ready: boolean };
 
 const KEY = "ms_social_v1";
-const EMPTY: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {}, profile: {} };
+const EMPTY: SocialDB = { bookmarks: {}, interests: [], nickname: "", posts: [], replies: [], reactions: {}, reports: {}, history: {}, profile: {}, reactedAt: {}, deleted: {} };
 const SERVER_STATE: SocialState = { ...EMPTY, ready: false };
 let cache: SocialState | null = null;
 const listeners = new Set<() => void>();
@@ -50,6 +57,9 @@ function load(): SocialState {
         reports: obj(p.reports, {}),
         history: obj(p.history, {}),
         profile: cleanProfile(p.profile),
+        ...(typeof p.interestsAt === "string" ? { interestsAt: p.interestsAt } : {}),
+        reactedAt: obj(p.reactedAt, {}),
+        deleted: obj(p.deleted, {}),
       };
     }
   } catch {
@@ -105,16 +115,21 @@ export const socialStore = {
     const saved = !next[contentId];
     if (saved) next[contentId] = new Date().toISOString();
     else delete next[contentId];
-    save({ ...db, bookmarks: next });
+    const key = `bm:${contentId}`;
+    save({ ...db, bookmarks: next, deleted: saved ? unmarkDeleted(db.deleted, key) : markDeleted(db.deleted, key) });
     return saved;
   },
 
   setInterests(interests: TopicId[]) {
-    save({ ...load(), interests });
+    save({ ...load(), interests, interestsAt: new Date().toISOString() });
   },
 
   setNickname(nickname: string) {
-    save({ ...load(), nickname: nickname.trim().slice(0, 24) });
+    const db = load();
+    const name = nickname.trim().slice(0, 24);
+    if (name === db.nickname) return;
+    // Name and profile travel together across phones, so changing the name counts as a profile change
+    save({ ...db, nickname: name, profile: { ...db.profile, updatedAt: new Date().toISOString() } });
   },
 
   /** Save his edited profile (name + photo, age range, region). Empty values remove that detail. */
@@ -146,7 +161,12 @@ export const socialStore = {
 
   deletePost(postId: string) {
     const db = load();
-    save({ ...db, posts: db.posts.filter((p) => p.id !== postId), replies: db.replies.filter((r) => r.postId !== postId) });
+    save({
+      ...db,
+      posts: db.posts.filter((p) => p.id !== postId),
+      replies: db.replies.filter((r) => r.postId !== postId),
+      deleted: markDeleted(db.deleted, `post:${postId}`),
+    });
   },
 
   addReply(postId: string, body: string, anonymous: boolean): Reply {
@@ -165,24 +185,36 @@ export const socialStore = {
 
   deleteReply(replyId: string) {
     const db = load();
-    save({ ...db, replies: db.replies.filter((r) => r.id !== replyId) });
+    save({ ...db, replies: db.replies.filter((r) => r.id !== replyId), deleted: markDeleted(db.deleted, `reply:${replyId}`) });
   },
 
   react(targetId: string, kind: ReactionKind) {
     const db = load();
-    save({ ...db, reactions: { ...db.reactions, [targetId]: toggleReaction(db.reactions[targetId], kind) } });
+    const next = toggleReaction(db.reactions[targetId], kind);
+    const key = `${targetId}:${kind}`;
+    const added = next.includes(kind);
+    save({
+      ...db,
+      reactions: { ...db.reactions, [targetId]: next },
+      reactedAt: added ? { ...db.reactedAt, [key]: new Date().toISOString() } : db.reactedAt,
+      deleted: added ? unmarkDeleted(db.deleted, `react:${key}`) : markDeleted(db.deleted, `react:${key}`),
+    });
   },
 
   report(targetId: string, reason: string) {
     const db = load();
-    save({ ...db, reports: { ...db.reports, [targetId]: { reason, at: new Date().toISOString() } } });
+    save({
+      ...db,
+      reports: { ...db.reports, [targetId]: { reason, at: new Date().toISOString() } },
+      deleted: unmarkDeleted(db.deleted, `report:${targetId}`),
+    });
   },
 
   undoReport(targetId: string) {
     const db = load();
     const reports = { ...db.reports };
     delete reports[targetId];
-    save({ ...db, reports });
+    save({ ...db, reports, deleted: markDeleted(db.deleted, `report:${targetId}`) });
   },
 };
 

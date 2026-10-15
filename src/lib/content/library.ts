@@ -4,6 +4,7 @@
 
 import type { ContentItem, Topic } from "./types";
 import { INSTAGRAM_CONTENT } from "./instagram";
+import { NIPATE_NINI } from "./nipate-nini";
 
 export const TOPICS: Topic[] = [
   { id: "erection", title: "Erection health", short: "Erections" },
@@ -510,4 +511,4 @@ const EDITORIAL_SAMPLES: ContentItem[] = [
 ];
 
 /** Everything in Discover: real content adapted from Instagram, plus editorial samples. */
-export const LIBRARY: ContentItem[] = [...INSTAGRAM_CONTENT, ...EDITORIAL_SAMPLES];
+export const LIBRARY: ContentItem[] = [...INSTAGRAM_CONTENT, ...NIPATE_NINI, ...EDITORIAL_SAMPLES];
