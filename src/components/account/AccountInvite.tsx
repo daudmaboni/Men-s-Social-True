@@ -61,7 +61,7 @@ export default function AccountInviteSheet() {
       </div>
       <div className="mt-5 space-y-2">
         <Link
-          href="/account"
+          href="/account?mode=signup"
           onClick={() => setReason(null)}
           className="block w-full rounded-full bg-forest py-3 text-center text-sm font-semibold text-white"
         >

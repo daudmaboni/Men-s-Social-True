@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabase, supabaseConfigured } from "../supabase/client";
 import { normalizeTzPhone } from "./merge";
+import { currentLang } from "../me/lang";
+import { checkPassword } from "../security/password";
+import { cooldown, formatWait, recordFailure, recordSuccess, waitSeconds } from "../security/loginGuard";
 
 export type AccountState =
   | { status: "loading" }
@@ -46,7 +49,9 @@ const friendly = (message: string): string => {
   if (m.includes("already registered") || m.includes("already been registered")) return "This email already has an account. Log in instead.";
   if (m.includes("invalid login")) return "Wrong email or password.";
   if (m.includes("email not confirmed")) return "Please confirm your email first. Check your inbox.";
-  if (m.includes("password should be") || m.includes("weak")) return "Choose a stronger password: at least 8 characters.";
+  if (m.includes("pwned") || m.includes("leaked") || m.includes("data breach")) return "This password has appeared in a data leak elsewhere. Please choose a different one.";
+  if (m.includes("password should") || m.includes("weak")) return "Choose a stronger password: at least 8 characters, with letters and numbers.";
+  if (m.includes("captcha")) return "Please complete the check that you're a person, then try again.";
   if (m.includes("rate limit") || m.includes("too many")) return "Too many tries. Please wait a few minutes and try again.";
   if (m.includes("token has expired") || m.includes("invalid otp") || m.includes("otp")) return "That code is wrong or expired. Ask for a new one.";
   if (m.includes("fetch") || m.includes("network")) return "Can't connect. Check your internet and try again.";
@@ -54,38 +59,60 @@ const friendly = (message: string): string => {
   return message;
 };
 
-type Result = { error: string | null; needsConfirm?: boolean };
+/** error is English (translated on screen with vars). */
+type Result = { error: string | null; vars?: Record<string, string | number>; needsConfirm?: boolean };
+
+const tooMany = (s: number): Result => ({ error: "Too many wrong tries. Wait {time} and try again.", vars: { time: formatWait(s, currentLang()) } });
+const weak = (pw: string, email?: string): Result | null => {
+  const c = checkPassword(pw, { email });
+  return c.ok ? null : { error: c.problem, vars: { n: 8 } };
+};
 
 export const account = {
-  async signUpEmail(email: string, password: string): Promise<Result> {
+  async signUpEmail(email: string, password: string, captchaToken?: string): Promise<Result> {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
-    if (password.length < 8) return { error: "Use at least 8 characters for your password." };
-    const { data, error } = await sb.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${location.origin}/me` } });
+    const bad = weak(password, email);
+    if (bad) return bad;
+    const { data, error } = await sb.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: `${location.origin}/me`, captchaToken } });
     if (error) return { error: friendly(error.message) };
     // Supabase hides "already registered" by returning a user with no identities
     if (data.user && data.user.identities?.length === 0) return { error: friendly("already registered") };
     return { error: null, needsConfirm: !data.session };
   },
 
-  async signInEmail(email: string, password: string): Promise<Result> {
+  async signInEmail(email: string, password: string, captchaToken?: string): Promise<Result> {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
-    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password });
+    const wait = waitSeconds("login", email);
+    if (wait) return tooMany(wait);
+    const { error } = await sb.auth.signInWithPassword({ email: email.trim(), password, options: { captchaToken } });
+    if (!error) {
+      recordSuccess("login", email);
+      return { error: null };
+    }
+    if (/invalid login/i.test(error.message)) {
+      const w = recordFailure("login", email);
+      if (w) return tooMany(w);
+    }
+    return { error: friendly(error.message) };
+  },
+
+  async resetPassword(email: string, captchaToken?: string): Promise<Result> {
+    const sb = getSupabase();
+    if (!sb) return { error: "Accounts aren't available yet." };
+    const wait = cooldown("reset", email, 60);
+    if (wait) return { error: "A link was just sent. Wait {time} before asking again.", vars: { time: formatWait(wait, currentLang()) } };
+    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${location.origin}/account/new-password`, captchaToken });
+    if (error) recordSuccess("reset", email);
     return { error: error ? friendly(error.message) : null };
   },
 
-  async resetPassword(email: string): Promise<Result> {
+  async setNewPassword(password: string, email?: string): Promise<Result> {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
-    const { error } = await sb.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${location.origin}/account/new-password` });
-    return { error: error ? friendly(error.message) : null };
-  },
-
-  async setNewPassword(password: string): Promise<Result> {
-    const sb = getSupabase();
-    if (!sb) return { error: "Accounts aren't available yet." };
-    if (password.length < 8) return { error: "Use at least 8 characters for your password." };
+    const bad = weak(password, email);
+    if (bad) return bad;
     const { error } = await sb.auth.updateUser({ password });
     return { error: error ? friendly(error.message) : null };
   },
@@ -99,20 +126,32 @@ export const account = {
     return { error: error ? friendly(error.message) : null };
   },
 
-  async sendPhoneCode(phoneInput: string): Promise<Result & { phone?: string }> {
+  async sendPhoneCode(phoneInput: string, captchaToken?: string): Promise<Result & { phone?: string }> {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
     const phone = normalizeTzPhone(phoneInput);
     if (!phone) return { error: "Enter a Tanzanian mobile number, e.g. 0712 345 678." };
-    const { error } = await sb.auth.signInWithOtp({ phone });
+    // One SMS a minute per number (each one costs money)
+    const wait = cooldown("sms", phone, 60);
+    if (wait) return { error: "A code was just sent. Wait {time} before asking again.", vars: { time: formatWait(wait, currentLang()) }, phone };
+    const { error } = await sb.auth.signInWithOtp({ phone, options: { captchaToken } });
+    if (error) recordSuccess("sms", phone); // nothing was sent: he can try again straight away
     return { error: error ? friendly(error.message) : null, phone };
   },
 
   async verifyPhoneCode(phone: string, code: string): Promise<Result> {
     const sb = getSupabase();
     if (!sb) return { error: "Accounts aren't available yet." };
+    const wait = waitSeconds("code", phone);
+    if (wait) return tooMany(wait);
     const { error } = await sb.auth.verifyOtp({ phone, token: code.trim(), type: "sms" });
-    return { error: error ? friendly(error.message) : null };
+    if (!error) {
+      recordSuccess("code", phone);
+      return { error: null };
+    }
+    const w = recordFailure("code", phone);
+    if (w) return tooMany(w);
+    return { error: friendly(error.message) };
   },
 
   async signOut() {

@@ -15,6 +15,8 @@ import { ROLES, type AdminRole } from "@/lib/admin/perms";
 import { getContentRepo } from "@/lib/content/repo";
 import { getSupabase } from "@/lib/supabase/client";
 import { staffName } from "@/lib/studio/username";
+import PasswordMeter from "@/components/security/PasswordMeter";
+import { checkPassword } from "@/lib/security/password";
 
 type Tab = "profile" | "admins" | "features" | "health" | "audit" | "security";
 const TABS: { id: Tab; label: string }[] = [
@@ -116,11 +118,12 @@ function Profile() {
         </label>
         <div className="mt-5 space-y-2">
           <p className="text-xs font-semibold text-ink-soft">Change password</p>
-          <input type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New password (at least 10 characters)" className={input} aria-label="New password" />
+          <input type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New password (at least 12 characters)" className={input} aria-label="New password" />
+          <PasswordMeter password={pw} email={studio.admin.email} minLength={12} />
           <input type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Type it again" className={input} aria-label="Repeat new password" />
           <button
             className={btn.ghost}
-            disabled={busy !== null || pw.length < 10 || pw !== pw2}
+            disabled={busy !== null || !checkPassword(pw, { email: studio.admin.email, minLength: 12 }).ok || pw !== pw2}
             onClick={async () => {
               setBusy("pw");
               setError(null);

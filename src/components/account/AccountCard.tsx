@@ -35,7 +35,7 @@ export default function AccountCard({ acc }: { acc: AccountState }) {
             </p>
             {acc.status === "guest" && (
               <div className="mt-4 flex gap-2">
-                <Link href="/account" className="flex-1 rounded-full bg-forest py-3 text-center text-sm font-semibold text-white">
+                <Link href="/account?mode=signup" className="flex-1 rounded-full bg-forest py-3 text-center text-sm font-semibold text-white">
                   {t("Create account")}
                 </Link>
                 <Link href="/account?mode=login" className="flex-1 rounded-full py-3 text-center text-sm font-semibold ring-1 ring-line">

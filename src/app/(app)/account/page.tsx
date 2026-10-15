@@ -1,14 +1,18 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail, Smartphone } from "lucide-react";
+import { ArrowLeft, ChevronRight, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, Smartphone } from "lucide-react";
 import { useToast } from "@/components/motion/Toast";
 import { account, AUTH_METHODS, useAccount } from "@/lib/account/useAccount";
 import { useT } from "@/lib/i18n";
+import PasswordMeter from "@/components/security/PasswordMeter";
+import Captcha, { captchaOn, type CaptchaHandle } from "@/components/security/Captcha";
 
 type Mode = "signup" | "login" | "reset";
+/** First the list of ways in (Google, phone, email); tapping one opens its own form. */
+type View = "choose" | "email" | "phone";
 
 export default function AccountPage() {
   return (
@@ -24,8 +28,9 @@ function AccountInner() {
   const showToast = useToast();
   const acc = useAccount();
   const t = useT();
-  const [mode, setMode] = useState<Mode>(params.get("mode") === "login" ? "login" : "signup");
-  const [phoneOpen, setPhoneOpen] = useState(false);
+  // Log in is the default; "Create free account" buttons elsewhere open ?mode=signup
+  const [mode, setMode] = useState<Mode>(params.get("mode") === "signup" ? "signup" : "login");
+  const [view, setView] = useState<View>("choose");
 
   // Where to go after signing in: ?next=/man from the welcome screen, otherwise Me
   const next = params.get("next");
@@ -55,66 +60,99 @@ function AccountInner() {
     );
   }
 
+  const signup = mode === "signup";
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    if (m !== "reset" && view === "phone") setView("choose");
+  };
+
   return (
-    <Shell>
+    <Shell back={view === "choose" ? null : () => { setView("choose"); if (mode === "reset") setMode("login"); }} backLabel={signup ? "Other ways to sign up" : "Other ways to log in"}>
       <div>
-        <h1 className="text-2xl font-bold">{t(mode === "login" ? "Welcome back" : mode === "reset" ? "Reset your password" : "Create your free account")}</h1>
+        <h1 className="text-2xl font-bold lg:text-3xl">{t(mode === "reset" ? "Reset your password" : signup ? "Create your free account" : "Welcome back")}</h1>
         <p className="mt-1 text-sm text-ink-soft">
           {t(
             mode === "reset"
               ? "We'll email you a link to choose a new password."
-              : "Keep your points, badges and progress safe, even if you change phones. Only you can see your data.",
+              : signup
+                ? "Keep your points, badges and progress safe, even if you change phones. Only you can see your data."
+                : "Log in to see your points, badges and progress.",
           )}
         </p>
       </div>
 
-      {mode !== "reset" && (
-        <div className="inline-flex w-full rounded-full bg-surface p-1 text-sm font-semibold ring-1 ring-line" role="tablist">
-          {(["signup", "login"] as const).map((m) => (
-            <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)} className={`flex-1 rounded-full py-2 ${mode === m ? "bg-forest-deep text-white" : "text-ink-soft"}`}>
-              {t(m === "signup" ? "Sign up" : "Log in")}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {mode !== "reset" && (
-        <div className="space-y-2">
+      {view === "choose" && (
+        <div key={mode} className="page-enter space-y-2.5">
           <button
             onClick={async () => {
               const r = await account.signInGoogle(afterSignIn);
               if (r.error) showToast(t(r.error));
             }}
             disabled={!AUTH_METHODS.google}
-            className="flex w-full items-center justify-center gap-3 rounded-full bg-surface py-3.5 text-sm font-semibold ring-1 ring-line disabled:opacity-50"
+            className={way}
           >
             <GoogleMark /> {t("Continue with Google")}
-            {!AUTH_METHODS.google && <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">{t("Soon")}</span>}
+            {!AUTH_METHODS.google && <Soon />}
           </button>
-          <button
-            onClick={() => setPhoneOpen((o) => !o)}
-            disabled={!AUTH_METHODS.phone}
-            aria-expanded={phoneOpen}
-            className="flex w-full items-center justify-center gap-3 rounded-full bg-surface py-3.5 text-sm font-semibold ring-1 ring-line disabled:opacity-50"
-          >
+          <button onClick={() => setView("phone")} disabled={!AUTH_METHODS.phone} className={way}>
             <Smartphone size={18} className="text-forest" /> {t("Continue with phone number")}
-            {!AUTH_METHODS.phone && <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">{t("Soon")}</span>}
+            {!AUTH_METHODS.phone && <Soon />}
           </button>
-          {phoneOpen && AUTH_METHODS.phone && <PhoneForm onDone={() => done("Signed in · your progress is saved")} />}
-          <div className="flex items-center gap-3 py-2 text-xs text-ink-soft">
-            <span className="h-px flex-1 bg-line" /> {t("or with email")} <span className="h-px flex-1 bg-line" />
-          </div>
+          <button onClick={() => setView("email")} className={way}>
+            <Mail size={18} className="text-forest" /> {t("Continue with email")}
+          </button>
         </div>
       )}
 
-      <EmailForm mode={mode} onMode={setMode} onDone={done} />
+      {view === "email" && (
+        <div className="page-enter">
+          <EmailForm mode={mode} onMode={switchMode} onDone={done} />
+        </div>
+      )}
+      {view === "phone" && AUTH_METHODS.phone && (
+        <div className="page-enter">
+          <PhoneForm onDone={() => done("Signed in · your progress is saved")} />
+        </div>
+      )}
+
+      {/* Log in ⇄ Create account */}
+      {mode !== "reset" && (
+        <p className="text-center text-sm text-ink-soft">
+          {t(signup ? "Already have an account?" : "Don't have an account?")}{" "}
+          <button onClick={() => switchMode(signup ? "login" : "signup")} className="font-semibold text-forest">
+            {t(signup ? "Log in" : "Create one")}
+          </button>
+        </p>
+      )}
 
       <p className="flex items-start gap-2 px-1 text-xs text-ink-soft">
         <Lock size={13} className="mt-0.5 shrink-0 text-forest" />
         {t("Your check-ins and notes are private. Kayani staff can't read them, and we never use them for adverts.")}
       </p>
+
+      {/* For Kayani staff: the Admin Control Center has its own sign-in (with an authenticator code) */}
+      {view === "choose" && (
+        <Link
+          href="/studio"
+          className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-xs ring-1 ring-line transition-colors hover:bg-surface"
+        >
+          <span className="flex items-center gap-2 text-ink-soft">
+            <ShieldCheck size={15} className="text-forest" />
+            {t("Kayani staff?")} <span className="font-semibold text-ink">{t("Open the Studio")}</span>
+          </span>
+          <ChevronRight size={15} className="text-ink-soft" />
+        </Link>
+      )}
     </Shell>
   );
+}
+
+const way =
+  "flex w-full items-center justify-center gap-3 rounded-full bg-surface py-3.5 text-sm font-semibold ring-1 ring-line transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100";
+
+function Soon() {
+  const t = useT();
+  return <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">{t("Soon")}</span>;
 }
 
 function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => void; onDone: (msg: string) => void }) {
@@ -124,21 +162,26 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const captchaBox = useRef<CaptchaHandle>(null);
   const t = useT();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (captchaOn && !captcha) return setError(t("Please complete the check that you're a person, then try again."));
     setBusy(true);
     setError(null);
+    const token = captcha ?? undefined;
+    captchaBox.current?.reset(); // each check works once
     if (mode === "reset") {
-      const r = await account.resetPassword(email);
+      const r = await account.resetPassword(email, token);
       setBusy(false);
-      if (r.error) return setError(t(r.error));
+      if (r.error) return setError(t(r.error, r.vars));
       return setSent("If that email has an account, a reset link is on its way. Check your inbox.");
     }
-    const r = mode === "signup" ? await account.signUpEmail(email, password) : await account.signInEmail(email, password);
+    const r = mode === "signup" ? await account.signUpEmail(email, password, token) : await account.signInEmail(email, password, token);
     setBusy(false);
-    if (r.error) return setError(t(r.error));
+    if (r.error) return setError(t(r.error, r.vars));
     if (r.needsConfirm) return setSent("Almost done. We sent you an email: tap the link in it to finish creating your account.");
     onDone(mode === "signup" ? "Account created · your progress is saved" : "Welcome back");
   }
@@ -178,9 +221,10 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          {mode === "signup" && <span className="mt-1 block text-[11px] text-ink-soft">{t("At least 8 characters.")}</span>}
+          {mode === "signup" && <PasswordMeter password={password} email={email} lang={t.lang} />}
         </label>
       )}
+      <Captcha ref={captchaBox} onToken={setCaptcha} lang={t.lang} />
       {error && (
         <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
@@ -212,15 +256,19 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const captchaBox = useRef<CaptchaHandle>(null);
   const t = useT();
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
+    if (captchaOn && !captcha) return setError(t("Please complete the check that you're a person, then try again."));
     setBusy(true);
     setError(null);
-    const r = await account.sendPhoneCode(phone);
+    const r = await account.sendPhoneCode(phone, captcha ?? undefined);
+    captchaBox.current?.reset();
     setBusy(false);
-    if (r.error) return setError(t(r.error));
+    if (r.error) return setError(t(r.error, r.vars));
     setSentTo(r.phone ?? null);
   }
   async function verify(e: React.FormEvent) {
@@ -230,7 +278,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
     setError(null);
     const r = await account.verifyPhoneCode(sentTo, code);
     setBusy(false);
-    if (r.error) return setError(t(r.error));
+    if (r.error) return setError(t(r.error, r.vars));
     onDone();
   }
 
@@ -247,6 +295,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
           <input type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" value={phone} onChange={(e) => setPhone(e.target.value)} className={input} />
         </label>
       )}
+      {!sentTo && <Captcha ref={captchaBox} onToken={setCaptcha} lang={t.lang} />}
       {error && <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full bg-forest py-3 text-sm font-semibold text-white disabled:opacity-60">
         {busy && <Loader2 size={16} className="animate-spin" />}
@@ -261,13 +310,20 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+/** Narrow, centred column on every screen size (on a computer the form doesn't stretch across the page). */
+function Shell({ children, back, backLabel }: { children: React.ReactNode; back?: (() => void) | null; backLabel?: string }) {
   const t = useT();
   return (
-    <div className="stagger space-y-5">
-      <Link href="/me" className="flex items-center gap-1 text-sm text-ink-soft">
-        <ArrowLeft size={16} /> {t("Me")}
-      </Link>
+    <div className="stagger mx-auto max-w-md space-y-5 lg:pt-6">
+      {back ? (
+        <button onClick={back} className="flex items-center gap-1 text-sm text-ink-soft">
+          <ArrowLeft size={16} /> {t(backLabel ?? "Back")}
+        </button>
+      ) : (
+        <Link href="/me" className="flex items-center gap-1 text-sm text-ink-soft">
+          <ArrowLeft size={16} /> {t("Me")}
+        </Link>
+      )}
       {children}
     </div>
   );

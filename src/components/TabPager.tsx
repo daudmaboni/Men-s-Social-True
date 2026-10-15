@@ -128,7 +128,7 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
             className="tab-panel"
             aria-label={["Social", "Man", "Me"][i]}
           >
-            <div className="mx-auto max-w-md px-5 pb-32 pt-6">
+            <div className="mx-auto max-w-md px-5 pb-32 pt-6 lg:max-w-6xl lg:px-10 lg:pb-14 lg:pt-8">
               <PanelBoundary>
                 {i > 0 && acc.status === "loading" ? (
                   <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
@@ -161,7 +161,7 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
 
       {!onRoot && (
         <div className="overlay-page" id="overlay-page">
-          <div className="mx-auto max-w-md px-5 pb-32 pt-6">{children}</div>
+          <div className="mx-auto max-w-md px-5 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">{children}</div>
         </div>
       )}
     </>
