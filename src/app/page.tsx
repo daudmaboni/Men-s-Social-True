@@ -50,8 +50,9 @@ const copy = {
       "A private space to track how you feel",
     ],
     ageQuestion: "This app talks openly about men's sexual health. By continuing you confirm you are 18 or older.",
-    start: "Get started",
     create: "Create free account",
+    guest: "Enter as guest",
+    guestNote: "No sign-up needed · read all guides, videos and quizzes",
     login: "I have an account · Log in",
     continue: "Continue",
     signedInAs: "Signed in as",
@@ -68,8 +69,9 @@ const copy = {
       "Sehemu ya siri ya kufuatilia unavyojisikia",
     ],
     ageQuestion: "Programu hii inazungumzia afya ya uzazi ya mwanaume kwa uwazi. Kwa kuendelea unathibitisha una miaka 18 au zaidi.",
-    start: "Anza sasa",
     create: "Fungua akaunti bure",
+    guest: "Ingia kama mgeni",
+    guestNote: "Huhitaji kujisajili · soma miongozo, video na maswali yote",
     login: "Nina akaunti · Ingia",
     continue: "Endelea",
     signedInAs: "Umeingia kama",
@@ -168,21 +170,23 @@ export default function Welcome() {
           </>
         ) : (
           <>
+            {/* Guests can read everything on Discover; Man, Me and Community ask for an account */}
             <button
-              onClick={() => enter("/social")}
+              onClick={() => enter("/account?mode=signup&next=/man")}
               className="mt-4 w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
-            >
-              {t.start}
-            </button>
-            <button
-              onClick={() => enter("/account?mode=signup&next=/social")}
-              className="mt-2 w-full rounded-full bg-mint py-3.5 text-sm font-semibold text-forest-deep transition-transform active:scale-[0.98]"
             >
               {t.create}
             </button>
             <button
-              onClick={() => enter("/account?mode=login&next=/social")}
-              className="mt-2 w-full rounded-full bg-white py-3.5 text-sm font-semibold text-forest-deep shadow-sm ring-1 ring-black/5 transition-transform active:scale-[0.98]"
+              onClick={() => enter("/social")}
+              className="mt-2 w-full rounded-full bg-mint py-3 text-forest-deep transition-transform active:scale-[0.98]"
+            >
+              <span className="block text-sm font-semibold">{t.guest}</span>
+              <span className="block text-[11px] text-forest">{t.guestNote}</span>
+            </button>
+            <button
+              onClick={() => enter("/account?mode=login&next=/man")}
+              className="mt-2 w-full py-2.5 text-sm font-semibold text-forest-deep"
             >
               {t.login}
             </button>

@@ -16,12 +16,15 @@ import { socialStore } from "@/lib/social/store";
 import { useT } from "@/lib/i18n";
 import { metaOf, topicTitle } from "@/lib/content/display";
 import { trackContent } from "@/lib/analytics/track";
+import { useAccount } from "@/lib/account/useAccount";
+import GuestGuideCard from "@/components/account/GuestGuideCard";
 
 /** Full page for any piece of content: guide, article, video, quiz, tool or expert answer. */
 export default function ContentDetail({ id, back }: { id: string; back: { href: string; label: string } }) {
   const library = useLibrary();
   const item = getContent(id, library.items);
   const feed = useFeed();
+  const acc = useAccount();
   const showToast = useToast();
   const t = useT();
   // Opens in the language he chose (Me tab); he can still switch on the page
@@ -222,7 +225,8 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
       {item.tool === "pelvic-floor" && <PelvicFloorTrainer />}
       {item.tool === "doctor-check" && <DoctorCheck />}
 
-      {item.inManFeed && feed.ready && (
+      {/* Points need an account (the Man tab is for members); guests get the invite card instead */}
+      {item.inManFeed && feed.ready && acc.status !== "guest" && (
         <button
           onClick={() => {
             if (read) return;
@@ -245,6 +249,8 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
       )}
 
       <p ref={endRef} className="px-2 text-center text-[11px] text-ink-soft">{t("General education, not medical advice.")}</p>
+
+      <GuestGuideCard next={`/social/c/${item.id}`} />
 
       {related.length > 0 && (
         <section className="space-y-3 pt-2">

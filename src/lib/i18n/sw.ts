@@ -668,4 +668,11 @@ export const SW: Record<string, string> = {
   "Choice saved": "Chaguo limehifadhiwa",
   "Create your profile": "Tengeneza wasifu wako",
   "Welcome! Add a few details so the app feels like yours. Everything is optional and private.": "Karibu! Ongeza taarifa chache ili programu iwe yako. Kila kitu ni hiari na ni siri yako.",
+  // Step 37: guest invite at the end of a guide
+  "Found this useful? There's more inside.": "Umeona ni muhimu? Kuna mengi zaidi ndani.",
+  "Create a free account to put what you read into practice.": "Fungua akaunti ya bure ili uweke ulichosoma katika vitendo.",
+  "Daily activities, points and progress tracking": "Shughuli za kila siku, pointi na kufuatilia maendeleo",
+  "Private reminders that fit your day": "Vikumbusho vya siri vinavyoendana na siku yako",
+  "Ask questions in the Community, anonymously": "Uliza maswali kwenye Jumuiya, bila kujulikana",
+  "Use a nickname if you like. Nobody sees your name or your records.": "Tumia jina la utani ukipenda. Hakuna anayeona jina lako wala rekodi zako.",
 };
