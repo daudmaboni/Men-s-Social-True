@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail, Smartphone } from "lucide-react";
 import { useToast } from "@/components/motion/Toast";
 import { account, AUTH_METHODS, useAccount } from "@/lib/account/useAccount";
 import { useT } from "@/lib/i18n";
+import PasswordMeter from "@/components/security/PasswordMeter";
+import Captcha, { captchaOn, type CaptchaHandle } from "@/components/security/Captcha";
 
 type Mode = "signup" | "login" | "reset";
 
@@ -124,21 +126,26 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const captchaBox = useRef<CaptchaHandle>(null);
   const t = useT();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (captchaOn && !captcha) return setError(t("Please complete the check that you're a person, then try again."));
     setBusy(true);
     setError(null);
+    const token = captcha ?? undefined;
+    captchaBox.current?.reset(); // each check works once
     if (mode === "reset") {
-      const r = await account.resetPassword(email);
+      const r = await account.resetPassword(email, token);
       setBusy(false);
-      if (r.error) return setError(t(r.error));
+      if (r.error) return setError(t(r.error, r.vars));
       return setSent("If that email has an account, a reset link is on its way. Check your inbox.");
     }
-    const r = mode === "signup" ? await account.signUpEmail(email, password) : await account.signInEmail(email, password);
+    const r = mode === "signup" ? await account.signUpEmail(email, password, token) : await account.signInEmail(email, password, token);
     setBusy(false);
-    if (r.error) return setError(t(r.error));
+    if (r.error) return setError(t(r.error, r.vars));
     if (r.needsConfirm) return setSent("Almost done. We sent you an email: tap the link in it to finish creating your account.");
     onDone(mode === "signup" ? "Account created · your progress is saved" : "Welcome back");
   }
@@ -178,9 +185,10 @@ function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => 
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          {mode === "signup" && <span className="mt-1 block text-[11px] text-ink-soft">{t("At least 8 characters.")}</span>}
+          {mode === "signup" && <PasswordMeter password={password} email={email} lang={t.lang} />}
         </label>
       )}
+      <Captcha ref={captchaBox} onToken={setCaptcha} lang={t.lang} />
       {error && (
         <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
@@ -212,15 +220,19 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const captchaBox = useRef<CaptchaHandle>(null);
   const t = useT();
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
+    if (captchaOn && !captcha) return setError(t("Please complete the check that you're a person, then try again."));
     setBusy(true);
     setError(null);
-    const r = await account.sendPhoneCode(phone);
+    const r = await account.sendPhoneCode(phone, captcha ?? undefined);
+    captchaBox.current?.reset();
     setBusy(false);
-    if (r.error) return setError(t(r.error));
+    if (r.error) return setError(t(r.error, r.vars));
     setSentTo(r.phone ?? null);
   }
   async function verify(e: React.FormEvent) {
@@ -230,7 +242,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
     setError(null);
     const r = await account.verifyPhoneCode(sentTo, code);
     setBusy(false);
-    if (r.error) return setError(t(r.error));
+    if (r.error) return setError(t(r.error, r.vars));
     onDone();
   }
 
@@ -247,6 +259,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
           <input type="tel" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" value={phone} onChange={(e) => setPhone(e.target.value)} className={input} />
         </label>
       )}
+      {!sentTo && <Captcha ref={captchaBox} onToken={setCaptcha} lang={t.lang} />}
       {error && <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       <button disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-full bg-forest py-3 text-sm font-semibold text-white disabled:opacity-60">
         {busy && <Loader2 size={16} className="animate-spin" />}

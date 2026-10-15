@@ -53,7 +53,7 @@ export const NAV: { href: string; label: string; Icon: typeof LayoutDashboard; p
 const COLLAPSE_KEY = "ms_admin_sidebar";
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
-  const { state, signIn, signOut, refresh } = useAdmin();
+  const { state, signIn, signOut, refresh, startSetup, verifyCode } = useAdmin();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [drawer, setDrawer] = useState(false);
@@ -72,7 +72,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     return { admin, can: (p) => can(admin.role, p), refresh: () => void refresh() };
   }, [state, refresh]);
 
-  if (state.status !== "admin" || !ctx) return <GateScreen state={state as Exclude<typeof state, { status: "admin" }>} onSignIn={signIn} onSignOut={signOut} />;
+  if (state.status !== "admin" || !ctx) return <GateScreen state={state as Exclude<typeof state, { status: "admin" }>} onSignIn={signIn} onSignOut={signOut} onStartSetup={startSetup} onVerify={verifyCode} />;
   const { admin } = ctx;
   const items = NAV.filter((n) => !n.perm || ctx.can(n.perm));
   const active = (n: (typeof NAV)[number]) => (n.match ? n.match.test(pathname) : pathname.startsWith(n.href));

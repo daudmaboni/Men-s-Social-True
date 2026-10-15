@@ -15,8 +15,10 @@ const ALLY = "00000000-0000-0000-0000-00000000000b";
 
 let db: PGlite;
 
-async function as<T = Record<string, unknown>>(uid: string | null, sql: string, params: unknown[] = []) {
-  const claims = uid ? JSON.stringify({ sub: uid, role: "authenticated" }) : "";
+// By default everyone is signed in with the second step done (aal2), like a real admin after 0007.
+// Pass aal = "aal1" for "password only".
+async function as<T = Record<string, unknown>>(uid: string | null, sql: string, params: unknown[] = [], aal: "aal1" | "aal2" = "aal2") {
+  const claims = uid ? JSON.stringify({ sub: uid, role: "authenticated", aal }) : "";
   await db.exec(`reset role; select set_config('request.jwt.claims', '${claims}', false); set role ${uid ? "authenticated" : "anon"};`);
   try {
     return (await db.query<T>(sql, params)).rows;
@@ -46,6 +48,7 @@ beforeAll(async () => {
   const dir = join(process.cwd(), "supabase/migrations");
   for (const f of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) await db.exec(readFileSync(join(dir, f), "utf8"));
   await db.exec(readFileSync(join(dir, "0006_admin_control_center.sql"), "utf8")); // safe to run twice
+  await db.exec(readFileSync(join(dir, "0007_admin_two_step.sql"), "utf8")); // (0006 again would undo 0007's checks; then 0007 again)
   await db.exec(`grant all on all tables in schema public to anon, authenticated; grant usage, select on all sequences in schema public to anon, authenticated;`);
   const people: [string, string][] = [[OWNER, "owner@x.co"], [EDITOR, "editor@x.co"], [WRITER, "writer@x.co"], [MOD, "mod@x.co"], [ANALYST, "analyst@x.co"], [JUMA, "juma@x.co"], [ALLY, "ally@x.co"]];
   for (const [id, email] of people) await db.query("insert into auth.users (id, email) values ($1, $2)", [id, email]);
@@ -239,5 +242,29 @@ describe("dashboard, admins and audit", { timeout: 30_000 }, () => {
     await as(OWNER, "select public.settings_set('community_enabled', 'false'::jsonb)");
     await fails(JUMA, "select public.community_create_post('general', 'Is anyone around today?', '', true, null, false)");
     await as(OWNER, "select public.settings_set('community_enabled', 'true'::jsonb)");
+  });
+});
+
+describe("two-step sign-in for admins (0007)", { timeout: 30_000 }, () => {
+  const pwOnly = <T = Record<string, unknown>>(uid: string, sql: string, params: unknown[] = []) => as<T>(uid, sql, params, "aal1");
+
+  it("a password alone gives no admin powers", async () => {
+    expect((await pwOnly(OWNER, "select public.is_admin() as ok"))[0]).toEqual({ ok: false });
+    expect((await pwOnly(OWNER, "select public.admin_can('settings.manage') as ok"))[0]).toEqual({ ok: false });
+    expect((await pwOnly(OWNER, "select public.admin_role() as r"))[0]).toEqual({ r: null });
+    await expect(pwOnly(OWNER, "insert into public.content_items (id, kind, topic, title) values ('pw-only', 'guide', 'wellbeing', 'Nope')")).rejects.toThrow();
+    expect(await pwOnly(OWNER, "select user_id from public.admins")).toEqual([]);
+  });
+
+  it("with the authenticator code, the same admin has his powers", async () => {
+    expect((await as(OWNER, "select public.is_admin() as ok"))[0]).toEqual({ ok: true });
+    expect((await as(WRITER, "select public.admin_can('content.publish') as ok"))[0]).toEqual({ ok: false });
+    expect((await as(EDITOR, "select public.admin_can('content.publish') as ok"))[0]).toEqual({ ok: true });
+  });
+
+  it("the sign-in screen can still tell staff apart, without giving powers", async () => {
+    expect((await pwOnly(EDITOR, "select public.my_admin_role() as r"))[0]).toEqual({ r: "editor" });
+    expect((await pwOnly(JUMA, "select public.my_admin_role() as r"))[0]).toEqual({ r: null });
+    await fails(null, "select public.my_admin_role()");
   });
 });
