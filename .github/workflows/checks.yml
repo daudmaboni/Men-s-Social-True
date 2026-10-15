@@ -1,0 +1,29 @@
+# Automatic checks on every push and pull request (GitHub → Actions tab).
+# A red ✗ on a commit means something broke: open it to see which step failed.
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Tests (including database security tests)
+        run: npm test
+      - name: Production build (also checks TypeScript)
+        run: npm run build

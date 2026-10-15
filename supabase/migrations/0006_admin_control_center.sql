@@ -1210,3 +1210,39 @@ end;
 $$;
 
 -- Old (0001) audit table is kept; new actions go to admin_audit.
+
+-- ---------------------------------------------------------------------------------------------
+-- Re-run safety (added in Step 34): if two-step sign-in (0007) is already installed, running this
+-- older file again must NOT switch it off. Put the 0007 versions of the admin checks back.
+do $guard$
+begin
+  if to_regprocedure('public.mfa_ok()') is null then return; end if;
+  execute $f$
+    create or replace function public.is_admin()
+    returns boolean language sql stable security definer set search_path = public as $b$
+      select public.mfa_ok() and exists (select 1 from public.admins where user_id = auth.uid());
+    $b$ $f$;
+  if to_regclass('public.admins') is not null and exists (
+       select 1 from information_schema.columns where table_schema = 'public' and table_name = 'admins' and column_name = 'role') then
+    execute $f$
+      create or replace function public.admin_role()
+      returns text language sql stable security definer set search_path = public as $b$
+        select role from public.admins where user_id = auth.uid() and public.mfa_ok();
+      $b$ $f$;
+    execute $f$
+      create or replace function public.admin_can(perm text)
+      returns boolean language sql stable security definer set search_path = public as $b$
+        select public.mfa_ok() and coalesce((
+          select case a.role
+            when 'owner' then true
+            when 'editor' then perm in ('content.edit', 'content.publish', 'homepage.edit', 'homepage.publish',
+                                        'notifications.send', 'ai.use', 'analytics.view', 'audit.view', 'users.view')
+            when 'writer' then perm in ('content.edit', 'homepage.edit', 'ai.use', 'analytics.view')
+            when 'moderator' then perm in ('community.moderate', 'users.view', 'users.restrict',
+                                           'notifications.send', 'analytics.view', 'audit.view')
+            when 'analyst' then perm in ('analytics.view', 'users.view')
+            else false end
+          from public.admins a where a.user_id = auth.uid()), false);
+      $b$ $f$;
+  end if;
+end $guard$;

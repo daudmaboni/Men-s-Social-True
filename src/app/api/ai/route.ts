@@ -15,6 +15,9 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const KEY = process.env.ANTHROPIC_API_KEY;
 const MODEL = process.env.AI_MODEL || "claude-sonnet-5-5";
 const BASE = process.env.AI_BASE_URL || "https://api.anthropic.com";
+// Keys made in the new Claude Console "work across workspaces": each request must say which workspace
+// (and its spending limit) to use. Copy the ID (wrkspc_…) from Console → Workspaces → Men's Social.
+const WORKSPACE = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
 
 const fail = (status: number, error: string) => NextResponse.json({ error }, { status });
 
@@ -75,13 +78,23 @@ export async function POST(req: Request) {
   try {
     const res = await fetch(`${BASE}/v1/messages`, {
       method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": KEY, "anthropic-version": "2023-06-01" },
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": KEY,
+        "anthropic-version": "2023-06-01",
+        ...(WORKSPACE ? { "anthropic-workspace-id": WORKSPACE } : {}),
+      },
       body: JSON.stringify({ model: MODEL, max_tokens: 2000, system: prompt.system, messages: [{ role: "user", content: prompt.user }] }),
       signal: AbortSignal.timeout(60_000),
     });
     const json = (await res.json().catch(() => ({}))) as { content?: { type: string; text?: string }[]; error?: { message?: string } };
     if (!res.ok) {
-      const msg = `AI service error (${res.status}): ${json.error?.message ?? "no details"}`;
+      const detail = json.error?.message ?? "no details";
+      const msg = /workspace/i.test(detail) && !WORKSPACE
+        ? "AI isn't fully connected: this key needs the workspace ID. Add ANTHROPIC_WORKSPACE_ID (wrkspc_…, from Console → Workspaces) next to the key, then restart / redeploy."
+        : /credit balance/i.test(detail)
+          ? "The AI account has no credit yet. Add credit in the Claude Console → Billing, then try again."
+          : `AI service error (${res.status}): ${detail}`;
       await log(false, msg, prompt.user.length, 0);
       return fail(502, msg);
     }

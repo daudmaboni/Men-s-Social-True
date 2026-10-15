@@ -38,7 +38,7 @@ beforeAll(async () => {
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(nullif(current_setting('request.jwt.claims', true), '')::json->>'sub', '')::uuid $$;
     create schema storage;
-    create table storage.buckets (id text primary key, name text, public boolean);
+    create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
     create table storage.objects (id serial primary key, bucket_id text, name text);
     alter table storage.objects enable row level security;
     grant usage on schema public, auth, storage to anon, authenticated;
@@ -47,9 +47,12 @@ beforeAll(async () => {
   `);
   const dir = join(process.cwd(), "supabase/migrations");
   for (const f of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) await db.exec(readFileSync(join(dir, f), "utf8"));
-  await db.exec(readFileSync(join(dir, "0006_admin_control_center.sql"), "utf8")); // safe to run twice
-  await db.exec(readFileSync(join(dir, "0007_admin_two_step.sql"), "utf8")); // (0006 again would undo 0007's checks; then 0007 again)
+  // Old files run again by mistake must not switch off two-step sign-in (re-run guard, Step 34)
+  await db.exec(readFileSync(join(dir, "0001_content_studio.sql"), "utf8"));
+  await db.exec(readFileSync(join(dir, "0006_admin_control_center.sql"), "utf8"));
+  await db.exec(readFileSync(join(dir, "0008_safety_fixes.sql"), "utf8")); // safe to run twice
   await db.exec(`grant all on all tables in schema public to anon, authenticated; grant usage, select on all sequences in schema public to anon, authenticated;`);
+  await db.exec(`grant select on storage.buckets to anon, authenticated;`);
   const people: [string, string][] = [[OWNER, "owner@x.co"], [EDITOR, "editor@x.co"], [WRITER, "writer@x.co"], [MOD, "mod@x.co"], [ANALYST, "analyst@x.co"], [JUMA, "juma@x.co"], [ALLY, "ally@x.co"]];
   for (const [id, email] of people) await db.query("insert into auth.users (id, email) values ($1, $2)", [id, email]);
   for (const [id, role] of [[OWNER, "owner"], [EDITOR, "editor"], [WRITER, "writer"], [MOD, "moderator"], [ANALYST, "analyst"]])
@@ -266,5 +269,51 @@ describe("two-step sign-in for admins (0007)", { timeout: 30_000 }, () => {
     expect((await pwOnly(EDITOR, "select public.my_admin_role() as r"))[0]).toEqual({ r: "editor" });
     expect((await pwOnly(JUMA, "select public.my_admin_role() as r"))[0]).toEqual({ r: null });
     await fails(null, "select public.my_admin_role()");
+  });
+});
+
+describe("safety fixes (0008)", { timeout: 30_000 }, () => {
+  it("re-running old migrations keeps two-step sign-in on", async () => {
+    // beforeAll re-ran 0001 and 0006 after 0007: a password-only session still gets nothing
+    expect((await as(OWNER, "select public.is_admin() as ok", [], "aal1"))[0]).toEqual({ ok: false });
+    expect((await as(OWNER, "select public.admin_can('settings.manage') as ok", [], "aal1"))[0]).toEqual({ ok: false });
+    expect((await as(OWNER, "select public.admin_can('settings.manage') as ok"))[0]).toEqual({ ok: true });
+  });
+
+  it("logged-out visitors can't call action functions", async () => {
+    for (const sql of [
+      "select public.admin_list()",
+      "select public.delete_my_account()",
+      "select public.community_list('all', 'new', 10)",
+      "select public.my_notifications()",
+      "select public.settings_set('x', '{}'::jsonb)",
+      "select public.log_admin('fake', null, '{}'::jsonb)",
+      "select public.is_restricted('00000000-0000-0000-0000-00000000000a')",
+    ])
+      await expect(as(null, sql), sql).rejects.toThrow(/permission denied/);
+  });
+
+  it("guests still read published lessons and the live homepage", async () => {
+    await as(EDITOR, "insert into public.content_items (id, kind, topic, title, status) values ('guest-ok', 'guide', 'wellbeing', 'For everyone', 'published')");
+    const rows = await as(null, "select id from public.content_items where id = 'guest-ok'");
+    expect(rows).toEqual([{ id: "guest-ok" }]);
+    await expect(as(null, "select count(*) from public.homepage_configs")).resolves.toBeTruthy();
+    await expect(as(null, "select public.track_search('kukosa usingizi', 3)")).resolves.toBeTruthy();
+  });
+
+  it("signed-in men can still use their own functions; internal helpers are closed", async () => {
+    await expect(as(JUMA, "select public.my_notifications()")).resolves.toBeTruthy();
+    await expect(as(JUMA, "select public.is_restricted('00000000-0000-0000-0000-00000000000a')")).rejects.toThrow(/permission denied/);
+  });
+
+  it("storage refuses big or wrong files", async () => {
+    const b = await db.query<{ id: string; file_size_limit: string; allowed_mime_types: string[] }>(
+      "select id, file_size_limit, allowed_mime_types from storage.buckets order by id",
+    );
+    const by = Object.fromEntries(b.rows.map((r) => [r.id, r]));
+    expect(Number(by["content-images"].file_size_limit)).toBe(3 * 1024 * 1024);
+    expect(by["content-images"].allowed_mime_types).toEqual(["image/jpeg", "image/png", "image/webp"]);
+    expect(Number(by["content-videos"].file_size_limit)).toBe(50 * 1024 * 1024);
+    expect(Number(by["content-audio"].file_size_limit)).toBe(40 * 1024 * 1024);
   });
 });

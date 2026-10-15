@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# one-time setup scripts from Claude (run once, never committed)
+setup-step-*.mjs
