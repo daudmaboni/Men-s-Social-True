@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Bell, CheckCircle2, FileText, Flag, PenLine, Smartphone, Sparkles } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, Eye, FileText, Flag, PenLine, Smartphone, Sparkles } from "lucide-react";
 import { useStudio } from "@/components/admin/AdminShell";
 import DailyColumns from "@/components/admin/Chart";
 import type { Overview } from "@/lib/admin/types";
@@ -68,6 +68,11 @@ export default function OverviewPage() {
             {studio.can("homepage.edit") && (
               <Link href="/studio/homepage" className={btn.ghost}>
                 <Smartphone size={15} /> Edit homepage
+              </Link>
+            )}
+            {studio.can("homepage.edit") && (
+              <Link href="/studio/homepage/preview" className={btn.ghost}>
+                <Eye size={15} /> Preview user page
               </Link>
             )}
             {studio.can("notifications.send") && (

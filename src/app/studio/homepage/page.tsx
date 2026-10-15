@@ -6,18 +6,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Eye, EyeOff, History, Plus, RotateCcw, Search, X } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, ChevronDown, ChevronUp, Eye, EyeOff, History, Plus, RotateCcw, Search, Smartphone, X } from "lucide-react";
 import { useStudio } from "@/components/admin/AdminShell";
-import { Badge, Confirm, Drawer, ErrorBox, Loading, PageHeader, Segmented, btn, fmtDate, input, useLoad } from "@/components/admin/ui";
-import { DiscoverView } from "@/components/social/Discover";
+import { Badge, Confirm, Drawer, ErrorBox, Loading, PageHeader, btn, fmtDate, input, useLoad } from "@/components/admin/ui";
+import { clearWork, keepWork, takeWork } from "@/lib/homepage/previewHandoff";
 import { useToast } from "@/components/motion/Toast";
 import { rpc, select } from "@/lib/admin/api";
-import { TOPICS } from "@/lib/content/library";
 import { KIND_LABEL, SECTIONS } from "@/lib/content/select";
-import type { ContentItem, TopicId } from "@/lib/content/types";
+import type { ContentItem } from "@/lib/content/types";
 import { useLibrary } from "@/lib/content/useLibrary";
 import { DEFAULT_CONFIG, normalizeConfig, SECTION_INFO, type HomepageConfig, type SectionConfig, type SectionId } from "@/lib/homepage/config";
-import { LangOverride } from "@/lib/i18n";
 import type { PlaceId } from "@/lib/studio/places";
 
 type Row = { id: number; state: "draft" | "published" | "archived"; config: unknown; note: string | null; created_at: string; published_at: string | null };
@@ -38,13 +36,11 @@ export default function HomepagePage() {
 
   const [work, setWork] = useState<HomepageConfig | null>(null);
   useEffect(() => {
-    if (rows.data) setWork(savedCfg);
+    // Coming back from the Preview page: pick up the changes you were making
+    if (rows.data) setWork(takeWork(savedCfg) ?? savedCfg);
   }, [rows.data, savedCfg]);
 
   const [open, setOpen] = useState<SectionId | null>(null);
-  const [showing, setShowing] = useState<"work" | "live">("work");
-  const [as, setAs] = useState<"new" | TopicId>("new");
-  const [lang, setLang] = useState<"en" | "sw">("en");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -54,6 +50,12 @@ export default function HomepagePage() {
 
   // Warn before leaving with changes that aren't even saved as a draft
   const unsaved = work !== null && !same(work, savedCfg);
+  // Keep unsaved changes for the Preview page (this browser tab only)
+  useEffect(() => {
+    if (!work) return;
+    if (unsaved) keepWork(work, savedCfg);
+    else clearWork();
+  }, [work, unsaved, savedCfg]);
   useEffect(() => {
     if (!unsaved) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -110,8 +112,6 @@ export default function HomepagePage() {
     setWork(liveCfg);
   };
 
-  const preview = showing === "live" ? liveCfg : work;
-  const me = { interests: as === "new" ? [] : [as], bookmarks: {}, history: {} };
 
   return (
     <div>
@@ -197,39 +197,32 @@ export default function HomepagePage() {
           })}
         </ol>
 
-        {/* Live preview with the real Discover page */}
-        <aside className="space-y-3 lg:sticky lg:top-6 lg:self-start">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Segmented
-              label="Show"
-              value={showing}
-              onChange={setShowing}
-              options={[
-                { id: "work", label: unsaved || draft ? "Your changes" : "Current" },
-                { id: "live", label: "Live now" },
-              ]}
-            />
-            <Segmented label="Preview language" value={lang} onChange={setLang} options={[{ id: "en", label: "EN" }, { id: "sw", label: "SW" }]} />
-          </div>
-          <label className="flex items-center gap-2 text-xs text-ink-soft">
-            Preview as
-            <select value={as} onChange={(e) => setAs(e.target.value as typeof as)} className={`${input} py-1.5 text-xs`}>
-              <option value="new">A new man (no topics yet)</option>
-              {TOPICS.map((t) => (
-                <option key={t.id} value={t.id}>
-                  A man who follows {t.short}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[36px] border-[6px] border-ink/80 bg-bg shadow-xl">
-            <div className="max-h-[70vh] overflow-y-auto p-4 [scrollbar-width:thin]" inert>
-              <LangOverride lang={lang}>
-                <DiscoverView me={me} items={library} config={preview} preview />
-              </LangOverride>
-            </div>
-          </div>
-          <p className="text-center text-[11px] text-ink-soft">The real Discover page, using live content. For You still changes per man.</p>
+        {/* The phone preview has its own page; here, a card that opens it */}
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <Link
+            href="/studio/homepage/preview"
+            className="group flex items-center gap-4 rounded-2xl bg-surface p-4 ring-1 ring-line transition-colors hover:ring-forest lg:flex-col lg:items-stretch lg:p-5"
+          >
+            {/* A tiny phone */}
+            <span className="flex h-24 w-14 shrink-0 flex-col gap-1 rounded-[14px] border-4 border-ink/80 bg-bg p-1 lg:mx-auto lg:h-40 lg:w-[88px] lg:rounded-[20px] lg:p-1.5" aria-hidden>
+              <span className="h-1/3 rounded-md bg-forest" />
+              <span className="h-2 rounded bg-line" />
+              <span className="h-2 w-2/3 rounded bg-line" />
+              <span className="flex-1 rounded-md bg-mint" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2 text-sm font-bold">
+                <Smartphone size={16} className="text-forest" /> Preview user page
+              </span>
+              <span className="mt-1 block text-xs text-ink-soft">
+                See Discover on a full phone screen and try it like a man would: scroll, swipe, open topics.
+              </span>
+              {unsaved && <span className="mt-2 inline-block"><Badge tone="info">Shows your unsaved changes</Badge></span>}
+              <span className="mt-3 flex items-center gap-1 text-sm font-semibold text-forest">
+                Open preview <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </span>
+          </Link>
         </aside>
       </div>
 
@@ -430,3 +423,4 @@ const swap = (a: string[], i: number, j: number) => {
   [b[i], b[j]] = [b[j], b[i]];
   return b;
 };
+
