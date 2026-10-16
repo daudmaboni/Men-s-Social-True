@@ -61,13 +61,13 @@ export default function ManTab() {
       </div>
 
       <div className="contents lg:col-span-5 lg:flex lg:flex-col lg:gap-5">
-        <div id="checkin" className="order-3 scroll-mt-4">
+        <div className="order-3">
           <CheckInCard period={1} />
         </div>
-        <div id="sleep" className="order-4 scroll-mt-4">
+        <div className="order-4">
           <SleepCard period={1} />
         </div>
-        <div id="water" className="order-5 scroll-mt-4">
+        <div className="order-5">
           <HydrationCard period={1} />
         </div>
       </div>

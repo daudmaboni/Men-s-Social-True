@@ -7,6 +7,7 @@ import { forgetAccount, knownAccount, type KnownAccount } from "@/lib/account/kn
 import { setLang, useLang } from "@/lib/me/lang";
 import { NIPATE_NINI_IDS } from "@/lib/content/nipate-nini";
 import SwipeRow from "@/components/motion/SwipeRow";
+import BrandMark from "@/components/brand/BrandMark";
 import { ChevronRight, HeartPulse, Leaf, Salad, Sprout, Target, type LucideIcon } from "lucide-react";
 
 /** "Nipate Nini?" — what he gets from the app. Each card opens its guide. */
@@ -125,9 +126,7 @@ export default function Welcome() {
       {/* Top bar: logo + language switch */}
       <header className="rise flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-sm font-bold text-mint">
-            MS
-          </div>
+          <BrandMark size={36} />
           <span className="text-base font-semibold">Men&apos;s Social</span>
         </div>
         <div className="flex rounded-full bg-surface p-1 text-xs font-semibold ring-1 ring-line">
@@ -150,9 +149,9 @@ export default function Welcome() {
       {/* Phone and computer: the content sits in the middle of the screen (my-auto) */}
       <div className="my-auto py-6 lg:grid lg:grid-cols-[1.25fr_1fr] lg:items-stretch lg:gap-6 lg:py-10">
       {/* Hero card */}
-      <section className="rise rise-2 rounded-3xl bg-forest-deep p-6 text-white lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-12">
+      <section className="kayani-arcs rise rise-2 rounded-3xl bg-forest-deep p-6 text-white lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-12">
         <p className="text-sm text-mint-strong">Kayani Men&apos;s Social</p>
-        <h1 className="mt-2 text-[28px] font-bold leading-tight lg:text-[44px]">{t.tagline}</h1>
+        <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] lg:text-[48px]">{t.tagline}</h1>
         <ul className="mt-6 space-y-3 lg:mt-8 lg:space-y-4">
           {t.points.map((p) => (
             <li key={p} className="flex items-start gap-3 text-sm text-mint lg:text-base">

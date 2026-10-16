@@ -10,7 +10,7 @@ export type Theme = "light" | "dark";
 /** Colour modes. Green is Kayani's own colour and the default. */
 export type Accent = "green" | "blue" | "red";
 export const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
-  { id: "green", label: "Green", swatch: "#0f5c46" },
+  { id: "green", label: "Green", swatch: "#029046" },
   { id: "blue", label: "Blue", swatch: "#1e5bb8" },
   { id: "red", label: "Red", swatch: "#b3263a" },
 ];

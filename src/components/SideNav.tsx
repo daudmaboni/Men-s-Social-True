@@ -3,6 +3,7 @@
 // On a computer (wide screens) the three tabs move into a sidebar on the left,
 // like a web app. On phones this is hidden and the Liquid Glass tab bar at the bottom is used instead.
 
+import BrandMark from "@/components/brand/BrandMark";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MessageCircle, ShoppingBag, Sparkles, UserRound } from "lucide-react";
@@ -32,7 +33,7 @@ export default function SideNav() {
     >
       {/* Logo */}
       <Link href="/man" className="flex items-center gap-2.5 px-2">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-forest text-sm font-bold text-mint">MS</span>
+        <BrandMark size={40} />
         <span className="leading-tight">
           <span className="block text-base font-semibold">Men&apos;s Social</span>
           <span className="block text-[11px] text-ink-soft">Kayani</span>

@@ -5,19 +5,12 @@ import { Droplet, GlassWater, Milk, Plus, Pencil } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import DayBars from "./DayBars";
 import StatusBadge from "./StatusBadge";
+import FoldCard from "@/components/motion/FoldCard";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
 import { goalFor, progressStore, useProgress } from "@/lib/progress/store";
 import { dateKey, lastNDays } from "@/lib/progress/dates";
-import {
-  averageRecorded,
-  dayTotal,
-  dayTotals,
-  daysGoalMet,
-  goalStreak,
-  metricStatus,
-  targetProgress,
-} from "@/lib/progress/calc";
+import { averageRecorded, dayTotal, dayTotals, daysGoalMet, goalStreak, metricStatus, targetProgress } from "@/lib/progress/calc";
 import { litres } from "@/lib/progress/format";
 import type { Period, RecordSource, TrackingRecord } from "@/lib/progress/types";
 import { useT } from "@/lib/i18n";
@@ -64,15 +57,18 @@ export default function HydrationCard({ period }: { period: Period }) {
     .sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
 
   function quickAdd(ml: number) {
-    progressStore.addRecord({ metric: "water", value: ml, unit: "ml", source: "quick_add" });
+    progressStore.addRecord({
+      metric: "water",
+      value: ml,
+      unit: "ml",
+      source: "quick_add",
+    });
     showToast(t("+{n} ml water logged", { n: ml }));
   }
 
   function openSheet(mode: SheetMode) {
     setError("");
-    setInput(
-      mode?.kind === "edit" ? String(mode.record.value) : mode?.kind === "goal" && goal ? String(goal) : "",
-    );
+    setInput(mode?.kind === "edit" ? String(mode.record.value) : mode?.kind === "goal" && goal ? String(goal) : "");
     setSheet(mode);
   }
 
@@ -80,9 +76,19 @@ export default function HydrationCard({ period }: { period: Period }) {
     const n = Number(input);
     const max = sheet?.kind === "goal" ? 10000 : 5000;
     if (!input.trim() || !Number.isFinite(n) || n <= 0) return setError(t("Enter an amount in ml, like 300"));
-    if (n > max) return setError(t("That's more than {amount}. Check the amount.", { amount: litres(max) }));
+    if (n > max)
+      return setError(
+        t("That's more than {amount}. Check the amount.", {
+          amount: litres(max),
+        }),
+      );
     if (sheet?.kind === "custom") {
-      progressStore.addRecord({ metric: "water", value: n, unit: "ml", source: "manual" });
+      progressStore.addRecord({
+        metric: "water",
+        value: n,
+        unit: "ml",
+        source: "manual",
+      });
       showToast(t("+{n} ml water logged", { n: Math.round(n) }));
     } else if (sheet?.kind === "edit") {
       progressStore.updateRecord(sheet.record.id, n);
@@ -104,103 +110,112 @@ export default function HydrationCard({ period }: { period: Period }) {
     return <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />;
   }
 
+  const head = (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint text-forest">
+          <Droplet size={18} />
+        </span>
+        <div>
+          <p className="font-semibold">{t("Water")}</p>
+          <button onClick={() => openSheet({ kind: "goal" })} className="flex items-center gap-1 text-xs text-ink-soft">
+            {t("Daily goal")} {goal ? litres(goal) : t("not set")} <Pencil size={11} />
+          </button>
+        </div>
+      </div>
+      <StatusBadge status={status} />
+    </div>
+  );
+
+  // Today (Man tab): amount, quick add and today's entries
+  const todayView = (
+    <>
+      <p className="text-3xl font-bold">
+        {todayTotal === null ? <span className="text-ink-soft">—</span> : litres(todayTotal)}
+        <span className="text-base font-medium text-ink-soft"> / {goal ? litres(goal) : "—"}</span>
+      </p>
+      <div className="mt-3">
+        <ProgressBar percent={pct} status={status} label={t("Water today")} />
+      </div>
+      <p className="mt-2 text-xs text-ink-soft">
+        {status === "not_recorded"
+          ? t("Nothing recorded yet today.")
+          : status === "goal_achieved"
+            ? t("Goal reached today. Well done.")
+            : `${Math.round(pct ?? 0)}% · ${t("{amount} to go", { amount: litres(Math.max((goal ?? 0) - (todayTotal ?? 0), 0)) })}`}
+      </p>
+
+      {/* Quick add */}
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {QUICK.map(({ ml, label, Icon }) => (
+          <button
+            key={ml}
+            onClick={() => quickAdd(ml)}
+            className="flex flex-col items-center gap-1 rounded-2xl bg-mint/60 py-3 text-forest transition-transform active:scale-[0.96]"
+          >
+            <Icon size={18} />
+            <span className="text-xs font-semibold">+{ml} ml</span>
+            <span className="text-[10px] text-ink-soft">{t(label)}</span>
+          </button>
+        ))}
+        <button
+          onClick={() => openSheet({ kind: "custom" })}
+          className="flex flex-col items-center gap-1 rounded-2xl py-3 ring-1 ring-line transition-transform active:scale-[0.96]"
+        >
+          <Plus size={18} />
+          <span className="text-xs font-semibold">{t("Custom")}</span>
+          <span className="text-[10px] text-ink-soft">{t("Any amount")}</span>
+        </button>
+      </div>
+
+      {/* Today's entries */}
+      {todayEntries.length > 0 && (
+        <ul className="mt-4 divide-y divide-line border-t border-line">
+          {(showAll ? todayEntries : todayEntries.slice(0, 3)).map((r) => (
+            <li key={r.id}>
+              <button
+                onClick={() => openSheet({ kind: "edit", record: r })}
+                className="flex w-full items-center justify-between py-2.5 text-left text-sm"
+              >
+                <span>
+                  {r.value} ml
+                  <span className="ml-2 text-[11px] text-ink-soft">{t(SOURCE_LABEL[r.source])}</span>
+                </span>
+                <span className="text-xs text-ink-soft">
+                  {new Date(r.recordedAt).toLocaleTimeString(t.locale, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </button>
+            </li>
+          ))}
+          {todayEntries.length > 3 && (
+            <li>
+              <button onClick={() => setShowAll(!showAll)} className="w-full pt-2.5 text-left text-xs font-semibold text-forest">
+                {showAll ? t("Show less") : t("Show all {n} entries", { n: todayEntries.length })}
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
+    </>
+  );
+
   return (
     <>
-      <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint text-forest">
-              <Droplet size={18} />
-            </span>
-            <div>
-              <p className="font-semibold">{t("Water")}</p>
-              <button onClick={() => openSheet({ kind: "goal" })} className="flex items-center gap-1 text-xs text-ink-soft">
-                {t("Daily goal")} {goal ? litres(goal) : t("not set")} <Pencil size={11} />
-              </button>
-            </div>
-          </div>
-          <StatusBadge status={status} />
-        </div>
-
-        {period === 1 ? (
-          <>
-            {/* Today */}
-            <p className="mt-5 text-3xl font-bold">
-              {todayTotal === null ? (
-                <span className="text-ink-soft">—</span>
-              ) : (
-                litres(todayTotal)
-              )}
-              <span className="text-base font-medium text-ink-soft"> / {goal ? litres(goal) : "—"}</span>
-            </p>
-            <div className="mt-3">
-              <ProgressBar percent={pct} status={status} label={t("Water today")} />
-            </div>
-            <p className="mt-2 text-xs text-ink-soft">
-              {status === "not_recorded"
-                ? t("Nothing recorded yet today.")
-                : status === "goal_achieved"
-                  ? t("Goal reached today. Well done.")
-                  : `${Math.round(pct ?? 0)}% · ${t("{amount} to go", { amount: litres(Math.max((goal ?? 0) - (todayTotal ?? 0), 0)) })}`}
-            </p>
-
-            {/* Quick add */}
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {QUICK.map(({ ml, label, Icon }) => (
-                <button
-                  key={ml}
-                  onClick={() => quickAdd(ml)}
-                  className="flex flex-col items-center gap-1 rounded-2xl bg-mint/60 py-3 text-forest transition-transform active:scale-[0.96]"
-                >
-                  <Icon size={18} />
-                  <span className="text-xs font-semibold">+{ml} ml</span>
-                  <span className="text-[10px] text-ink-soft">{t(label)}</span>
-                </button>
-              ))}
-              <button
-                onClick={() => openSheet({ kind: "custom" })}
-                className="flex flex-col items-center gap-1 rounded-2xl py-3 ring-1 ring-line transition-transform active:scale-[0.96]"
-              >
-                <Plus size={18} />
-                <span className="text-xs font-semibold">{t("Custom")}</span>
-                <span className="text-[10px] text-ink-soft">{t("Any amount")}</span>
-              </button>
-            </div>
-
-            {/* Today's entries */}
-            {todayEntries.length > 0 && (
-              <ul className="mt-4 divide-y divide-line border-t border-line">
-                {(showAll ? todayEntries : todayEntries.slice(0, 3)).map((r) => (
-                  <li key={r.id}>
-                    <button
-                      onClick={() => openSheet({ kind: "edit", record: r })}
-                      className="flex w-full items-center justify-between py-2.5 text-left text-sm"
-                    >
-                      <span>
-                        {r.value} ml
-                        <span className="ml-2 text-[11px] text-ink-soft">{t(SOURCE_LABEL[r.source])}</span>
-                      </span>
-                      <span className="text-xs text-ink-soft">
-                        {new Date(r.recordedAt).toLocaleTimeString(t.locale, { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-                {todayEntries.length > 3 && (
-                  <li>
-                    <button
-                      onClick={() => setShowAll(!showAll)}
-                      className="w-full pt-2.5 text-left text-xs font-semibold text-forest"
-                    >
-                      {showAll ? t("Show less") : t("Show all {n} entries", { n: todayEntries.length })}
-                    </button>
-                  </li>
-                )}
-              </ul>
-            )}
-          </>
-        ) : (
+      {period === 1 ? (
+        <FoldCard
+          id="water"
+          head={head}
+          description={t("Add each glass or bottle as you drink through the day.")}
+          peek={todayTotal === null ? null : `${t("Today")}: ${litres(todayTotal)}${goal ? ` / ${litres(goal)}` : ""}`}
+        >
+          {todayView}
+        </FoldCard>
+      ) : (
+        <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
+          {head}
           <>
             {/* Period summary */}
             <div className="mt-5 grid grid-cols-3 gap-2 text-center">
@@ -212,16 +227,13 @@ export default function HydrationCard({ period }: { period: Period }) {
               <p className="mt-3 text-xs text-ink-soft">{t("No water recorded in the last {n} days.", { n: period })}</p>
             )}
           </>
-        )}
 
-        {/* Chart (trends view only — the daily view stays short) */}
-        {period !== 1 && (
           <div className="mt-5 border-t border-line pt-4">
             <p className="mb-3 text-xs font-medium text-ink-soft">{t("Last {n} days", { n: period })}</p>
             <DayBars keys={keys} values={totals} target={goal} format={litres} />
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* Add / edit / goal sheet */}
       <Sheet

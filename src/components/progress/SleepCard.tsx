@@ -5,6 +5,7 @@ import { Moon, Pencil } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import DayBars from "./DayBars";
 import StatusBadge from "./StatusBadge";
+import FoldCard from "@/components/motion/FoldCard";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
 import { goalFor, progressStore, useProgress } from "@/lib/progress/store";
@@ -62,12 +63,22 @@ export default function SleepCard({ period }: { period: Period }) {
     const mins = sleepMinutes(bed, wake);
     if (mins === null) return setError(t("Choose a bedtime and a wake-up time."));
     if (mins < 60 || mins > 960) return setError(t("That's under 1 hour or over 16 hours. Check the times."));
-    const meta = { bedtime: bed, wakeTime: wake, quality: quality ?? undefined };
+    const meta = {
+      bedtime: bed,
+      wakeTime: wake,
+      quality: quality ?? undefined,
+    };
     if (lastNight) {
       progressStore.updateRecord(lastNight.id, mins, meta);
       showToast(t("Sleep updated"));
     } else {
-      progressStore.addRecord({ metric: "sleep", value: mins, unit: "min", source: "manual", meta });
+      progressStore.addRecord({
+        metric: "sleep",
+        value: mins,
+        unit: "min",
+        source: "manual",
+        meta,
+      });
       showToast(t("{time} of sleep logged", { time: duration(mins) }));
     }
     setMode(null);
@@ -90,69 +101,84 @@ export default function SleepCard({ period }: { period: Period }) {
 
   if (!ready) return <div className="h-56 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />;
 
+  const head = (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint text-forest">
+          <Moon size={18} />
+        </span>
+        <div>
+          <p className="font-semibold">{t("Sleep")}</p>
+          <button onClick={openGoal} className="flex items-center gap-1 text-xs text-ink-soft">
+            {t("Goal")} {goal ? duration(goal) : t("not set")} <Pencil size={11} />
+          </button>
+        </div>
+      </div>
+      <StatusBadge status={status} />
+    </div>
+  );
+
+  // Today (Man tab): what he did last night and the log button
+  const lastNightView = (
+    <>
+      <p className="text-xs font-medium text-ink-soft">{t("Last night")}</p>
+      <p className="text-3xl font-bold">
+        {lastValue === null ? <span className="text-ink-soft">—</span> : duration(lastValue)}
+        <span className="text-base font-medium text-ink-soft"> / {goal ? duration(goal) : "—"}</span>
+      </p>
+      <div className="mt-3">
+        <ProgressBar percent={pct} status={status} label={t("Sleep last night")} />
+      </div>
+      {lastNight ? (
+        <p className="mt-2 text-xs text-ink-soft">
+          {lastNight.meta?.bedtime} → {lastNight.meta?.wakeTime}
+          {lastNight.meta?.quality ? ` · ${t("Quality")}: ${t(RATING_LABELS[lastNight.meta.quality - 1])}` : ""}
+        </p>
+      ) : (
+        <p className="mt-2 text-xs text-ink-soft">{t("Not logged yet for last night.")}</p>
+      )}
+      <button
+        onClick={openLog}
+        className="mt-4 w-full rounded-full bg-forest py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
+      >
+        {t(lastNight ? "Edit last night" : "Log last night")}
+      </button>
+    </>
+  );
+
   return (
     <>
-      <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint text-forest">
-              <Moon size={18} />
-            </span>
-            <div>
-              <p className="font-semibold">{t("Sleep")}</p>
-              <button onClick={openGoal} className="flex items-center gap-1 text-xs text-ink-soft">
-                {t("Goal")} {goal ? duration(goal) : t("not set")} <Pencil size={11} />
-              </button>
-            </div>
-          </div>
-          <StatusBadge status={status} />
-        </div>
-
-        {period === 1 ? (
-          <>
-            <p className="mt-5 text-xs font-medium text-ink-soft">{t("Last night")}</p>
-            <p className="text-3xl font-bold">
-              {lastValue === null ? <span className="text-ink-soft">—</span> : duration(lastValue)}
-              <span className="text-base font-medium text-ink-soft"> / {goal ? duration(goal) : "—"}</span>
-            </p>
-            <div className="mt-3">
-              <ProgressBar percent={pct} status={status} label={t("Sleep last night")} />
-            </div>
-            {lastNight ? (
-              <p className="mt-2 text-xs text-ink-soft">
-                {lastNight.meta?.bedtime} → {lastNight.meta?.wakeTime}
-                {lastNight.meta?.quality ? ` · ${t("Quality")}: ${t(RATING_LABELS[lastNight.meta.quality - 1])}` : ""}
-              </p>
-            ) : (
-              <p className="mt-2 text-xs text-ink-soft">{t("Not logged yet for last night.")}</p>
-            )}
-            <button
-              onClick={openLog}
-              className="mt-4 w-full rounded-full bg-forest py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98]"
-            >
-              {t(lastNight ? "Edit last night" : "Log last night")}
-            </button>
-          </>
-        ) : (
+      {period === 1 ? (
+        <FoldCard
+          id="sleep"
+          head={head}
+          description={t("Log when you went to bed and woke up, and how well you slept.")}
+          peek={lastValue === null ? null : `${t("Last night")}: ${duration(lastValue)}${goal ? ` / ${duration(goal)}` : ""}`}
+        >
+          {lastNightView}
+        </FoldCard>
+      ) : (
+        <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
+          {head}
           <div className="mt-5 grid grid-cols-3 gap-2 text-center">
             <Stat label={t("Average")} value={avg === null ? "—" : duration(avg)} hint={t("recorded nights")} />
             <Stat label={t("Goal reached")} value={`${met}`} hint={t("of {n} nights", { n: recorded })} />
             <Stat label={t("Quality")} value={avgQuality === null ? "—" : `${score(avgQuality)}/5`} hint={t("average")} />
           </div>
-        )}
 
-        {period !== 1 && (
           <div className="mt-5 border-t border-line pt-4">
             <p className="mb-3 text-xs font-medium text-ink-soft">{t("Last {n} nights", { n: period })}</p>
             <DayBars keys={keys} values={values} target={goal} format={duration} />
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       <Sheet open={mode !== null} onClose={() => setMode(null)} title={t(mode === "goal" ? "Sleep goal" : "Last night's sleep")}>
         {mode === "goal" ? (
           <>
-            <label htmlFor="sleep-goal" className="text-xs text-ink-soft">{t("Hours per night")}</label>
+            <label htmlFor="sleep-goal" className="text-xs text-ink-soft">
+              {t("Hours per night")}
+            </label>
             <input
               id="sleep-goal"
               autoFocus
@@ -215,7 +241,9 @@ export default function SleepCard({ period }: { period: Period }) {
         {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
         <div className="mt-5 flex items-center justify-between gap-2">
           {mode === "log" && lastNight ? (
-            <button onClick={remove} className="text-sm font-semibold text-red-600">{t("Delete")}</button>
+            <button onClick={remove} className="text-sm font-semibold text-red-600">
+              {t("Delete")}
+            </button>
           ) : (
             <span />
           )}
@@ -223,7 +251,10 @@ export default function SleepCard({ period }: { period: Period }) {
             <button onClick={() => setMode(null)} className="rounded-full px-5 py-2.5 text-sm font-semibold ring-1 ring-line">
               {t("Cancel")}
             </button>
-            <button onClick={mode === "goal" ? saveGoal : saveLog} className="rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
+            <button
+              onClick={mode === "goal" ? saveGoal : saveLog}
+              className="rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white"
+            >
               {t("Save")}
             </button>
           </div>

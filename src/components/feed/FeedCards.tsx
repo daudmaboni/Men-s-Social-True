@@ -1,5 +1,6 @@
 "use client";
 
+import { openFold } from "@/components/motion/FoldCard";
 import Link from "next/link";
 import { BookOpen, Clock, Flame, Lightbulb, PartyPopper } from "lucide-react";
 import { useToast } from "@/components/motion/Toast";
@@ -27,16 +28,16 @@ export function TodayCard({ f }: { f: HomeFeed }) {
   const pct = f.total ? Math.round((f.doneCount / f.total) * 100) : 0;
   const t = useT();
   return (
-    <section className="rounded-3xl bg-forest-deep p-5 text-white">
+    <section className="kayani-arcs rounded-3xl bg-forest-deep p-5 text-white">
       <p className="text-sm text-mint-strong">{t(f.greeting)}</p>
       {f.isNew ? (
         <>
-          <p className="mt-1 text-2xl font-bold">{t("Try your first activity")}</p>
+          <p className="font-display mt-1 text-2xl font-extrabold">{t("Try your first activity")}</p>
           <p className="mt-1 text-sm text-mint">{t("Pick anything below. Small steps count.")}</p>
         </>
       ) : (
         <>
-          <p className="mt-1 text-2xl font-bold">
+          <p className="font-display mt-1 text-2xl font-extrabold">
             {t("{done} of {total} done today", { done: f.doneCount, total: f.total })}
           </p>
           <div
@@ -54,7 +55,7 @@ export function TodayCard({ f }: { f: HomeFeed }) {
           </div>
           <div className="mt-4 flex items-center justify-between text-xs">
             <span className="text-mint">
-              <span className="text-lg font-bold text-white">{f.points}</span> {t("points · Level {n}", { n: f.level.level })}
+              <span className="mr-1 rounded-full bg-honey px-2 py-0.5 text-sm font-bold text-on-honey">{f.points}</span> {t("points · Level {n}", { n: f.level.level })}
             </span>
             {f.streak > 0 && (
               <span className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 font-semibold">
@@ -90,7 +91,14 @@ export function ReminderCard({ f }: { f: HomeFeed }) {
           <p className="text-xs text-ink-soft">{t(a.detail)}</p>
         </div>
         {a.tracker ? (
-          <a href={`#${a.tracker}`} className="shrink-0 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
+          <a
+            href={`#${a.tracker}`}
+            onClick={(e) => {
+              // Unfold that card and bring it into view (Step 51)
+              e.preventDefault();
+              openFold(a.tracker!);
+            }}
+            className="shrink-0 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white">
             {t("Start")}
           </a>
         ) : (

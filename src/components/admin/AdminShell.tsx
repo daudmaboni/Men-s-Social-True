@@ -3,6 +3,7 @@
 // The Admin Control Center frame: sign-in gate, sidebar (collapsible on desktop, a drawer on phones),
 // appearance controls, and the signed-in admin for every page underneath.
 
+import BrandMark from "@/components/brand/BrandMark";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -127,7 +128,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           }`}
         >
           <div className={`flex items-center gap-2 px-4 py-4 ${collapsed ? "justify-center px-0" : ""}`}>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-forest text-sm font-bold text-mint">MS</div>
+            <BrandMark size={36} />
             {!collapsed && (
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold leading-tight">Control Center</p>
@@ -155,7 +156,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <Menu size={18} />
           </button>
           <p className="text-sm font-bold">{items.find(active)?.label ?? "Control Center"}</p>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-xs font-bold text-mint">MS</div>
+          <BrandMark size={36} />
         </header>
 
         {/* Phone / tablet drawer: close by dragging it left, tapping X, or tapping beside it */}

@@ -1,5 +1,6 @@
 "use client";
 
+import BrandMark from "@/components/brand/BrandMark";
 import { ShoppingBag } from "lucide-react";
 import InboxButton from "@/components/notifications/InboxButton";
 import { useToast } from "@/components/motion/Toast";
@@ -13,7 +14,7 @@ export default function TopBar() {
       {/* On a computer the logo is already in the sidebar, so the page shows its name instead */}
       <h1 className="hidden text-2xl font-bold lg:block">{t("Man")}</h1>
       <div className="flex items-center gap-2 lg:hidden">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-sm font-bold text-mint">MS</div>
+        <BrandMark size={36} />
         <span className="text-base font-semibold">Men&apos;s Social</span>
       </div>
       <div className="flex gap-2">

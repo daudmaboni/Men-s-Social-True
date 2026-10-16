@@ -743,4 +743,13 @@ export const SW: Record<string, string> = {
   "Exercise": "Zoezi",
   "Locked": "Imefungwa",
   "Opens after lesson {n}": "Inafunguka baada ya somo {n}",
+  // Step 51: fold cards on the Man tab
+  "How do you feel today? Rate your energy and mood from 1 to 5.": "Unajisikiaje leo? Pima nguvu na hali yako kuanzia 1 hadi 5.",
+  "Log when you went to bed and woke up, and how well you slept.": "Andika ulipolala na ulipoamka, na ulivyolala vizuri.",
+  "Add each glass or bottle as you drink through the day.": "Ongeza kila glasi au chupa unayokunywa siku nzima.",
+  "Your energy, mood, water and sleep over 7, 30 or 90 days. Built only from what you have logged.": "Nguvu, hali, maji na usingizi wako kwa siku 7, 30 au 90. Imetokana tu na ulichoandika.",
+  "Show more": "Onyesha zaidi",
+  "Show all {n} activities": "Onyesha shughuli zote {n}",
+  "All done for today. Well done.": "Umemaliza zote za leo. Hongera.",
+  "Today": "Leo",
 };

@@ -3,6 +3,7 @@
 // The sign-in screens (men's log in / sign up, new password, and the Studio): one frosted-glass card
 // in the middle of the screen, over soft brand-colour light. X at the top left closes it.
 
+import BrandMark from "@/components/brand/BrandMark";
 import Link from "next/link";
 import { X } from "lucide-react";
 
@@ -16,7 +17,7 @@ export default function AuthScreen({
   /** Where the X goes */
   closeHref: string;
   closeLabel: string;
-  /** Shown under the MS logo at the top of the card (default "Men's Social") */
+  /** Shown under the Kayani logo at the top of the card (default "Men's Social") */
   title?: string;
   subtitle?: string;
   children: React.ReactNode;
@@ -35,7 +36,7 @@ export default function AuthScreen({
           </Link>
 
           <div className="flex flex-col items-center pb-5 text-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-forest text-sm font-bold text-mint shadow-lg shadow-forest/25">MS</div>
+            <BrandMark size={44} className="rounded-2xl shadow-lg shadow-forest/25" />
             <p className="mt-2 text-sm font-bold leading-tight">{title ?? "Men's Social"}</p>
             {subtitle && <p className="text-[11px] text-ink-soft">{subtitle}</p>}
           </div>

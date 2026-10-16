@@ -2,36 +2,43 @@
 /* `dark:` utilities follow the app's own Light/Dark/Auto setting (data-theme on <html>) */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Brand tokens — Kayani Men's Social (Fernly-inspired: white, forest green, mint) */
+/* Brand tokens — Kayani (brand system "Kayani": colour 60/30/10 = Kayani Green / cream / honey) */
 /* Colour modes: the "a-" values are the chosen colour (Green, Blue or Red, set on <html data-accent>). */
 :root {
-  /* Green (default) */
-  --a-forest: #0f5c46;
-  --a-deep: #073b2d;
-  --a-mint: #dff3ea;
-  --a-strong: #5dcaa5;
-  --a-deep-rgb: 7 59 45;
-  --a-mint-rgb: 223 243 234;
-  --a-strong-rgb: 93 202 165;
+  /* Kayani Green (default). The logo green is #029046; buttons and green text use the stronger #027a3d
+     so white and small text stay readable (5.4:1). */
+  --a-forest: #027a3d;
+  --a-deep: #0b3b24;
+  --a-mint: #dcefe2;
+  --a-strong: #3dbf7a;
+  --a-deep-rgb: 11 59 36;
+  --a-mint-rgb: 220 239 226;
+  --a-strong-rgb: 61 191 122;
   /* …and its night version */
-  --a-forest-dark: #17785b;
-  --a-deep-dark: #0a3328;
-  --a-bright: #6fd3ae;
-  --a-soft: #d6f3e7;
-  --a-tint-dark: #16382d;
-  --a-bg-dark: #0b1411;
-  --a-surface-dark: #131f1b;
-  --a-line-dark: #24342e;
+  --a-forest-dark: #08803f;
+  --a-deep-dark: #0f4a2e;
+  --a-bright: #3dbf7a;
+  --a-soft: #d6f0df;
+  --a-tint-dark: #173a28;
+  --a-bg-dark: #0c1712;
+  --a-surface-dark: #13221a;
+  --a-line-dark: #22352a;
 
-  --bg: #f4f6f4;
-  --surface: #ffffff;
-  --ink: #0f1f1a;
-  --ink-soft: #5b6b65;
-  --line: #e3e8e5;
+  /* The 30%: warm cream ground, like ugali and sisal */
+  --bg: #f5f0e6;
+  --surface: #fffdf8;
+  --ink: #13231a;
+  --ink-soft: #56665c;
+  --line: #e3dccd;
   --forest: var(--a-forest);
   --forest-deep: var(--a-deep);
   --mint: var(--a-mint);
   --mint-strong: var(--a-strong);
+  /* The 10%: honey. One thing per screen (points, an offer). A fill, never text on cream. */
+  --honey: #e9a23b;
+  --on-honey: #0b3b24;
+  /* The logo green itself, for big brand fields */
+  --kayani: #029046;
 }
 [data-accent="blue"] {
   --a-forest: #1e5bb8;
@@ -50,6 +57,7 @@
   --a-surface-dark: #121a26;
   --a-line-dark: #233046;
   --bg: #f3f5f9;
+  --surface: #ffffff;
   --line: #e1e6ee;
 }
 [data-accent="red"] {
@@ -69,6 +77,7 @@
   --a-surface-dark: #1e1316;
   --a-line-dark: #3a2328;
   --bg: #f8f4f4;
+  --surface: #ffffff;
   --line: #ece3e4;
 }
 
@@ -82,7 +91,11 @@
   --color-forest-deep: var(--forest-deep);
   --color-mint: var(--mint);
   --color-mint-strong: var(--mint-strong);
+  --color-honey: var(--honey);
+  --color-on-honey: var(--on-honey);
+  --color-kayani: var(--kayani);
   --font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Plus Jakarta Sans Variable", system-ui, sans-serif;
 }
 
 html {
@@ -97,6 +110,13 @@ body {
   font-family: "Plus Jakarta Sans Variable", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Headlines in the Kayani headline face; everything else stays Plus Jakarta Sans */
+h1, h2, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+/* Kayani arcs: the K's wings and arm as a pattern (brand system "Kayani"). Behind content, never under body text. */
+.kayani-arcs { background-image: url("/brand/kayani-arcs-soft.svg"); background-repeat: no-repeat; background-size: 288px; background-position: right -96px top -72px; }
+.kayani-arcs-green { background-image: url("/brand/kayani-arcs-on-green.svg"); background-size: 240px; }
 
 /* Gentle entrance motion */
 @keyframes rise {
@@ -634,3 +654,20 @@ button:disabled { cursor: not-allowed; }
 }
 .countdown-in { animation: countdown-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: top right; }
 @media (prefers-reduced-motion: reduce) { .mini-in, .mini-pulse, .countdown-in { animation: none; } }
+
+/* Fold cards (Step 51): the inside unfolds like paper opening downwards when he taps the card */
+.fold-body { transform-origin: top center; }
+.expand[data-open="true"] > * > .fold-body { animation: fold-open 0.45s cubic-bezier(0.2, 0.9, 0.25, 1.1) both; }
+.expand[data-open="false"] > * > .fold-body { opacity: 0; transform: rotateX(-40deg); transition: opacity 0.2s ease-in, transform 0.25s ease-in; }
+.expand[data-instant="true"] > * > .fold-body { transition: none; animation: none; }
+@keyframes fold-open {
+  0% { opacity: 0; transform: rotateX(-50deg) translateY(-8px); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .expand[data-open="true"] > * > .fold-body { animation: none; }
+  .expand[data-open="false"] > * > .fold-body { transition: none; }
+}
+/* Inside "Your trends" the chart card sits flat (no card inside a card) */
+.trend-inner > section { padding: 0; background: transparent; box-shadow: none; border-radius: 0; }
