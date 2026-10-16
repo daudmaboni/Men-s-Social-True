@@ -7,13 +7,15 @@
 // - All three tabs stay open in the background: no reloads, and each keeps its scroll position.
 // - The address (/social, /man, /me) follows the tab you land on.
 // - Other pages (an article, sign-up…) open on top of the strip and slide in from the right.
+// - Swiping sideways on such a page works too: it slides away and the next tab comes in (Step 53).
+// - Each tab remembers the page it was left on, and opens it again when he comes back (Step 54).
 
 import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import SocialTab from "@/components/tabs/SocialTab";
 import ManTab from "@/components/tabs/ManTab";
 import MeTab from "@/components/tabs/MeTab";
-import { isTabRoot, stripPosition, TAB_PATHS, tabFor } from "@/lib/tabs";
+import { isTabRoot, stripPosition, TAB_PATHS, tabFor, tabMemory } from "@/lib/tabs";
 import LockedTab from "@/components/account/LockedTab";
 import { cancelGlide, glideTo, holdSnap, isGliding, landingTab } from "@/lib/tabGlide";
 import { useAccount } from "@/lib/account/useAccount";
@@ -82,7 +84,10 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
     if (!el || dragging.current || isGliding()) return;
     const landed = Math.round(el.scrollLeft / el.clientWidth);
     if (isTabRoot(window.location.pathname) && TAB_PATHS[landed] !== window.location.pathname) {
-      router.replace(TAB_PATHS[landed], { scroll: false });
+      // Swiped back to a tab he had left on a page (the course…): open that page straight away
+      const back = tabMemory.take(landed);
+      if (back) router.push(back, { scroll: false });
+      else router.replace(TAB_PATHS[landed], { scroll: false });
     }
   }, [router]);
 
@@ -163,6 +168,193 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
     glideTo(el, to * el.clientWidth, settle);
   };
 
+  // ---- Swiping on a page opened on top (a lesson, an article, the course…) ----
+  // The page slides away with the finger and the next tab slides in beside it, like swiping between tabs.
+  // Let go far or fast enough and that tab opens; otherwise the page springs back.
+  const overlay = useRef<HTMLDivElement>(null);
+  const odrag = useRef<{ id: number; x: number; y: number; axis: "x" | "y" | null; dx: number; samples: { t: number; dx: number }[] } | null>(null);
+  const leaving = useRef(false);
+
+  const onOverlayDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" || !e.isPrimary || tab < 0 || leaving.current) return;
+    if ((e.target as Element).closest?.(".overflow-x-auto, input, textarea, select, video, [data-own-swipe], [role=dialog]")) return;
+    odrag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, axis: null, dx: 0, samples: [] };
+  };
+
+  const onOverlayMove = (e: React.PointerEvent) => {
+    const el = strip.current;
+    const ov = overlay.current;
+    const d = odrag.current;
+    if (!el || !ov || !d || e.pointerId !== d.id) return;
+    let dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      d.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+      if (d.axis === "y") {
+        odrag.current = null; // he's scrolling the page
+        return;
+      }
+      ov.style.transition = "none";
+      holdSnap(el);
+      snapshot(); // the page's picture stays on its tab while the next one slides in
+    }
+    // No tab on that side (Social has nothing to its left, Me nothing to its right): a little resistance
+    const w = el.clientWidth;
+    if ((dx > 0 && tab === 0) || (dx < 0 && tab === TAB_PATHS.length - 1)) dx = dx / 4;
+    d.dx = dx;
+    ov.style.transform = `translateX(${dx}px)`;
+    el.scrollLeft = Math.min(Math.max(tab * w - dx, 0), el.scrollWidth - w);
+    setBubble(el.scrollLeft / w, true);
+    const now = performance.now();
+    d.samples.push({ t: now, dx });
+    while (d.samples.length > 2 && now - d.samples[0].t > 100) d.samples.shift();
+  };
+
+  const endOverlayDrag = (e: React.PointerEvent) => {
+    const el = strip.current;
+    const ov = overlay.current;
+    const d = odrag.current;
+    if (!el || !ov || !d || e.pointerId !== d.id) return;
+    odrag.current = null;
+    if (d.axis !== "x") return;
+    const w = el.clientWidth;
+    const first = d.samples[0];
+    const last = d.samples[d.samples.length - 1];
+    const velocity = first && last && last.t > first.t ? -(last.dx - first.dx) / (last.t - first.t) : 0;
+    const to = landingTab({ startTab: tab, dragPx: -d.dx, width: w, velocity, count: TAB_PATHS.length });
+    const ease = "transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)";
+    ov.style.transition = ease;
+    if (to === tab) {
+      // Not far enough: the page springs back over its tab
+      ov.style.transform = "translateX(0)";
+      glideTo(el, tab * w, () => {
+        setBubble(tab);
+        dropGhost(tab);
+      });
+      return;
+    }
+    // The page leaves on the side he swiped to, the next tab glides in, then the address follows
+    leaving.current = true;
+    ov.style.transform = `translateX(${to > tab ? -w : w}px)`;
+    glideTo(el, to * w);
+    setTimeout(() => {
+      router.push(TAB_PATHS[to], { scroll: false });
+    }, 280);
+  };
+
+  // ---- The left page's picture (Step 55) ----
+  // When he leaves a page on top (the course) for another tab, a still copy of it stays in that tab's place
+  // in the strip. Swiping back, he sees the course slide in, not the top of Man; then the real page opens
+  // over it at the same scroll position and the copy goes away.
+  const ghostHosts = useRef<(HTMLDivElement | null)[]>([]);
+  const ghosts = useRef<Record<number, { node: HTMLElement; scrollTop: number; path: string }>>({});
+
+  const paintGhost = useCallback((i: number) => {
+    const host = ghostHosts.current[i];
+    if (!host) return;
+    const g = ghosts.current[i];
+    if (!g) {
+      host.replaceChildren();
+      host.hidden = true;
+      return;
+    }
+    g.node.style.transform = `translateY(${-g.scrollTop}px)`;
+    host.replaceChildren(g.node);
+    host.hidden = false;
+  }, []);
+
+  const snapshot = useCallback(() => {
+    const ov = overlay.current;
+    const page = ov?.firstElementChild as HTMLElement | null;
+    if (!ov || !page || tab < 0) return;
+    const node = page.cloneNode(true) as HTMLElement;
+    node.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
+    node.querySelectorAll("video, audio, iframe").forEach((n) => n.remove());
+    ghosts.current[tab] = { node, scrollTop: ov.scrollTop, path: window.location.pathname + window.location.search };
+    paintGhost(tab);
+  }, [tab, paintGhost]);
+
+  const dropGhost = useCallback(
+    (i: number) => {
+      if (!ghosts.current[i]) return;
+      delete ghosts.current[i];
+      paintGhost(i);
+    },
+    [paintGhost],
+  );
+
+  // Taps on the tab bar or the sidebar while on a page on top: take the picture before the address changes
+  useEffect(() => {
+    if (onRoot) return;
+    const onDown = (e: PointerEvent) => {
+      if ((e.target as Element).closest?.("nav[aria-label='Main'], aside")) snapshot();
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [onRoot, snapshot]);
+
+  // ---- Each tab remembers the page he left it on (Step 54) ----
+  // He's on the course (Man), swipes or taps over to Me, then comes back to Man: the course opens again,
+  // not the top of Man. Going back to a tab's top himself (Back, or tapping the tab he's on) forgets it.
+  const prevPath = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevPath.current;
+    const here = pathname + window.location.search;
+    prevPath.current = here;
+    if (!prev) return;
+    const prevPathname = prev.split("?")[0];
+    const from = tabFor(prevPathname);
+    const to = tabFor(pathname);
+    if (from === to) {
+      if (onRoot) {
+        tabMemory.forget(to); // back to this tab's top on purpose
+        dropGhost(to);
+      }
+      return;
+    }
+    // Leaving a page opened on top of a tab for another tab: remember it
+    if (from >= 0 && !isTabRoot(prevPathname)) tabMemory.remember(from, prev.replace(/([?&])play=1(&|$)/, "$1").replace(/[?&]$/, ""));
+    // Arriving at the top of a tab he had left on a page: open that page again
+    if (to >= 0 && onRoot) {
+      const back = tabMemory.take(to);
+      if (back && back.split("?")[0] !== pathname) router.push(back, { scroll: false });
+    }
+  }, [pathname, onRoot, router, dropGhost]);
+
+  // A new page on top starts in place (after a swipe away, the next one must not open off-screen).
+  // If it's the page he left earlier, it opens at the same scroll position and its picture goes away.
+  useEffect(() => {
+    leaving.current = false;
+    const ov = overlay.current;
+    if (ov) {
+      ov.style.transition = "";
+      ov.style.transform = "";
+    }
+    const g = tab >= 0 ? ghosts.current[tab] : undefined;
+    if (!g) return;
+    if (onRoot) return; // still on the tab's top: keep the picture until the page itself opens
+    const here = pathname + window.location.search;
+    if (g.path.split("?")[0] !== pathname) {
+      dropGhost(tab);
+      return;
+    }
+    let tries = 0;
+    const restore = () => {
+      const o = overlay.current;
+      if (o && (o.scrollHeight - o.clientHeight >= g.scrollTop - 2 || tries > 30)) {
+        o.scrollTop = g.scrollTop;
+        requestAnimationFrame(() => dropGhost(tab));
+        return;
+      }
+      tries++;
+      requestAnimationFrame(restore);
+    };
+    void here;
+    requestAnimationFrame(restore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   // The three tabs are built once and kept: switching tabs (or the address changing) doesn't redraw them,
   // which removed a stutter at the end of every swipe.
   const panels = useMemo(
@@ -204,10 +396,32 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
         aria-hidden={!onRoot}
       >
         {panels}
+        {/* A still picture of the page each tab was left on (Step 55), sitting in that tab's place */}
+        {TAB_PATHS.map((p, i) => (
+          <div
+            key={p}
+            ref={(el) => {
+              ghostHosts.current[i] = el;
+            }}
+            className="tab-ghost"
+            style={{ left: `${i * 100}%` }}
+            hidden
+            aria-hidden
+            inert
+          />
+        ))}
       </div>
 
       {!onRoot && (
-        <div className="overlay-page" id="overlay-page">
+        <div
+          ref={overlay}
+          className="overlay-page"
+          id="overlay-page"
+          onPointerDown={onOverlayDown}
+          onPointerMove={onOverlayMove}
+          onPointerUp={endOverlayDrag}
+          onPointerCancel={endOverlayDrag}
+        >
           <div className="mx-auto max-w-md px-5 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">{children}</div>
         </div>
       )}

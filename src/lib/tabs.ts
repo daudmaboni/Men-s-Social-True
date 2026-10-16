@@ -36,3 +36,43 @@ export const stripPosition = {
     };
   },
 };
+
+/**
+ * The page each tab was left on (e.g. Man → /man/course/wz-2-0), so coming back to the tab opens it again.
+ * Kept for this visit only (sessionStorage), so a fresh start always opens the tabs at their top.
+ */
+const MEMORY_KEY = "ms_tab_memory";
+function readMemory(): Record<string, string> {
+  try {
+    return JSON.parse(sessionStorage.getItem(MEMORY_KEY) ?? "{}") as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+function writeMemory(m: Record<string, string>) {
+  try {
+    sessionStorage.setItem(MEMORY_KEY, JSON.stringify(m));
+  } catch {}
+}
+export const tabMemory = {
+  remember(tab: number, path: string) {
+    writeMemory({ ...readMemory(), [tab]: path });
+  },
+  /** The remembered page for this tab, and forget it (it's being opened now). */
+  take(tab: number): string | null {
+    const m = readMemory();
+    const path = m[tab] ?? null;
+    if (path) {
+      delete m[tab];
+      writeMemory(m);
+    }
+    return path;
+  },
+  forget(tab: number) {
+    const m = readMemory();
+    if (m[tab]) {
+      delete m[tab];
+      writeMemory(m);
+    }
+  },
+};

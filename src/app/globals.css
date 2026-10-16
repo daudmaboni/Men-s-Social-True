@@ -246,6 +246,9 @@ h1, h2, .font-display { font-family: var(--font-display); letter-spacing: -0.01e
   transition: opacity 0.15s ease-out;
 }
 .tab-strip::-webkit-scrollbar { display: none; }
+/* The picture of the page a tab was left on (TabPager), covering that tab in the strip */
+.tab-strip { position: fixed; }
+.tab-ghost { position: absolute; top: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); z-index: 2; pointer-events: none; }
 /* Each tab scrolls up and down on its own, and remembers where it was */
 .tab-panel {
   flex: 0 0 100%;
@@ -386,7 +389,9 @@ h1, h2, .font-display { font-family: var(--font-display); letter-spacing: -0.01e
 }
 
 /* Two-finger pinch is used for light/dark, so the app itself doesn't zoom */
-.tab-strip, .overlay-page { touch-action: pan-x pan-y; }
+.tab-strip { touch-action: pan-x pan-y; }
+/* Pages opened on top: up/down is the phone's own; a sideways swipe moves to the next tab (TabPager) */
+.overlay-page { touch-action: pan-y; }
 /* Inside a tab, up/down scrolling stays the phone's own; a sideways swipe is handled by the app,
    which glides to the next tab quickly (src/lib/tabGlide.ts). Card rows still scroll sideways themselves. */
 .tab-panel { touch-action: pan-y; }
