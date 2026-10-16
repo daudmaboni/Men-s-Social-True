@@ -611,3 +611,23 @@ button:disabled { cursor: not-allowed; }
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
 }
 .course-range:focus-visible { outline: 2px solid var(--mint-strong); outline-offset: 4px; border-radius: 9999px; }
+
+/* Mini player (Step 49): slides up above the bottom bar when a lesson plays on another page */
+@keyframes mini-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.mini-in { animation: mini-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+/* The lesson picture breathes gently while it plays */
+@keyframes mini-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.94); }
+}
+.mini-pulse { animation: mini-pulse 1.6s ease-in-out infinite; }
+/* "Next lesson in 10" pops in at the top right of the lesson card */
+@keyframes countdown-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+.countdown-in { animation: countdown-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both; transform-origin: top right; }
+@media (prefers-reduced-motion: reduce) { .mini-in, .mini-pulse, .countdown-in { animation: none; } }

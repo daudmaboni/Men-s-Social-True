@@ -733,4 +733,14 @@ export const SW: Record<string, string> = {
   "Lesson finished · +{n} points": "Somo limekamilika · +{n} pointi",
   "{n}% heard · the next lesson opens at {pass}%": "Umesikiliza {n}% · somo linalofuata linafunguka kwa {pass}%",
   "I've read it · +{n} points": "Nimesoma · +{n} pointi",
+  // Step 49: lesson strip, countdown, mini player
+  "Swipe to see other lessons": "Telezesha kuona masomo mengine",
+  "Next lesson in {n} seconds": "Somo linalofuata baada ya sekunde {n}",
+  "Stop and close": "Simamisha na funga",
+  "Open the lesson": "Fungua somo",
+  "Before the next lesson": "Kabla ya somo linalofuata",
+  "Keeps playing when you leave this page.": "Inaendelea kucheza ukitoka kwenye ukurasa huu.",
+  "Exercise": "Zoezi",
+  "Locked": "Imefungwa",
+  "Opens after lesson {n}": "Inafunguka baada ya somo {n}",
 };

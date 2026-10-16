@@ -35,7 +35,7 @@ import {
   type CourseRow,
 } from "@/lib/course/repo";
 import { addLesson, addModule, checkCourse, type CourseIssue, fromLines, matchUpload, move, moveLesson, removeLesson, toLines, updateLesson, updateModule } from "@/lib/course/studio";
-import { flatLessons, lessonMinutes, type Course, type CourseLesson, type LessonKind } from "@/lib/course/types";
+import { flatLessons, lessonAfter, lessonMinutes, type Course, type CourseLesson, type LessonKind } from "@/lib/course/types";
 import { clock } from "@/lib/course/progress";
 import { WAZIMU_OUTLINE } from "@/lib/course/wazimu";
 
@@ -669,6 +669,31 @@ function LessonEditor({ courseId, lesson: l, editable, onChange, onDelete }: { c
           <input type="checkbox" checked={Boolean(l.hidden)} onChange={(e) => set("hidden", e.target.checked)} className="h-4 w-4 accent-[var(--forest)]" />
           Hide from men
         </label>
+      </div>
+      {/* What happens when this lesson ends (Step 49): the next one comes on its own after 10 seconds,
+          or the app waits because he has something to do first (questions, an exercise) */}
+      <div className="grid gap-3 rounded-xl bg-bg p-3 ring-1 ring-line">
+        <Field label="After this lesson">
+          <select
+            className={input}
+            value={l.after ?? ""}
+            onChange={(e) => set("after", (e.target.value || undefined) as CourseLesson["after"])}
+          >
+            <option value="">Default ({lessonAfter({ ...l, after: undefined }).mode === "wait" ? "wait for the man" : "go on automatically"})</option>
+            <option value="auto">Go on automatically (10-second countdown)</option>
+            <option value="wait">Wait for the man (he has something to do first)</option>
+          </select>
+        </Field>
+        {lessonAfter(l).mode === "wait" && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="What he does first (English)">
+              <input className={input} value={l.task ?? ""} placeholder={lessonAfter({ ...l, task: undefined }).task ?? "e.g. Write your answers first."} onChange={(e) => set("task", e.target.value || undefined)} />
+            </Field>
+            <Field label="Kiswahili">
+              <input className={input} value={l.taskSw ?? ""} placeholder={lessonAfter({ ...l, taskSw: undefined }).taskSw ?? "mf. Andika majibu yako kwanza."} onChange={(e) => set("taskSw", e.target.value || undefined)} />
+            </Field>
+          </div>
+        )}
       </div>
       <Field label="Staff note (never shown to men)">
         <textarea rows={2} className={input} value={l.staffNote ?? ""} onChange={(e) => set("staffNote", e.target.value)} />

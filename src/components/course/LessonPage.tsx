@@ -5,17 +5,22 @@
 // - Counts only what he actually listens to: when he has heard the pass share (70%), the lesson is
 //   finished, points are added and the next lesson opens.
 // - Lock screen shows only "Lesson 5 · Men's Social", never the lesson title.
+// - Step 49: audio plays in the app-wide player (keeps playing on other pages, mini player), a 10-second
+//   countdown to the next lesson at the top right when it ends, and lessons that wait for him show what to do.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, ListOrdered, Lock, Pause, Play, RotateCcw, RotateCw, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ListChecks, ListOrdered, Lock, Pause, Play, RotateCcw, RotateCw, ShieldCheck } from "lucide-react";
 import CourseArt from "./CourseArt";
+import Countdown from "./Countdown";
+import { toPlayerLesson } from "./CoursePlayerHost";
+import { coursePlayer, useCoursePlayer } from "@/lib/course/player";
 import { useToast } from "@/components/motion/Toast";
 import { feedStore, useFeed } from "@/lib/feed/store";
 import { pick, useMainCourse } from "@/lib/course/useCourses";
 import { clock, courseView, heardStep, passReached, passSeconds } from "@/lib/course/progress";
-import { lessonMinutes, type Course, type FlatLesson } from "@/lib/course/types";
+import { lessonAfter, lessonMinutes, type Course, type FlatLesson } from "@/lib/course/types";
 import { useT } from "@/lib/i18n";
 
 const SPEEDS = [1, 1.25, 1.5, 0.75];
@@ -106,7 +111,11 @@ export default function LessonPage({ id }: { id: string }) {
           <p className="mt-1 text-xs text-mint">{t("Reading")} · {t("{n} min", { n: lessonMinutes(lesson) })}</p>
         </header>
       ) : (
-        <Player course={course} lesson={lesson} moduleTitle={pick(sw, mod.title, mod.titleSw)} done={done} hasNext={Boolean(nextLesson)} />
+        lesson.kind === "audio" ? (
+          <AudioPlayer course={course} lesson={lesson} moduleTitle={pick(sw, mod.title, mod.titleSw)} done={done} />
+        ) : (
+          <Player course={course} lesson={lesson} moduleTitle={pick(sw, mod.title, mod.titleSw)} done={done} hasNext={Boolean(nextLesson)} />
+        )
       )}
 
       {caution && (
@@ -133,6 +142,20 @@ export default function LessonPage({ id }: { id: string }) {
           </ol>
         </div>
       )}
+
+      {/* Lessons that wait for him: what to do before moving on */}
+      {(() => {
+        const after = lessonAfter(lesson);
+        const task = pick(sw, after.task, after.taskSw);
+        return after.mode === "wait" && task && nextLesson ? (
+          <p className="flex items-start gap-2 rounded-2xl bg-mint/60 p-4 text-sm text-forest-deep">
+            <ListChecks size={16} className="mt-0.5 shrink-0" />
+            <span>
+              <b className="font-semibold">{t("Before the next lesson")}:</b> {task}
+            </span>
+          </p>
+        ) : null;
+      })()}
 
       {done && nextLesson ? (
         <Link
@@ -167,7 +190,113 @@ export default function LessonPage({ id }: { id: string }) {
   );
 }
 
-/* ───────────── Audio / video ───────────── */
+/* ───────────── Audio (app-wide player, Step 49) ───────────── */
+
+function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; lesson: FlatLesson & { state: string; progress?: { pos: number; heard: number } }; moduleTitle: string; done: boolean }) {
+  const t = useT();
+  const sw = t.lang === "sw";
+  const params = useSearchParams();
+  const p = useCoursePlayer();
+  const mine = p.lesson?.id === lesson.id;
+  const load = useCallback(
+    (autoplay: boolean) => coursePlayer.load(toPlayerLesson(course, lesson, sw), lesson.progress ?? {}, { autoplay, lockLabel: t("Lesson {n}", { n: "{n}" }) }),
+    [course, lesson, sw, t],
+  );
+
+  // "Play" on the course card brings him here with ?play=1: start straight away
+  useEffect(() => {
+    if (params.get("play") === "1" && coursePlayer.get().lesson?.id !== lesson.id) load(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson.id]);
+
+  const time = mine ? p.time : lesson.progress?.pos ?? 0;
+  const duration = (mine && p.duration) || lesson.seconds || 0;
+  const heard = mine ? p.heard : lesson.progress?.heard ?? 0;
+  const playing = mine && p.playing;
+  const finished = done || (mine && Boolean(p.lesson?.done));
+  const need = passSeconds(duration, course.passPercent);
+  const heardPct = duration ? Math.min(100, Math.round((heard / duration) * 100)) : 0;
+  const SPEED_LIST = SPEEDS;
+
+  return (
+    <section className="relative overflow-hidden rounded-[28px] bg-forest-deep text-white">
+      {/* "Next lesson in 10" when it ends */}
+      <Countdown forLesson={lesson.id} className="absolute right-3 top-3 z-10" />
+      <div className="flex justify-center pt-7">
+        <CourseArt className={`h-28 w-28 rounded-[28px] shadow-lg transition-transform duration-500 ${playing ? "scale-105" : ""}`} size={40} />
+      </div>
+      <div className="px-5 pb-5 pt-5 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-mint-strong">
+          {t("Module {n}", { n: lesson.moduleIndex + 1 })} · {moduleTitle}
+        </p>
+        <h1 className="mt-1.5 text-[24px] font-bold leading-tight">{pick(sw, lesson.title, lesson.titleSw)}</h1>
+        {!sw && <p className="mt-1 text-xs text-mint">{t("In Kiswahili")}</p>}
+
+        <input
+          type="range"
+          min={0}
+          max={Math.max(duration, 1)}
+          step={1}
+          value={Math.min(time, duration || time)}
+          disabled={!mine}
+          onChange={(e) => coursePlayer.seek(Number(e.target.value))}
+          aria-label={t("Position in the lesson")}
+          className="course-range mt-5 w-full disabled:opacity-60"
+          style={{ ["--pct" as string]: `${duration ? (time / duration) * 100 : 0}%` }}
+        />
+        <div className="mt-1 flex justify-between text-left text-[11px] tabular-nums text-mint">
+          <span>{clock(time)}</span>
+          <span>-{clock(Math.max(0, duration - time))}</span>
+        </div>
+        <div className="mt-3 flex items-center justify-between">
+          <button
+            onClick={() => coursePlayer.setSpeed(SPEED_LIST[(SPEED_LIST.indexOf(p.speed) + 1) % SPEED_LIST.length])}
+            className="flex h-10 w-14 items-center justify-center rounded-full bg-white/10 text-xs font-bold tabular-nums"
+            aria-label={t("Playback speed")}
+          >
+            {p.speed}×
+          </button>
+          <button onClick={() => mine && coursePlayer.skip(-15)} disabled={!mine} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white disabled:opacity-40" aria-label={t("Back 15 seconds")}>
+            <RotateCcw size={26} />
+            <span className="absolute text-[9px] font-bold">15</span>
+          </button>
+          <button
+            onClick={() => (mine ? coursePlayer.toggle() : load(true))}
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-mint-strong text-forest-deep shadow-lg transition-transform active:scale-95"
+            aria-label={playing ? t("Pause") : t("Play")}
+          >
+            {playing ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" className="translate-x-0.5" />}
+          </button>
+          <button onClick={() => mine && coursePlayer.skip(15)} disabled={!mine} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white disabled:opacity-40" aria-label={t("Forward 15 seconds")}>
+            <RotateCw size={26} />
+            <span className="absolute text-[9px] font-bold">15</span>
+          </button>
+          <span className="w-14" />
+        </div>
+
+        {mine && p.failed && <p className="mt-3 rounded-2xl bg-white/10 p-3 text-left text-xs text-mint">{t("This lesson couldn't play. Check your internet and try again.")}</p>}
+
+        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2.5 text-left text-xs text-mint">
+          {finished ? (
+            <>
+              <Check size={15} className="shrink-0 text-mint-strong" /> {t("Lesson finished · +{n} points", { n: lesson.points })}
+            </>
+          ) : (
+            <span className="min-w-0 flex-1">
+              <span className="block">{t("{n}% heard · the next lesson opens at {pass}%", { n: heardPct, pass: course.passPercent })}</span>
+              <span className="relative mt-2 block h-1.5 overflow-hidden rounded-full bg-white/15">
+                <span className="absolute inset-y-0 left-0 rounded-full bg-mint-strong" style={{ width: `${Math.min(100, (heard / Math.max(need, 1)) * 100)}%` }} />
+              </span>
+            </span>
+          )}
+        </div>
+        <p className="mt-2 text-[11px] text-mint/80">{t("Keeps playing when you leave this page.")}</p>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────── Video ───────────── */
 
 function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course; lesson: FlatLesson & { progress?: { pos: number; heard: number } }; moduleTitle: string; done: boolean; hasNext: boolean }) {
   const t = useT();
@@ -291,7 +420,10 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
     preload: "metadata" as const,
     onLoadedMetadata: onLoaded,
     onTimeUpdate: onTime,
-    onPlay: () => setPlaying(true),
+    onPlay: () => {
+      setPlaying(true);
+      coursePlayer.pause(); // a video lesson takes over from any audio lesson
+    },
     onPause: () => {
       setPlaying(false);
       save();

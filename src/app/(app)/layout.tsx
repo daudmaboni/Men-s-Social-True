@@ -6,6 +6,8 @@ import AccountSync from "@/components/account/AccountSync";
 import AccountInviteSheet from "@/components/account/AccountInvite";
 import ThemeGesture from "@/components/ThemeGesture";
 import ProfilePrompt from "@/components/me/ProfilePrompt";
+import CoursePlayerHost from "@/components/course/CoursePlayerHost";
+import MiniPlayer from "@/components/course/MiniPlayer";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +18,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <ThemeGesture />
       {/* The three tabs live in the pager; other pages (children) open on top of it */}
       <TabPager>{children}</TabPager>
+      {/* Lessons keep playing on every page; the mini player shows them (Step 49) */}
+      <CoursePlayerHost />
+      <MiniPlayer />
       <BottomNav />
       {/* On a computer the tabs sit in a sidebar instead of the bottom bar */}
       <SideNav />

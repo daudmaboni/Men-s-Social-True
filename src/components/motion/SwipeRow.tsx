@@ -19,6 +19,7 @@ export default function SwipeRow({
   hint,
   slideClass = "w-[calc(100%-0.5rem)] lg:w-[calc((100%-2rem)/3)]",
   label,
+  focus,
 }: {
   /** Kept for older callers; the hint no longer depends on it. */
   id?: string;
@@ -27,6 +28,8 @@ export default function SwipeRow({
   hint: string;
   slideClass?: string;
   label?: string;
+  /** Show this card (e.g. his current lesson): jumps there at first, glides there when it changes. */
+  focus?: number;
 }) {
   const t = useT();
   const scroller = useRef<HTMLDivElement>(null);
@@ -62,6 +65,21 @@ export default function SwipeRow({
       swiped();
     }
   }, [swiped]);
+
+  // Bring the focused card into view (no animation the first time)
+  const focused = useRef<number | null>(null);
+  useEffect(() => {
+    const el = scroller.current;
+    if (focus === undefined || focus < 0 || !el) return;
+    const kid = el.children[focus] as HTMLElement | undefined;
+    if (!kid) return;
+    const first = focused.current === null;
+    if (focused.current === focus) return;
+    focused.current = focus;
+    last.current = kid.offsetLeft - (el.children[0] as HTMLElement).offsetLeft;
+    el.scrollTo({ left: last.current, behavior: first ? "instant" : "smooth" });
+    setIndex(focus);
+  }, [focus, slides.length]);
 
   const go = (i: number) => {
     const el = scroller.current;
@@ -106,6 +124,12 @@ export default function SwipeRow({
             {hint}
           </p>
           <div className="flex items-center gap-2">
+            {/* Long rows (a course's lessons): "3 / 37" instead of a dot for each */}
+            {slides.length > 8 ? (
+              <span className="rounded-full bg-bg px-2.5 py-1 text-[11px] font-bold tabular-nums text-ink-soft ring-1 ring-line">
+                {index + 1} / {slides.length}
+              </span>
+            ) : (
             <div className="flex items-center gap-1.5">
               {slides.map((_, i) => (
                 <button
@@ -117,6 +141,7 @@ export default function SwipeRow({
                 />
               ))}
             </div>
+            )}
             {/* Arrows for mouse users on a computer */}
             <button
               onClick={() => go(Math.max(0, index - 1))}
