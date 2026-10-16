@@ -15,6 +15,7 @@ import { duration, RATING_LABELS, score } from "@/lib/progress/format";
 import type { Period } from "@/lib/progress/types";
 import { CATEGORY_LABEL, clockOf, sessionMinutes, sleepCategory, weekInsight, weekSummary } from "@/lib/progress/sleep";
 import { sleepTracker, useSleepTracker } from "@/lib/progress/sleepTracker";
+import { isNativeSleep, nativeSleep, type NativeStatus } from "@/lib/native/sleepDetection";
 import { shiftKey } from "@/lib/progress/dates";
 import { useT } from "@/lib/i18n";
 
@@ -39,6 +40,9 @@ export default function SleepCard({ period }: { period: Period }) {
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
+  // Inside the Android app, Google's sleep detection replaces the app-use estimate (known after the first paint)
+  const [native, setNative] = useState(false);
+  useEffect(() => setNative(isNativeSleep()), []);
 
   const goal = goalFor(goals, "sleep")?.target ?? null;
   const today = dateKey(new Date());
@@ -166,13 +170,15 @@ export default function SleepCard({ period }: { period: Period }) {
   const category = sleepCategory(lastValue);
   const sourceLabel = !lastNight
     ? ""
-    : st === "estimated"
+    : st === "estimated" && how === "sleep_api"
+      ? t("Detected by your phone")
+      : st === "estimated"
       ? t("Estimated from when you used the app")
       : st === "corrected"
         ? t("Corrected by you")
         : how === "tap"
           ? t("From your taps")
-          : how === "app_activity"
+          : how === "app_activity" || how === "sleep_api"
             ? t("Estimate you confirmed")
             : t("Entered by you");
   const primary = "w-full rounded-full bg-forest py-3 text-sm font-semibold text-white transition-transform active:scale-[0.98]";
@@ -215,7 +221,9 @@ export default function SleepCard({ period }: { period: Period }) {
       {st === "estimated" ? (
         <>
           <p className="mt-2 rounded-2xl bg-bg px-3 py-2 text-[11px] leading-relaxed text-ink-soft">
-            {t("This is the time between closing the app at night and opening it in the morning. It may be longer than your real sleep.")}
+            {how === "sleep_api"
+              ? t("Google's sleep detection on your phone worked this out from movement and light. It can be a little off.")
+              : t("This is the time between closing the app at night and opening it in the morning. It may be longer than your real sleep.")}
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button onClick={confirmEstimate} className="flex items-center justify-center gap-1.5 rounded-full bg-forest py-3 text-sm font-semibold text-white">
@@ -330,7 +338,7 @@ export default function SleepCard({ period }: { period: Period }) {
           }
         >
           {lastNightView}
-          {autoRow}
+          {native ? <PhoneDetection /> : autoRow}
         </FoldCard>
       ) : (
         <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
@@ -457,6 +465,81 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
       <p className="text-lg font-bold">{value}</p>
       <p className="text-[11px] font-medium">{label}</p>
       <p className="text-[10px] text-ink-soft">{hint}</p>
+    </div>
+  );
+}
+
+/** Android app (Step 57): Google's sleep detection on this phone — on/off, and why it can't work when it can't. */
+function PhoneDetection() {
+  const t = useT();
+  const showToast = useToast();
+  const [st, setSt] = useState<NativeStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const refresh = () =>
+    nativeSleep
+      .status()
+      .then(setSt)
+      .catch(() => setSt({ available: false, permission: "prompt", enabled: false }));
+  useEffect(() => {
+    void refresh();
+    // Back from Android settings: look again
+    const onShow = () => document.visibilityState === "visible" && void refresh();
+    document.addEventListener("visibilitychange", onShow);
+    return () => document.removeEventListener("visibilitychange", onShow);
+  }, []);
+
+  async function toggle() {
+    if (!st || busy) return;
+    setBusy(true);
+    try {
+      if (st.enabled) {
+        await nativeSleep.stop();
+        showToast(t("Sleep detection off"));
+      } else {
+        await nativeSleep.start();
+        showToast(t("Sleep detection on. Last night will show here each morning."));
+      }
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      showToast(t(code === "DENIED" ? "Allow \"Physical activity\" to detect your sleep." : "Sleep detection couldn't start on this phone."));
+    }
+    await refresh();
+    setBusy(false);
+  }
+
+  if (!st) return null;
+  const on = st.enabled && st.permission === "granted";
+  return (
+    <div className="mt-5 flex items-start justify-between gap-3 border-t border-line pt-4">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">{t("Phone sleep detection")}</p>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-ink-soft">
+          {!st.available
+            ? t("This phone doesn't have Google Play services, so it can't detect sleep. Use the taps instead.")
+            : st.permission === "denied"
+              ? t("\"Physical activity\" isn't allowed for Men's Social, so sleep can't be detected.")
+              : on
+                ? t("On. Google's sleep detection notices when you sleep from your phone's movement and the light around it. Keep the phone near your bed. It's an estimate, not a medical measurement.")
+                : t("Off. Turn it on and your phone notices when you sleep, without tapping. Android will ask to allow \"Physical activity\".")}
+        </p>
+        {st.available && st.permission === "denied" && (
+          <button onClick={() => void nativeSleep.openSettings()} className="mt-2 rounded-full px-3 py-1.5 text-xs font-semibold text-forest ring-1 ring-line">
+            {t("Open settings")}
+          </button>
+        )}
+      </div>
+      {st.available && st.permission !== "denied" && (
+        <button
+          role="switch"
+          aria-checked={on}
+          aria-label={t("Phone sleep detection")}
+          disabled={busy}
+          onClick={toggle}
+          className={`relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60 ${on ? "bg-forest" : "bg-line"}`}
+        >
+          <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-[left] ${on ? "left-[22px]" : "left-0.5"}`} />
+        </button>
+      )}
     </div>
   );
 }

@@ -797,4 +797,17 @@ export const SW: Record<string, string> = {
   "Some nights are missing, so this picture is incomplete.": "Baadhi ya usiku haupo, kwa hiyo picha hii haijakamilika.",
   "Your sleep has been steady this week. Keep it up.": "Usingizi wako umekuwa thabiti wiki hii. Endelea hivyo.",
   "Estimated": "Makadirio",
+  // Step 57: Android sleep detection
+  "Detected by your phone": "Imegunduliwa na simu yako",
+  "Google's sleep detection on your phone worked this out from movement and light. It can be a little off.": "Kipengele cha Google cha kugundua usingizi kwenye simu yako kimekadiria hili kutokana na mwendo na mwanga. Kinaweza kukosea kidogo.",
+  "Sleep detection off": "Ugunduzi wa usingizi umezimwa",
+  "Sleep detection on. Last night will show here each morning.": "Ugunduzi wa usingizi umewashwa. Usiku uliopita utaonekana hapa kila asubuhi.",
+  "Allow \"Physical activity\" to detect your sleep.": "Ruhusu \"Shughuli za mwili\" ili kugundua usingizi wako.",
+  "Sleep detection couldn't start on this phone.": "Ugunduzi wa usingizi haukuweza kuanza kwenye simu hii.",
+  "Phone sleep detection": "Ugunduzi wa usingizi kwa simu",
+  "This phone doesn't have Google Play services, so it can't detect sleep. Use the taps instead.": "Simu hii haina huduma za Google Play, kwa hiyo haiwezi kugundua usingizi. Tumia vitufe badala yake.",
+  "\"Physical activity\" isn't allowed for Men's Social, so sleep can't be detected.": "\"Shughuli za mwili\" hazijaruhusiwa kwa Men's Social, kwa hiyo usingizi hauwezi kugunduliwa.",
+  "On. Google's sleep detection notices when you sleep from your phone's movement and the light around it. Keep the phone near your bed. It's an estimate, not a medical measurement.": "Imewashwa. Kipengele cha Google kinatambua unapolala kutokana na mwendo wa simu na mwanga unaoizunguka. Weka simu karibu na kitanda chako. Ni makadirio, si kipimo cha kitabibu.",
+  "Off. Turn it on and your phone notices when you sleep, without tapping. Android will ask to allow \"Physical activity\".": "Imezimwa. Iwashe na simu yako itatambua unapolala, bila kubonyeza. Android itaomba kuruhusu \"Shughuli za mwili\".",
+  "Open settings": "Fungua mipangilio",
 };

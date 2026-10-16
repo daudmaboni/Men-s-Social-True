@@ -24,9 +24,11 @@ export interface TrackerState {
   /** Mornings already estimated (so deleting an estimate doesn't bring it back). */
   estimated: string[];
   seen: Seen[];
+  /** Android app: segments from Google's sleep detection already turned into nights (so a deleted one stays deleted). */
+  imported: string[];
 }
 
-const EMPTY: TrackerState = { auto: false, night: null, incomplete: null, estimated: [], seen: [] };
+const EMPTY: TrackerState = { auto: false, night: null, incomplete: null, estimated: [], seen: [], imported: [] };
 let cache: TrackerState | null = null;
 const listeners = new Set<() => void>();
 
@@ -122,6 +124,10 @@ export const sleepTracker = {
     }
     progressStore.saveNight({ ...e, how: "app_activity", status: "estimated" });
     save({ ...load(), estimated, incomplete: null });
+  },
+
+  setImported(imported: string[]) {
+    save({ ...load(), imported, incomplete: null });
   },
 
   clearIncomplete() {

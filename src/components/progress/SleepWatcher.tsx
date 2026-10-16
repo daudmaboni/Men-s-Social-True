@@ -6,6 +6,7 @@
 import { useEffect } from "react";
 import { sleepTracker } from "@/lib/progress/sleepTracker";
 import { progressSync } from "@/lib/progress/store";
+import { isNativeSleep, nativeSleep } from "@/lib/native/sleepDetection";
 
 export default function SleepWatcher() {
   useEffect(() => {
@@ -16,7 +17,21 @@ export default function SleepWatcher() {
     };
     const onShow = () => {
       if (!visible()) return;
-      sleepTracker.noteSeen();
+      if (isNativeSleep()) {
+        // Android app (Step 57): bring in what Google's sleep detection found, and keep it registered
+        void (async () => {
+          try {
+            const st = await nativeSleep.status();
+            if (!st.enabled || !st.available) return;
+            if (st.permission === "granted") await nativeSleep.start().catch(() => {});
+            sleepTracker.setImported(await nativeSleep.importNights(sleepTracker.get().imported));
+          } catch {
+            // Not available on this phone: the card says so
+          }
+        })();
+      } else {
+        sleepTracker.noteSeen();
+      }
       sleepTracker.checkMorning(progressSync.get().records);
     };
     onShow();
