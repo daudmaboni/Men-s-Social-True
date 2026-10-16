@@ -10,7 +10,7 @@ import CourseArt from "./CourseArt";
 import Countdown from "./Countdown";
 import { toPlayerLesson } from "./CoursePlayerHost";
 import SwipeRow from "@/components/motion/SwipeRow";
-import { coursePlayer, setCourseCardOnScreen, useCoursePlayer } from "@/lib/course/player";
+import { coursePlayer, setCourseCardOnScreen, useCoursePlayer, useCoursePlayerSelect, type PlayerState } from "@/lib/course/player";
 import { useFeed } from "@/lib/feed/store";
 import { useMainCourse, pick } from "@/lib/course/useCourses";
 import { clock, courseView, type CourseView } from "@/lib/course/progress";
@@ -20,7 +20,8 @@ import { useT } from "@/lib/i18n";
 export default function CourseCard() {
   const { course } = useMainCourse();
   const feed = useFeed();
-  const player = useCoursePlayer();
+  // Only which lesson is playing (not every second of it), so the card doesn't redraw while scrolling
+  const playingId = useCoursePlayerSelect((s) => s.lesson?.id ?? null);
   const t = useT();
   // Tell the mini player whether this card is on screen (it hides while the card's own controls show)
   const box = useRef<HTMLElement>(null);
@@ -41,7 +42,7 @@ export default function CourseCard() {
   if (v.total === 0) return null;
   const next = v.current;
   // The card in view: the lesson playing now, otherwise the one he's on (or the last when all are done)
-  const playingIdx = v.lessons.findIndex((l) => l.id === player.lesson?.id);
+  const playingIdx = v.lessons.findIndex((l) => l.id === playingId);
   const focusIndex = playingIdx >= 0 ? playingIdx : next ? v.lessons.indexOf(next) : v.lessons.length - 1;
   const discreet = feed.settings.discreet;
   const title = discreet ? t("Your course") : pick(sw, course.title, course.titleSw);
@@ -91,12 +92,26 @@ export default function CourseCard() {
 }
 
 type ViewLesson = CourseView["lessons"][number];
+const IDLE: PlayerState = coursePlayerIdle();
+function coursePlayerIdle(): PlayerState {
+  return { lesson: null, playing: false, time: 0, duration: 0, heard: 0, speed: 1, failed: false, ended: false, countdown: null };
+}
 
 /** One lesson in the swipe row: play it right here (audio), or open it. */
-function LessonCard({ lesson: l, course, discreet, sw }: { lesson: ViewLesson; course: Course; discreet: boolean; sw: boolean }) {
+type CardProps = { lesson: ViewLesson; course: Course; discreet: boolean; sw: boolean };
+function LessonCard(props: CardProps) {
+  const mine = useCoursePlayerSelect((s) => s.lesson?.id === props.lesson.id);
+  // Only the card that's playing follows the player second by second
+  return mine ? <PlayingLessonCard {...props} /> : <LessonCardView {...props} p={null} />;
+}
+function PlayingLessonCard(props: CardProps) {
+  return <LessonCardView {...props} p={useCoursePlayer()} />;
+}
+
+function LessonCardView({ lesson: l, course, discreet, sw, p: live }: CardProps & { p: PlayerState | null }) {
   const t = useT();
-  const p = useCoursePlayer();
-  const mine = p.lesson?.id === l.id;
+  const mine = live !== null;
+  const p: PlayerState = live ?? IDLE;
   const playing = mine && p.playing;
   const open = l.state === "done" || l.state === "current" || l.state === "open";
   const title = discreet ? t("Lesson {n}", { n: l.number }) : pick(sw, l.title, l.titleSw);

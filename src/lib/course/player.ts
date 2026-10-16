@@ -95,10 +95,10 @@ function audio(): HTMLAudioElement {
   return el;
 }
 
-function save(atEnd = false) {
+function save(atEnd = false, quiet = false) {
   const l = state.lesson;
   if (!l || !el) return;
-  feedStore.saveCourseSpot(l.id, atEnd ? 0 : el.currentTime, state.heard);
+  feedStore.saveCourseSpot(l.id, atEnd ? 0 : el.currentTime, state.heard, quiet);
   lastSave = Date.now();
 }
 
@@ -120,7 +120,8 @@ function onTime() {
     }
   }
   set({ time: el.currentTime, heard });
-  if (Date.now() - lastSave > 5000) save();
+  // Every few seconds while playing: kept on the phone only (a full save happens on pause / leaving)
+  if (Date.now() - lastSave > 5000) save(false, true);
 }
 
 function mediaSession(l: PlayerLesson, label: string) {
@@ -239,6 +240,19 @@ export function useCourseCardOnScreen(): boolean {
     },
     () => cardOnScreen,
     () => false,
+  );
+}
+
+/** Just one piece of the player state: the component re-renders only when that piece changes
+ *  (not 4 times a second while a lesson plays). */
+export function useCoursePlayerSelect<T>(pick: (s: PlayerState) => T): T {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => pick(state),
+    () => pick(EMPTY),
   );
 }
 

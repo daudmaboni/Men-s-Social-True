@@ -32,7 +32,8 @@ export default function ThemeGesture() {
     };
     const onMove = (e: TouchEvent) => {
       if (!start || e.touches.length !== 2) return;
-      e.preventDefault(); // stop the browser zooming the page
+      // (The page can't zoom anyway: touch-action in globals.css. This listener is passive so
+      // scrolling never waits for the app — a blocking one made scrolling jerky on phones.)
       const d = dist(e.touches);
       const m = mid(e.touches);
       last = { ...m, theme: pinchResult(start, d), scale: Math.min(Math.max(d / start, 0.5), 1.8) };
@@ -52,7 +53,7 @@ export default function ThemeGesture() {
     const stopSafariZoom = (e: Event) => e.preventDefault();
 
     window.addEventListener("touchstart", onStart, { passive: true });
-    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchmove", onMove, { passive: true });
     window.addEventListener("touchend", onEnd);
     window.addEventListener("touchcancel", onEnd);
     document.addEventListener("gesturestart", stopSafariZoom);

@@ -87,6 +87,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* Two-finger pinch is the light/dark gesture, so the page itself never zooms (no blocking script needed) */
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -459,14 +461,15 @@ button:disabled { cursor: not-allowed; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* "Swipe": the hand keeps sliding left (or right on the last card) */
+/* "Swipe": the hand slides left a few times (or right on the last card). Teaching animations run a few
+   rounds, not forever: endless ones under frosted glass kept the phone repainting and made scrolling jerky. */
 @keyframes swipe-hand {
   0%, 15% { transform: translateX(6px) rotate(-8deg); opacity: 0.6; }
   55% { transform: translateX(-8px) rotate(-8deg); opacity: 1; }
   100% { transform: translateX(6px) rotate(-8deg); opacity: 0.6; }
 }
-.swipe-hand { animation: swipe-hand 1.6s ease-in-out infinite; }
-.swipe-hand-back { animation: swipe-hand 1.6s ease-in-out infinite reverse; }
+.swipe-hand { animation: swipe-hand 1.6s ease-in-out 6; }
+.swipe-hand-back { animation: swipe-hand 1.6s ease-in-out 6 reverse; }
 
 /* The current card swipes itself a little, then settles back, every few seconds */
 @keyframes swipe-tease {
@@ -479,8 +482,8 @@ button:disabled { cursor: not-allowed; }
   68% { transform: translateX(26px); }
   84% { transform: translateX(-5px); }
 }
-.swipe-tease { animation: swipe-tease 3.2s ease-in-out 0.6s infinite; }
-.swipe-tease-back { animation: swipe-tease-back 3.2s ease-in-out 0.6s infinite; }
+.swipe-tease { animation: swipe-tease 3.2s ease-in-out 0.6s 3; }
+.swipe-tease-back { animation: swipe-tease-back 3.2s ease-in-out 0.6s 3; }
 
 /* Frosted-glass "Swipe" pill on the card, with a light sweeping across it */
 .glass-swipe {
@@ -500,7 +503,7 @@ button:disabled { cursor: not-allowed; }
   inset: 0;
   background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.8) 50%, transparent 80%);
   transform: translateX(-120%);
-  animation: glass-shine 2.4s ease-in-out 0.8s infinite;
+  animation: glass-shine 2.4s ease-in-out 0.8s 3;
 }
 [data-theme="dark"] .glass-swipe {
   color: #fff;

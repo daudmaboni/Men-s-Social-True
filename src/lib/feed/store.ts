@@ -67,13 +67,18 @@ function load(): FeedState {
   return cache;
 }
 
-function save(next: FeedDB) {
+/** A quiet spot save happened that the app (and his account) hasn't heard about yet. */
+let quietPending = false;
+
+function save(next: FeedDB, quiet = false) {
   cache = { ...next, ready: true };
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
     // keep working in memory
   }
+  // Quiet: kept on the phone only — no redraw of the app, no upload (used while a lesson plays)
+  if (quiet) return;
   listeners.forEach((l) => l());
   changeListeners.forEach((l) => l());
 }
@@ -118,7 +123,9 @@ export const feedStore = {
   },
 
   /** Where he is in a course lesson. `heard` only ever grows. */
-  saveCourseSpot(lessonId: string, pos: number, heard: number) {
+  /** Where he is in a lesson. `quiet` while it plays (kept on the phone only, so nothing redraws or
+   *  uploads every few seconds and scrolling stays smooth); a normal save on pause / leaving / the end. */
+  saveCourseSpot(lessonId: string, pos: number, heard: number, quiet = false) {
     const db = load();
     const have = db.course?.[lessonId];
     const next: CourseProgress = {
@@ -127,8 +134,9 @@ export const feedStore = {
       heard: Math.max(have?.heard ?? 0, Math.round(heard)),
       at: new Date().toISOString(),
     };
-    if (have && have.pos === next.pos && have.heard === next.heard) return;
-    save({ ...db, course: { ...db.course, [lessonId]: next } });
+    if (have && have.pos === next.pos && have.heard === next.heard && !quietPending) return;
+    quietPending = quiet;
+    save({ ...db, course: { ...db.course, [lessonId]: next } }, quiet);
   },
 
   /** He finished a course lesson (the first time counts; points are saved with it). */
