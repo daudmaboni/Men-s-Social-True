@@ -42,7 +42,7 @@ export const WAZIMU_OUTLINE: Course = {
       title: "Your goals",
       titleSw: "Malengo yako",
       lessons: [
-        L("0.0", "Welcome to the course", "Utangulizi: MTIE Wazimu Mkeo", "audio", 242),
+        L("0.0", "Utangulizi: MTIE Wazimu Mkeo", "Utangulizi: MTIE Wazimu Mkeo", "audio", 242),
         L("1.0", "Setting your goals", "Malengo", "audio", 265),
         L("1.1", "Answer these questions", "Jibu maswali haya", "reading", undefined, {
           bodySw: [
