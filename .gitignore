@@ -42,3 +42,6 @@ next-env.d.ts
 
 # one-time setup scripts from Claude (run once, never committed)
 setup-step-*.mjs
+
+# Course audio is uploaded in Studio, not kept in GitHub
+Wazimu-audio-ready-to-upload*

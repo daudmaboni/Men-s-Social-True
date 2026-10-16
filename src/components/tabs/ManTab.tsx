@@ -1,7 +1,7 @@
 "use client";
 
 // "Man": Home and Progress in one place.
-// Top: what to do today (all interactive right here). Bottom: his trends.
+// Top: his course (Step 48), then what to do today (all interactive right here). Bottom: his trends.
 // On a computer the cards sit in two columns.
 
 import TopBar from "@/components/feed/TopBar";
@@ -10,6 +10,7 @@ import TrendsSection from "@/components/feed/TrendsSection";
 import { EndCard, LessonCard, ReminderCard, TipCard, TodayCard } from "@/components/feed/FeedCards";
 import { useHomeFeed } from "@/components/feed/useHomeFeed";
 import CheckInCard from "@/components/progress/CheckInCard";
+import CourseCard from "@/components/course/CourseCard";
 import HydrationCard from "@/components/progress/HydrationCard";
 import SleepCard from "@/components/progress/SleepCard";
 import { useT } from "@/lib/i18n";
@@ -36,6 +37,11 @@ export default function ManTab() {
     <div className="stagger flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:gap-6">
       <div className="lg:col-span-12">
         <TopBar />
+      </div>
+
+      {/* The course comes first, across the full width on a computer */}
+      <div className="lg:col-span-12 empty:hidden">
+        <CourseCard />
       </div>
 
       <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-5">

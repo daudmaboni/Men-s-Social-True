@@ -18,11 +18,24 @@ export interface FeedDB {
   settings: { discreet: boolean; updatedAt?: string };
   /** What he undid, and when — so another phone doesn't bring it back (see account/tombstones.ts). */
   deleted?: Tombstones;
+  /** Course lessons (Step 48): course["wz-1-0"] = where he stopped, how much he heard, when he finished. */
+  course?: Record<string, CourseProgress>;
+}
+
+export interface CourseProgress {
+  /** Where he stopped (seconds), so the lesson continues from there. */
+  pos: number;
+  /** Seconds he actually listened to (skipping ahead doesn't count). */
+  heard: number;
+  /** When this was last changed. */
+  at: string;
+  /** Finished: the day (his time) and the points it earned. */
+  done?: { localDate: string; at: string; points: number };
 }
 export type FeedState = FeedDB & { ready: boolean };
 
 const KEY = "ms_feed_v1";
-const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false }, deleted: {} };
+const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false }, deleted: {}, course: {} };
 const SERVER_STATE: FeedState = { ...EMPTY, ready: false };
 let cache: FeedState | null = null;
 const listeners = new Set<() => void>();
@@ -44,6 +57,7 @@ function load(): FeedState {
           ...(typeof p.settings?.updatedAt === "string" ? { updatedAt: p.settings.updatedAt } : {}),
         },
         deleted: p.deleted && typeof p.deleted === "object" ? p.deleted : {},
+        course: p.course && typeof p.course === "object" ? p.course : {},
       };
     }
   } catch {
@@ -101,6 +115,35 @@ export const feedStore = {
     if (db.lessons[lessonId]) return;
     const now = new Date();
     save({ ...db, lessons: { ...db.lessons, [lessonId]: { localDate: dateKey(now), at: now.toISOString() } } });
+  },
+
+  /** Where he is in a course lesson. `heard` only ever grows. */
+  saveCourseSpot(lessonId: string, pos: number, heard: number) {
+    const db = load();
+    const have = db.course?.[lessonId];
+    const next: CourseProgress = {
+      ...have,
+      pos: Math.max(0, Math.round(pos)),
+      heard: Math.max(have?.heard ?? 0, Math.round(heard)),
+      at: new Date().toISOString(),
+    };
+    if (have && have.pos === next.pos && have.heard === next.heard) return;
+    save({ ...db, course: { ...db.course, [lessonId]: next } });
+  },
+
+  /** He finished a course lesson (the first time counts; points are saved with it). */
+  finishCourseLesson(lessonId: string, points: number) {
+    const db = load();
+    const have = db.course?.[lessonId];
+    if (have?.done) return;
+    const now = new Date();
+    save({
+      ...db,
+      course: {
+        ...db.course,
+        [lessonId]: { pos: have?.pos ?? 0, heard: have?.heard ?? 0, at: now.toISOString(), done: { localDate: dateKey(now), at: now.toISOString(), points } },
+      },
+    });
   },
 
   setDiscreet(discreet: boolean) {

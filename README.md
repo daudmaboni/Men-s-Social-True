@@ -9,6 +9,7 @@ Tanzania first, in English and Kiswahili. Run by Kayani Herbs.
 |---|---|---|
 | **Social** (Discover + Community) | `src/app/(app)/social`, `src/components/social` | Guides, videos, Q&A, personalised picks; anonymous community questions with moderation |
 | **Man** | `src/components/tabs/ManTab.tsx`, `src/lib/feed`, `src/lib/progress` | Daily activities, check-ins, sleep, water, points, streaks, trends |
+| **Course** (top of Man) | `src/components/course`, `src/lib/course`, Studio → Courses | Audio course: lessons open in order after 70% is heard, resumes on any phone |
 | **Me** | `src/components/tabs/MeTab.tsx`, `src/lib/me` | Profile, badges, goals, settings, privacy (download / delete data) |
 | **Sign-in** | `src/app/(auth)/account` | Email (Google and phone optional), password checks, slow-down after wrong tries |
 | **Admin Control Center** | `/studio` (`src/app/studio`) | Content, homepage, users, community moderation, notifications, AI drafts, analytics, settings. Staff only, password + authenticator code |
@@ -54,6 +55,7 @@ Run the files in `supabase/migrations` **once each, in number order**, in Supaba
 | 0006 | Admin Control Center: roles, community, moderation, notifications, analytics, AI settings |
 | 0007 | Two-step sign-in for admins (set up the authenticator app in `/studio` **before** running it) |
 | 0008 | Safety fixes: upload limits, locked-down functions |
+| 0009 | Courses: drafts, publishing and history for the audio course on the Man tab |
 
 Old files can be re-run safely; they won't switch off two-step sign-in. Don't edit an old migration to change the live database: add a new numbered file.
 

@@ -573,3 +573,41 @@ button:disabled { cursor: not-allowed; }
 }
 .drawer-in { animation: drawer-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @media (prefers-reduced-motion: reduce) { .drawer-in { animation: none; } }
+
+/* ===== Step 48: course player ===== */
+/* Position slider: mint-strong fill up to where he is, soft track after it, white thumb */
+.course-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  touch-action: none;
+}
+.course-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--mint-strong) var(--pct, 0%), rgb(255 255 255 / 0.18) var(--pct, 0%));
+}
+.course-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--mint-strong) var(--pct, 0%), rgb(255 255 255 / 0.18) var(--pct, 0%));
+}
+.course-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -6px;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+}
+.course-range::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border: 0;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+}
+.course-range:focus-visible { outline: 2px solid var(--mint-strong); outline-offset: 4px; border-radius: 9999px; }

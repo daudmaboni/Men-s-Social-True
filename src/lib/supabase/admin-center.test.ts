@@ -317,3 +317,47 @@ describe("safety fixes (0008)", { timeout: 30_000 }, () => {
     expect(Number(by["content-audio"].file_size_limit)).toBe(40 * 1024 * 1024);
   });
 });
+
+describe("courses (0009)", { timeout: 30_000 }, () => {
+  const course = (title: string, hidden = false) =>
+    JSON.stringify({ version: 1, id: "wazimu", title, summary: "", credit: "© Kayani Herbs", passPercent: 70, modules: [{ id: "m1", title: "Goals", lessons: [{ id: "wz-1-0", code: "1.0", title: "Goals", kind: "audio", points: 10, hidden }] }] });
+
+  it("writers save drafts that men can't see; only editors publish", async () => {
+    await as(WRITER, "select public.course_save_draft('wazimu', $1::jsonb)", [course("Draft one")]);
+    expect(await as(null, "select id from public.course_versions")).toEqual([]);
+    expect(await as(JUMA, "select id from public.course_versions")).toEqual([]);
+    await fails(WRITER, "select public.course_publish('wazimu')");
+    await as(EDITOR, "select public.course_publish('wazimu', 'First')");
+    const live = await as<{ title: string }>(null, "select data->>'title' as title from public.course_versions");
+    expect(live).toEqual([{ title: "Draft one" }]);
+  });
+
+  it("a new draft doesn't change what men see until it's published; old versions are kept", async () => {
+    await as(WRITER, "select public.course_save_draft('wazimu', $1::jsonb)", [course("Second")]);
+    expect((await as<{ title: string }>(JUMA, "select data->>'title' as title from public.course_versions"))[0].title).toBe("Draft one");
+    await as(OWNER, "select public.course_publish('wazimu')");
+    expect((await as<{ title: string }>(JUMA, "select data->>'title' as title from public.course_versions"))[0].title).toBe("Second");
+    const states = await as<{ state: string }>(EDITOR, "select state from public.course_versions order by id");
+    expect(states.map((s) => s.state)).toEqual(["archived", "published"]);
+  });
+
+  it("nobody writes to the table directly, and guests can't call the functions", async () => {
+    await fails(EDITOR, "insert into public.course_versions (course_id, state, data) values ('x1', 'published', '{}'::jsonb)");
+    await as(OWNER, "update public.course_versions set data = '{}'::jsonb"); // allowed to run, changes nothing
+    expect((await as<{ title: string }>(JUMA, "select data->>'title' as title from public.course_versions"))[0].title).toBe("Second");
+    await expect(as(null, "select public.course_save_draft('wazimu', $1::jsonb)", [course("Hack")])).rejects.toThrow(/permission denied/);
+    await fails(JUMA, "select public.course_save_draft('wazimu', $1::jsonb)", [course("Hack")]);
+  });
+
+  it("refuses a broken course", async () => {
+    await fails(EDITOR, "select public.course_save_draft('wazimu', $1::jsonb)", [JSON.stringify({ title: "No modules" })]);
+    await fails(EDITOR, "select public.course_save_draft('wazimu', $1::jsonb)", [JSON.stringify({ title: "Bad", modules: [{ id: "m1", lessons: [{ id: "a", title: "A", kind: "podcast" }] }] })]);
+  });
+
+  it("unpublish takes it off the Man tab; actions are in the audit log", async () => {
+    await as(EDITOR, "select public.course_unpublish('wazimu')");
+    expect(await as(null, "select id from public.course_versions")).toEqual([]);
+    const log = await as<{ action: string }>(OWNER, "select action from public.admin_audit where target = 'wazimu' order by id");
+    expect(log.map((l) => l.action)).toEqual(["course.save_draft", "course.publish", "course.save_draft", "course.publish", "course.unpublish"]);
+  });
+});

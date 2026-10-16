@@ -84,7 +84,12 @@ export function dayPoints(
   const fromLessons = lessons
     .filter((l) => feed.lessons[l.id]?.localDate === key)
     .reduce((s, l) => s + l.points, 0);
-  return fromActivities + fromLessons;
+  return fromActivities + fromLessons + coursePoints(feed, key);
+}
+
+/** Points from course lessons he finished on this day (Step 48). */
+export function coursePoints(feed: FeedDB, key: string): number {
+  return Object.values(feed.course ?? {}).reduce((s, c) => s + (c.done?.localDate === key ? Math.max(0, c.done.points || 0) : 0), 0);
 }
 
 /** Every day he did anything (activity choice, lesson, or tracker record). */
@@ -92,6 +97,7 @@ export function activeDays(feed: FeedDB, records: TrackingRecord[]): string[] {
   const set = new Set<string>();
   Object.keys(feed.days).forEach((k) => set.add(k));
   Object.values(feed.lessons).forEach((l) => set.add(l.localDate));
+  Object.values(feed.course ?? {}).forEach((c) => c.done && set.add(c.done.localDate));
   records.forEach((r) => set.add(r.localDate));
   return [...set].sort();
 }

@@ -74,7 +74,22 @@ export function mergeFeed(local: FeedDB, remote: Partial<FeedDB> | null, now: Da
   if (!ls.updatedAt && !rs?.updatedAt) settings = { discreet: Boolean(ls.discreet || rs?.discreet) }; // saved before Step 35
   else if ((rs?.updatedAt ?? "") > (ls.updatedAt ?? "")) settings = { discreet: Boolean(rs?.discreet), updatedAt: rs?.updatedAt };
   else settings = { discreet: Boolean(ls.discreet), updatedAt: ls.updatedAt };
-  return { days, lessons, settings, deleted };
+  // Course lessons: the newest spot wins, listening time only grows, and the first finish counts
+  const course: NonNullable<FeedDB["course"]> = {};
+  for (const src of [local.course ?? {}, remote?.course ?? {}]) {
+    for (const [id, c] of Object.entries(src)) {
+      if (!c || typeof c !== "object") continue;
+      const have = course[id];
+      if (!have) {
+        course[id] = c;
+        continue;
+      }
+      const newer = c.at > have.at || (c.at === have.at && c.pos > have.pos) ? c : have;
+      const done = !have.done ? c.done : !c.done ? have.done : c.done.at < have.done.at ? c.done : have.done;
+      course[id] = { pos: newer.pos, heard: Math.max(have.heard, c.heard), at: newer.at, ...(done ? { done } : {}) };
+    }
+  }
+  return { days, lessons, settings, deleted, course };
 }
 
 const HISTORY_LIMIT = 150;
