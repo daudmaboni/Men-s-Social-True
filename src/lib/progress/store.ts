@@ -157,6 +157,44 @@ export const progressStore = {
     save({ ...db, records: [...db.records.filter((r) => !same(r)), record], deleted });
   },
 
+  /**
+   * Save a night of sleep (Step 56). Dated by the morning he woke up. One night per morning:
+   * a better source replaces an estimate, but nothing automatic ever replaces what he entered or corrected.
+   */
+  saveNight(input: { startAt: string; endAt: string; minutes: number; how: NonNullable<RecordMeta["how"]>; status: NonNullable<RecordMeta["status"]>; confidence?: number; quality?: number; original?: RecordMeta["original"] }): TrackingRecord | null {
+    if (!Number.isFinite(input.minutes) || input.minutes <= 0) return null;
+    const end = new Date(input.endAt);
+    const start = new Date(input.startAt);
+    const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    const record = makeRecord({
+      metric: "sleep",
+      value: input.minutes,
+      unit: "min",
+      source: input.how === "app_activity" ? "phone_estimate" : "manual",
+      recordedAt: end,
+      meta: {
+        bedtime: hhmm(start),
+        wakeTime: hhmm(end),
+        startAt: start.toISOString(),
+        endAt: end.toISOString(),
+        how: input.how,
+        status: input.status,
+        confidence: input.confidence,
+        quality: input.quality,
+        original: input.original,
+      },
+    });
+    const db = load();
+    const sameNight = db.records.filter((r) => r.metric === "sleep" && r.localDate === record.localDate);
+    const automatic = input.how === "app_activity" || input.how === "sleep_api";
+    // Never let an automatic estimate replace a night he gave or fixed himself
+    if (automatic && sameNight.some((r) => r.meta?.status !== "estimated")) return null;
+    let deleted = db.deleted;
+    for (const old of sameNight) deleted = markDeleted(deleted, `rec:${old.id}`);
+    save({ ...db, records: [...db.records.filter((r) => !sameNight.includes(r)), record], deleted });
+    return record;
+  },
+
   setGoal(metric: MetricType, target: number, unit: Unit) {
     if (!Number.isFinite(target) || target <= 0) return;
     const db = load();

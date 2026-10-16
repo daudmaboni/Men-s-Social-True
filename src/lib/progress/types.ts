@@ -5,7 +5,7 @@
 export type MetricType = "water" | "sleep" | "energy" | "mood";
 
 /** Where a value came from — shown to the user so he knows what is real vs estimated. */
-export type RecordSource = "manual" | "quick_add" | "ai_estimate" | "device_sync" | "calculated";
+export type RecordSource = "manual" | "quick_add" | "ai_estimate" | "device_sync" | "calculated" | "phone_estimate";
 
 /** ml = water, min = sleep duration, score = 1–5 self-rating */
 export type Unit = "ml" | "min" | "score";
@@ -15,6 +15,14 @@ export interface RecordMeta {
   bedtime?: string; // "22:30"
   wakeTime?: string; // "06:15"
   quality?: number; // 1–5 sleep quality
+  // Sleep sessions (Step 56)
+  startAt?: string; // ISO: fell asleep (estimated or told)
+  endAt?: string; // ISO: woke up
+  how?: "tap" | "app_activity" | "manual" | "sleep_api"; // where the times came from
+  status?: "estimated" | "confirmed" | "corrected";
+  confidence?: number; // 0–1, only for estimates
+  /** The app's own estimate, kept when he corrects it */
+  original?: { startAt: string; endAt: string; minutes: number };
 }
 
 export interface TrackingRecord {

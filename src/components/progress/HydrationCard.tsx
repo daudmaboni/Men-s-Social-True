@@ -26,6 +26,7 @@ const SOURCE_LABEL: Record<RecordSource, string> = {
   ai_estimate: "AI estimate",
   device_sync: "Synced",
   calculated: "Calculated",
+  phone_estimate: "Estimated",
 };
 
 type SheetMode = { kind: "custom" } | { kind: "edit"; record: TrackingRecord } | { kind: "goal" } | null;

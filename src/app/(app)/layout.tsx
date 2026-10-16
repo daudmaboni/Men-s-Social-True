@@ -8,6 +8,7 @@ import ThemeGesture from "@/components/ThemeGesture";
 import ProfilePrompt from "@/components/me/ProfilePrompt";
 import CoursePlayerHost from "@/components/course/CoursePlayerHost";
 import MiniPlayer from "@/components/course/MiniPlayer";
+import SleepWatcher from "@/components/progress/SleepWatcher";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Lessons keep playing on every page; the mini player shows them (Step 49) */}
       <CoursePlayerHost />
       <MiniPlayer />
+      <SleepWatcher />
       <BottomNav />
       {/* On a computer the tabs sit in a sidebar instead of the bottom bar */}
       <SideNav />
