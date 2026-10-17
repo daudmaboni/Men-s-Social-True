@@ -2,7 +2,7 @@
 
 // Is a man signed in to his own account? Sign up / log in with email, Google or phone.
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabase, supabaseConfigured } from "../supabase/client";
 import { normalizeTzPhone } from "./merge";
@@ -24,19 +24,95 @@ export const AUTH_METHODS = {
   phone: process.env.NEXT_PUBLIC_AUTH_PHONE === "on",
 };
 
+/* ───────────── Step 58: trust the phone ─────────────
+ * Before, every screen waited for Supabase to answer "is he still signed in?" before showing
+ * anything. When his sign-in had expired (app closed for over an hour), that meant waiting for a
+ * full trip to the server first.
+ * Now the app reads the sign-in already saved on this phone and opens straight away. Supabase
+ * still checks it in the background: if the server says the sign-in is no longer valid
+ * (signed out on another phone, account deleted), the app switches to guest a moment later.
+ * This only decides what the screens show. The database checks every request itself
+ * (row-level security), so a phone that is wrong about its sign-in can't read anything extra.
+ */
+
+/** The key supabase-js saves the session under in localStorage (its default: sb-<project ref>-auth-token). */
+function sessionKey(): string | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  try {
+    return url ? `sb-${new URL(url).hostname.split(".")[0]}-auth-token` : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The signed-in man saved on this phone, read straight from storage (no network). */
+export function storedUser(): User | null {
+  const key = sessionKey();
+  if (!key || typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as { user?: User; refresh_token?: string; currentSession?: { user?: User; refresh_token?: string } };
+    const session = s.currentSession ?? s;
+    // Without a refresh token the session can't be renewed, so don't pretend he's signed in
+    return session.user?.id && session.refresh_token ? session.user : null;
+  } catch {
+    return null;
+  }
+}
+
+let accState: AccountState | null = null;
+const accListeners = new Set<() => void>();
+let watching = false;
+
+function setAcc(next: AccountState) {
+  const same =
+    accState?.status === next.status &&
+    (next.status !== "signedIn" || (accState?.status === "signedIn" && accState.user === next.user));
+  if (same) return;
+  // Signed out (here, on another phone, or account deleted): the remembered Community list goes too
+  if (next.status === "guest") {
+    try {
+      localStorage.removeItem("ms_community_v1");
+    } catch {}
+  }
+  accState = next;
+  accListeners.forEach((l) => l());
+}
+
+/** One watcher for the whole app (before, every screen asked Supabase on its own). */
+function watch() {
+  if (watching) return;
+  watching = true;
+  const sb = getSupabase();
+  if (!sb) return;
+  const apply = (user: User | null | undefined) => setAcc(user ? { status: "signedIn", user } : { status: "guest" });
+  sb.auth.getSession().then(({ data }) => apply(data.session?.user));
+  sb.auth.onAuthStateChange((_e, session) => apply(session?.user));
+}
+
+function readAcc(): AccountState {
+  if (accState) return accState;
+  if (!supabaseConfigured) accState = { status: "unavailable" };
+  else {
+    const user = storedUser();
+    accState = user ? { status: "signedIn", user } : { status: "loading" };
+  }
+  return accState;
+}
+
+const SERVER_ACC: AccountState = supabaseConfigured ? { status: "loading" } : { status: "unavailable" };
+
 export function useAccount(): AccountState {
-  const [state, setState] = useState<AccountState>(supabaseConfigured ? { status: "loading" } : { status: "unavailable" });
-  useEffect(() => {
-    const sb = getSupabase();
-    if (!sb) return;
-    sb.auth.getSession().then(({ data }) =>
-      setState(data.session?.user ? { status: "signedIn", user: data.session.user } : { status: "guest" }),
-    );
-    const { data } = sb.auth.onAuthStateChange((_e, session) =>
-      setState(session?.user ? { status: "signedIn", user: session.user } : { status: "guest" }),
-    );
-    return () => data.subscription.unsubscribe();
-  }, []);
+  const state = useSyncExternalStore(
+    (cb) => {
+      accListeners.add(cb);
+      watch();
+      return () => accListeners.delete(cb);
+    },
+    readAcc,
+    () => SERVER_ACC,
+  );
   return state;
 }
 
