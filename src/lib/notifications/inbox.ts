@@ -17,7 +17,15 @@ const set = (s: Partial<State>) => {
 };
 
 let last = 0;
-export async function refreshInbox(force = false) {
+let inFlight: Promise<void> | null = null;
+/** The inbox button and the inbox page share one request when they ask together (Step 58). */
+export function refreshInbox(force = false): Promise<void> {
+  inFlight ??= loadInbox(force).finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+async function loadInbox(force: boolean) {
   const sb = getSupabase();
   if (!sb) return set({ status: "unavailable" });
   if (!force && Date.now() - last < 60_000) return;

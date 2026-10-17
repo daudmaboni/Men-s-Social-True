@@ -25,8 +25,18 @@ function read(): State {
   return current;
 }
 
-async function refresh(force = false) {
-  if (!force && Date.now() - lastFetch < 30_000) return;
+let inFlight: Promise<void> | null = null;
+/** Every screen with a course card asks on open; they share one request (Step 58). */
+function refresh(force = false): Promise<void> {
+  if (inFlight) return inFlight;
+  if (!force && Date.now() - lastFetch < 30_000) return Promise.resolve();
+  inFlight = fetchCourses().finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
+async function fetchCourses() {
   lastFetch = Date.now();
   try {
     const live = await listLiveCourses();

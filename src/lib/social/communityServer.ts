@@ -6,6 +6,7 @@
 
 import { useSyncExternalStore } from "react";
 import { getSupabase } from "../supabase/client";
+import { storedUser } from "../account/useAccount";
 import type { CommunityTopic, Post, ReactionKind, Reply } from "./community";
 
 type Row = {
@@ -38,12 +39,51 @@ export type ServerState = {
   error?: string;
 };
 
-let state: ServerState = { status: "loading", enabled: true, posts: [], replyCounts: {}, replies: {}, myReactions: {}, reported: {} };
+const LOADING: ServerState = { status: "loading", enabled: true, posts: [], replyCounts: {}, replies: {}, myReactions: {}, reported: {} };
+let state: ServerState = LOADING;
 const listeners = new Set<() => void>();
 const set = (patch: Partial<ServerState>) => {
   state = { ...state, ...patch };
   listeners.forEach((l) => l());
 };
+
+/* Step 58: the Community list is remembered on the phone, so it shows straight away when he
+ * opens Community (and offline). The server's answer replaces it a moment later.
+ * The copy belongs to one account: it is only used while the same man is signed in on this
+ * phone, and it is removed when he signs out (see account.signOut). */
+export const COMMUNITY_CACHE_KEY = "ms_community_v1";
+type Cached = { uid: string; at: string; enabled: boolean; posts: Post[]; replyCounts: Record<string, number>; myReactions: Record<string, ReactionKind[]> };
+
+function readCache(): Cached | null {
+  try {
+    const uid = storedUser()?.id;
+    const raw = localStorage.getItem(COMMUNITY_CACHE_KEY);
+    if (!uid || !raw) return null;
+    const c = JSON.parse(raw) as Cached;
+    return c.uid === uid && Array.isArray(c.posts) ? c : null;
+  } catch {
+    return null;
+  }
+}
+function writeCache() {
+  try {
+    const uid = storedUser()?.id;
+    if (!uid) return;
+    const c: Cached = { uid, at: new Date().toISOString(), enabled: state.enabled, posts: state.posts, replyCounts: state.replyCounts, myReactions: state.myReactions };
+    localStorage.setItem(COMMUNITY_CACHE_KEY, JSON.stringify(c));
+  } catch {}
+}
+
+let fromCacheTried = false;
+/** On the phone: the first read picks up the remembered list (the server render always starts "loading"). */
+function snapshot(): ServerState {
+  if (!fromCacheTried && state === LOADING) {
+    fromCacheTried = true;
+    const c = readCache();
+    if (c) state = { ...state, status: "ready", enabled: c.enabled !== false, posts: c.posts, replyCounts: c.replyCounts ?? {}, myReactions: c.myReactions ?? {} };
+  }
+  return state;
+}
 
 const author = (r: Row) => (r.anonymous || !r.display_name ? { name: "Anonymous member", anonymous: true } : { name: r.display_name, anonymous: false });
 /** The server's counts include his own reactions; the app adds his on top, so take them out of the base */
@@ -80,7 +120,10 @@ export function refreshCommunity(): Promise<void> {
       sb.from("app_settings").select("value").eq("key", "community_enabled").maybeSingle(),
     ]);
     if (list.error) {
-      set(missing(list.error.message) ? { status: "unavailable" } : { status: "error", error: list.error.message });
+      if (missing(list.error.message)) set({ status: "unavailable" });
+      // Offline or a server problem: keep showing the remembered list if there is one
+      else if (state.status === "ready" && state.posts.length) set({ error: list.error.message });
+      else set({ status: "error", error: list.error.message });
       return;
     }
     const rows = (list.data ?? []) as Row[];
@@ -91,6 +134,7 @@ export function refreshCommunity(): Promise<void> {
       replyCounts[r.id] = r.reply_count ?? 0;
     }
     set({ status: "ready", enabled: flag.data?.value !== false, posts: rows.map(toPost), replyCounts, myReactions, error: undefined });
+    writeCache();
   })().finally(() => {
     loading = null;
   });
@@ -165,7 +209,7 @@ export function useCommunityServer(): ServerState {
       listeners.add(cb);
       return () => listeners.delete(cb);
     },
-    () => state,
-    () => state,
+    snapshot,
+    () => LOADING,
   );
 }

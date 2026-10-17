@@ -102,14 +102,16 @@ async function push(userId: string, kinds: Kind[]) {
   if (!getSupabase() || kinds.length === 0) return;
   setStatus("syncing");
   let failed = false;
-  for (const kind of kinds) {
-    try {
-      await syncKind(userId, kind);
-    } catch {
-      pending.add(kind);
-      failed = true;
-    }
-  }
+  // Step 58: the kinds are separate rows, so they're saved at the same time (before: one after another,
+  // so the waits added up — about 3 round trips on every open)
+  await Promise.all(
+    kinds.map((kind) =>
+      syncKind(userId, kind).catch(() => {
+        pending.add(kind);
+        failed = true;
+      }),
+    ),
+  );
   if (failed) setStatus(navigator.onLine ? "error" : "offline");
   else setStatus("saved");
 }
