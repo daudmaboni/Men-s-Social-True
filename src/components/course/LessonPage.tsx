@@ -22,6 +22,7 @@ import { pick, useMainCourse } from "@/lib/course/useCourses";
 import { clock, courseView, heardStep, passReached, passSeconds } from "@/lib/course/progress";
 import { lessonAfter, lessonMinutes, type Course, type FlatLesson } from "@/lib/course/types";
 import { useT } from "@/lib/i18n";
+import { useMediaSrc } from "@/lib/course/media";
 
 const SPEEDS = [1, 1.25, 1.5, 0.75];
 
@@ -414,9 +415,10 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
   };
 
   const need = passSeconds(duration || lesson.seconds || 0, course.passPercent);
+  const mediaSrc = useMediaSrc(lesson.mediaUrl); // private files: a one-day link (Step 59)
   const heardPct = duration ? Math.min(100, Math.round((heard / duration) * 100)) : 0;
   const common = {
-    src: lesson.mediaUrl,
+    src: mediaSrc || undefined,
     preload: "metadata" as const,
     onLoadedMetadata: onLoaded,
     onTimeUpdate: onTime,

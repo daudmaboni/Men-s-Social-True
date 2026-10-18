@@ -9,6 +9,7 @@ import { normalizeTzPhone } from "./merge";
 import { currentLang } from "../me/lang";
 import { checkPassword } from "../security/password";
 import { markOAuthPending } from "./known";
+import { forgetLinks } from "../course/media";
 import { cooldown, formatWait, recordFailure, recordSuccess, waitSeconds } from "../security/loginGuard";
 
 export type AccountState =
@@ -74,6 +75,7 @@ function setAcc(next: AccountState) {
   if (next.status === "guest") {
     try {
       localStorage.removeItem("ms_community_v1");
+      forgetLinks(); // one-day lesson links (Step 59)
     } catch {}
   }
   accState = next;

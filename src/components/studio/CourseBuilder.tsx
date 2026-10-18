@@ -27,6 +27,8 @@ import type { Perm } from "@/lib/admin/perms";
 import {
   discardCourseDraft,
   listStudioCourses,
+  makeLessonFilesPrivate,
+  publicLessonLinks,
   publishCourse,
   readDuration,
   saveCourseDraft,
@@ -38,11 +40,13 @@ import { addLesson, addModule, checkCourse, type CourseIssue, fromLines, matchUp
 import { flatLessons, lessonAfter, lessonMinutes, type Course, type CourseLesson, type LessonKind } from "@/lib/course/types";
 import { clock } from "@/lib/course/progress";
 import { WAZIMU_OUTLINE } from "@/lib/course/wazimu";
+import { useMediaSrc } from "@/lib/course/media";
 
 export default function CourseBuilder({ can }: { can: (p: Perm) => boolean }) {
   const { data: rows, error, loading, reload } = useLoad(listStudioCourses, []);
   const showToast = useToast();
   const [busy, setBusy] = useState(false);
+  const [moves, setMoves] = useState(0); // reloads the editor after the files are moved (Step 59)
 
   const start = async (c: Course) => {
     setBusy(true);
@@ -86,7 +90,65 @@ export default function CourseBuilder({ can }: { can: (p: Perm) => boolean }) {
   const id = ids[0];
   const draft = rows!.find((r) => r.course_id === id && r.state === "draft") ?? null;
   const live = rows!.find((r) => r.course_id === id && r.state === "published") ?? null;
-  return <Editor key={`${id}:${draft?.saved_at ?? ""}:${live?.published_at ?? ""}`} draft={draft} live={live} can={can} onSaved={reload} />;
+  const stillPublic = publicLessonLinks(rows!.filter((r) => r.course_id === id)).length;
+  return (
+    <>
+      {stillPublic > 0 && (
+        <PrivateFilesNotice
+          count={stillPublic}
+          allowed={can("content.publish")}
+          onDone={() => {
+            setMoves((n) => n + 1);
+            reload();
+          }}
+        />
+      )}
+      <Editor key={`${id}:${draft?.saved_at ?? ""}:${live?.published_at ?? ""}:${moves}`} draft={draft} live={live} can={can} onSaved={reload} />
+    </>
+  );
+}
+
+/** Step 59: lesson files uploaded before 0010 are still in public folders. One press moves them all. */
+function PrivateFilesNotice({ count, allowed, onDone }: { count: number; allowed: boolean; onDone: () => void }) {
+  const showToast = useToast();
+  const [ask, setAsk] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const run = async () => {
+    setAsk(false);
+    setProgress({ done: 0, total: count });
+    try {
+      const r = await makeLessonFilesPrivate((done, total) => setProgress({ done, total }));
+      showToast(`${r.files} lesson files are now private`);
+      onDone();
+    } catch (e) {
+      showToast((e as Error).message);
+    } finally {
+      setProgress(null);
+    }
+  };
+  return (
+    <div className="mb-5 rounded-2xl bg-amber-50 p-4 text-sm ring-1 ring-amber-200 dark:bg-amber-950/30 dark:ring-amber-900">
+      <p className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} /> {count} lesson {count === 1 ? "file is" : "files are"} still in a public folder</p>
+      <p className="mt-1 text-ink-soft">
+        Anyone with the link can download them without an account. Moving them puts them in the private folder: only signed-in men can play them,
+        through links that work for one day. Men keep their progress. Save any changes below first.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {allowed ? (
+          <button className={btn.primary} disabled={Boolean(progress)} onClick={() => setAsk(true)}>
+            {progress && <Loader2 size={14} className="animate-spin" />}
+            {progress ? `Moving ${progress.done} of ${progress.total}…` : "Make lesson files private"}
+          </button>
+        ) : (
+          <span className="text-ink-soft">An editor or owner can move them.</span>
+        )}
+      </div>
+      <Confirm open={ask} title="Make lesson files private?" confirmLabel="Move the files" onConfirm={run} onClose={() => setAsk(false)}>
+        The files are copied into the private folder, every version of the course is updated, then the public copies are removed.
+        It takes a minute or two. Keep this page open until it&apos;s done.
+      </Confirm>
+    </div>
+  );
 }
 
 /* ───────────── Editor ───────────── */
@@ -555,6 +617,7 @@ function LessonEditor({ courseId, lesson: l, editable, onChange, onDelete }: { c
   const showToast = useToast();
   const file = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const mediaSrc = useMediaSrc(l.mediaUrl); // private files play through a one-day link
   const [askDelete, setAskDelete] = useState(false);
   const set = <K extends keyof CourseLesson>(k: K, v: CourseLesson[K]) => onChange((x) => ({ ...x, [k]: v }));
 
@@ -611,9 +674,9 @@ function LessonEditor({ courseId, lesson: l, editable, onChange, onDelete }: { c
           <p className="text-xs font-medium text-ink-soft">{l.kind === "audio" ? "Audio" : "Video"}</p>
           {l.mediaUrl ? (
             l.kind === "audio" ? (
-              <audio src={l.mediaUrl} controls preload="none" className="mt-2 w-full" />
+              <audio src={mediaSrc || undefined} controls preload="none" className="mt-2 w-full" />
             ) : (
-              <video src={l.mediaUrl} controls preload="none" playsInline className="mt-2 aspect-video w-full rounded-xl bg-black" />
+              <video src={mediaSrc || undefined} controls preload="none" playsInline className="mt-2 aspect-video w-full rounded-xl bg-black" />
             )
           ) : (
             <p className="mt-1 text-sm text-ink-soft">Nothing uploaded yet.</p>

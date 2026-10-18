@@ -7,6 +7,7 @@
 import { getSupabase } from "../supabase/client";
 import { MAX_AUDIO_BYTES, MAX_VIDEO_BYTES } from "../content/repo";
 import type { Course } from "./types";
+import { PRIVATE_BUCKET, privateRef } from "./media";
 
 export interface CourseRow {
   course_id: string;
@@ -110,7 +111,7 @@ export async function unpublishCourse(id: string): Promise<void> {
 const AUDIO = /^audio\/(mpeg|mp4|x-m4a|aac|wav|webm|ogg)$/;
 const VIDEO = /^video\/(mp4|webm|quicktime)$/;
 
-/** Upload a lesson's audio or video. Returns its public address. */
+/** Upload a lesson's audio or video into the private folder. Returns "private:course-media/<path>" (Step 59). */
 export async function uploadLessonMedia(file: File, courseId: string, lessonId: string, kind: "audio" | "video"): Promise<string> {
   // Some computers give .m4a files no type: treat them as audio/mp4
   const type = file.type || (/\.m4a$/i.test(file.name) ? "audio/mp4" : /\.mp3$/i.test(file.name) ? "audio/mpeg" : /\.mp4$/i.test(file.name) ? "video/mp4" : "");
@@ -124,12 +125,74 @@ export async function uploadLessonMedia(file: File, courseId: string, lessonId: 
   }
   const sb = getSupabase();
   if (!sb) throw new Error("Uploading needs Supabase (demo mode can't store files).");
-  const bucket = kind === "audio" ? "content-audio" : "content-videos";
   const ext = (file.name.split(".").pop() ?? "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
   const path = `courses/${courseId}/${lessonId}-${Date.now()}.${ext}`;
-  const { error } = await sb.storage.from(bucket).upload(path, file, { contentType: type });
-  if (error) throw new Error(error.message);
-  return sb.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  const { error } = await sb.storage.from(PRIVATE_BUCKET).upload(path, file, { contentType: type });
+  if (error) throw new Error(/bucket not found/i.test(error.message) ? NEEDS_0010 : error.message);
+  return privateRef(path);
+}
+
+const NEEDS_0010 = "Lesson files need supabase/migrations/0010_course_members_only.sql. Run it in Supabase first.";
+const PUBLIC_COURSE_FILE = /\/storage\/v1\/object\/public\/(content-audio|content-videos)\/(courses\/[^"?#\s]+)/;
+
+/** Old lesson links that still point to a public folder (in the course versions the Studio loaded). */
+export function publicLessonLinks(rows: { data: Course }[]): string[] {
+  const out = new Set<string>();
+  for (const r of rows) for (const m of r.data.modules ?? []) for (const l of m.lessons ?? []) if (l.mediaUrl && PUBLIC_COURSE_FILE.test(l.mediaUrl)) out.add(l.mediaUrl);
+  return [...out];
+}
+
+/**
+ * Step 59: move every lesson file out of the public folders into the private one.
+ * 1. Copy each file under courses/ (in content-audio and content-videos) into course-media.
+ * 2. Swap the links in every saved version of the course (draft, live and history) in one database call.
+ * 3. Delete the public copies.
+ * Safe to press again: files already copied are skipped, and nothing is deleted before the links are swapped.
+ */
+export async function makeLessonFilesPrivate(onProgress: (done: number, total: number) => void): Promise<{ files: number; versions: number }> {
+  const sb = getSupabase();
+  if (!sb) throw new Error("This needs Supabase.");
+  const { data: rows, error } = await sb.from("course_versions").select("data");
+  if (error) throw new Error(friendly(error.message));
+  // Every lesson link in every version, plus any other file left in the courses/ folders
+  const files = new Map<string, { bucket: string; path: string }>();
+  for (const url of publicLessonLinks((rows ?? []) as { data: Course }[])) {
+    const m = url.match(PUBLIC_COURSE_FILE)!;
+    files.set(`${m[1]}/${decodeURIComponent(m[2])}`, { bucket: m[1], path: decodeURIComponent(m[2]) });
+  }
+  for (const bucket of ["content-audio", "content-videos"]) {
+    const { data: folders } = await sb.storage.from(bucket).list("courses", { limit: 1000 });
+    for (const f of folders ?? []) {
+      if (f.id) continue; // a file directly in courses/ (not expected)
+      const { data: inside } = await sb.storage.from(bucket).list(`courses/${f.name}`, { limit: 1000 });
+      for (const x of inside ?? []) if (x.id) files.set(`${bucket}/courses/${f.name}/${x.name}`, { bucket, path: `courses/${f.name}/${x.name}` });
+    }
+  }
+  const list = [...files.values()];
+  const map: Record<string, string> = {};
+  let done = 0;
+  onProgress(0, list.length);
+  for (const f of list) {
+    const { error: e } = await sb.storage.from(f.bucket).copy(f.path, f.path, { destinationBucket: PRIVATE_BUCKET });
+    if (e && !/exists|duplicate/i.test(e.message)) throw new Error(/bucket not found/i.test(e.message) ? NEEDS_0010 : `Couldn't copy ${f.path}: ${e.message}`);
+    map[sb.storage.from(f.bucket).getPublicUrl(f.path).data.publicUrl] = privateRef(f.path);
+    onProgress(++done, list.length);
+  }
+  let versions = 0;
+  if (Object.keys(map).length) {
+    const { data: n, error: e } = await sb.rpc("course_media_moved", { p_map: map });
+    if (e) throw new Error(/course_media_moved/.test(e.message) ? NEEDS_0010 : friendly(e.message));
+    versions = (n as number) ?? 0;
+  }
+  // Only now, with every link pointing at the private copy, remove the public ones
+  for (const bucket of ["content-audio", "content-videos"]) {
+    const paths = list.filter((f) => f.bucket === bucket).map((f) => f.path);
+    for (let i = 0; i < paths.length; i += 100) {
+      const { error: e } = await sb.storage.from(bucket).remove(paths.slice(i, i + 100));
+      if (e) throw new Error(`Files copied and links updated, but the public copies couldn't all be removed: ${e.message}. Press the button again.`);
+    }
+  }
+  return { files: list.length, versions };
 }
 
 /** Length of an audio/video file in seconds, read in the browser before uploading (null if unknown). */

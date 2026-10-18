@@ -9,6 +9,7 @@
 import { useSyncExternalStore } from "react";
 import { feedStore } from "../feed/store";
 import { heardStep, passReached } from "./progress";
+import { linkFor, playable } from "./media";
 
 export interface PlayerLesson {
   id: string;
@@ -43,6 +44,8 @@ let el: HTMLAudioElement | null = null;
 let prev = 0;
 /** Where to start once the file has loaded (the browser ignores a jump before that). */
 let pendingStart = 0;
+/** Resolves when the current lesson's file address is in the player (private files need a link first, Step 59). */
+let sourceReady: Promise<void> = Promise.resolve();
 let lastSave = 0;
 let countdownTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -143,7 +146,20 @@ export const coursePlayer = {
     this.cancelCountdown();
     if (state.lesson?.id !== l.id) {
       if (state.lesson) save();
-      a.src = l.mediaUrl;
+      const now = playable(l.mediaUrl);
+      if (now) {
+        a.src = now;
+        sourceReady = Promise.resolve();
+      } else {
+        // A private file whose link isn't on the phone yet: stop the old one and fetch the link
+        a.pause();
+        a.removeAttribute("src");
+        sourceReady = linkFor(l.mediaUrl).then((url) => {
+          if (state.lesson?.id !== l.id) return;
+          if (url) a.src = url;
+          else set({ failed: true });
+        });
+      }
       a.playbackRate = state.speed;
       const pos = from.pos ?? 0;
       const len = l.seconds ?? 0;
@@ -167,6 +183,8 @@ export const coursePlayer = {
     }
     this.cancelCountdown();
     try {
+      await sourceReady;
+      if (!a.getAttribute("src")) throw new Error("no file");
       await a.play();
     } catch {
       set({ failed: true });

@@ -328,8 +328,10 @@ describe("courses (0009)", { timeout: 30_000 }, () => {
     expect(await as(JUMA, "select id from public.course_versions")).toEqual([]);
     await fails(WRITER, "select public.course_publish('wazimu')");
     await as(EDITOR, "select public.course_publish('wazimu', 'First')");
-    const live = await as<{ title: string }>(null, "select data->>'title' as title from public.course_versions");
+    const live = await as<{ title: string }>(JUMA, "select data->>'title' as title from public.course_versions");
     expect(live).toEqual([{ title: "Draft one" }]);
+    // Step 59 (0010): guests can't read the course, even straight from the database
+    expect(await as(null, "select id from public.course_versions")).toEqual([]);
   });
 
   it("a new draft doesn't change what men see until it's published; old versions are kept", async () => {
@@ -359,5 +361,48 @@ describe("courses (0009)", { timeout: 30_000 }, () => {
     expect(await as(null, "select id from public.course_versions")).toEqual([]);
     const log = await as<{ action: string }>(OWNER, "select action from public.admin_audit where target = 'wazimu' order by id");
     expect(log.map((l) => l.action)).toEqual(["course.save_draft", "course.publish", "course.save_draft", "course.publish", "course.unpublish"]);
+  });
+});
+
+describe("course files are members only (0010)", { timeout: 30_000 }, () => {
+  const OLD = "https://x.supabase.co/storage/v1/object/public/content-audio/courses/wazimu/wz-1-0-1.m4a";
+  const NEW = "private:course-media/courses/wazimu/wz-1-0-1.m4a";
+  const course = JSON.stringify({ version: 1, id: "wz2", title: "Files", summary: "", credit: "", passPercent: 70, modules: [{ id: "m1", title: "M", lessons: [{ id: "a", code: "1.0", title: "A", kind: "audio", points: 10, mediaUrl: OLD }] }] });
+
+  // The setup re-runs 0006 on purpose (an old file run again by mistake), which brings back the old
+  // open audio rule. Running 0010 again closes it — the same advice the 0010 notes give.
+  beforeAll(async () => {
+    await db.exec(readFileSync(join(process.cwd(), "supabase/migrations/0010_course_members_only.sql"), "utf8"));
+  });
+
+  it("the private folder exists and is not public", async () => {
+    expect(await as(OWNER, "select public from storage.buckets where id = 'course-media'")).toEqual([{ public: false }]);
+  });
+
+  it("only signed-in men can open lesson files; guests can't even list old ones", async () => {
+    // Supabase gives these table rights to everyone; the policies decide what each person sees
+    await db.exec(`grant select, insert, update, delete on storage.objects to anon, authenticated; grant usage, select on all sequences in schema storage to anon, authenticated;`);
+    await db.exec(`insert into storage.objects (bucket_id, name) values ('course-media', 'courses/wz2/a.m4a'), ('content-audio', 'courses/wz2/old.m4a'), ('content-audio', 'podcast/p.m4a')`);
+    expect(await as(null, "select name from storage.objects where bucket_id = 'course-media'")).toEqual([]);
+    expect(await as(JUMA, "select name from storage.objects where bucket_id = 'course-media'")).toEqual([{ name: "courses/wz2/a.m4a" }]);
+    expect(await as(null, "select name from storage.objects where bucket_id = 'content-audio' order by name")).toEqual([{ name: "podcast/p.m4a" }]);
+  });
+
+  it("only staff can put files in the private folder", async () => {
+    await fails(JUMA, "insert into storage.objects (bucket_id, name) values ('course-media', 'courses/x/hack.m4a')");
+    await as(EDITOR, "insert into storage.objects (bucket_id, name) values ('course-media', 'courses/x/ok.m4a')");
+  });
+
+  it("swaps old links in every version; only publishers can, and only to private files", async () => {
+    await as(EDITOR, "select public.course_save_draft('wz2', $1::jsonb)", [course]);
+    await as(EDITOR, "select public.course_publish('wz2')");
+    await as(EDITOR, "select public.course_save_draft('wz2', $1::jsonb)", [course]);
+    await fails(WRITER, "select public.course_media_moved($1::jsonb)", [JSON.stringify({ [OLD]: NEW })]);
+    await fails(JUMA, "select public.course_media_moved($1::jsonb)", [JSON.stringify({ [OLD]: NEW })]);
+    await fails(EDITOR, "select public.course_media_moved($1::jsonb)", [JSON.stringify({ [OLD]: "https://evil.example/x.m4a" })]);
+    const n = await as<{ n: number }>(EDITOR, "select public.course_media_moved($1::jsonb) as n", [JSON.stringify({ [OLD]: NEW })]);
+    expect(n[0].n).toBe(2);
+    const urls = await as<{ u: string }>(EDITOR, "select data->'modules'->0->'lessons'->0->>'mediaUrl' as u from public.course_versions where course_id = 'wz2'");
+    expect(urls.map((r) => r.u)).toEqual([NEW, NEW]);
   });
 });

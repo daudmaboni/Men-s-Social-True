@@ -6,6 +6,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { listLiveCourses } from "./repo";
 import { visibleCourse, type Course } from "./types";
+import { courseRefs, fetchLinks } from "./media";
 
 const KEY = "ms_courses_v1";
 type State = { courses: Course[]; ready: boolean };
@@ -19,6 +20,7 @@ function read(): State {
   try {
     const raw = localStorage.getItem(KEY);
     current = raw ? { courses: (JSON.parse(raw) as Course[]).map(visibleCourse), ready: true } : { courses: [], ready: false };
+    void fetchLinks(current.courses.flatMap(courseRefs)); // lesson files are private: get their links early (Step 59)
   } catch {
     current = { courses: [], ready: false };
   }
@@ -44,6 +46,7 @@ async function fetchCourses() {
       localStorage.setItem(KEY, JSON.stringify(live));
     } catch {}
     current = { courses: live.map(visibleCourse), ready: true };
+    void fetchLinks(current.courses.flatMap(courseRefs));
   } catch {
     // Offline or not set up yet: keep what we have
     current = { ...read(), ready: true };
