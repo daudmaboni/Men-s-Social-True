@@ -1,7 +1,8 @@
 // Converts between a database row (snake_case) and the app's ContentItem.
 // Defensive: bad or missing values from the database never crash the app.
 
-import type { ContentItem, ContentKind, ContentStatus, QuizQuestion, ToolId, TopicId } from "./types";
+import type { ActionSpec, ContentItem, ContentKind, ContentStatus, QuizQuestion, ToolId, TopicId } from "./types";
+import { cleanAction } from "./action-shape";
 
 export interface ContentRow {
   id: string;
@@ -37,6 +38,8 @@ export interface ContentRow {
   review_note?: string | null;
   ai_generated?: boolean;
   audio_url?: string | null;
+  /** Added by migration 0011: a "do this" card made in the Card maker */
+  action?: ActionSpec | null;
   updated_at?: string;
 }
 
@@ -86,6 +89,7 @@ export function rowToItem(row: Partial<ContentRow>): ContentItem | null {
     points: Number(row.points) || 10,
     updatedAt: row.updated_at,
     builtIn: false,
+    ...(cleanAction(row.action) ? { action: cleanAction(row.action) } : {}),
   };
 }
 
@@ -121,6 +125,7 @@ export function itemToRow(item: ContentItem, status: ContentStatus): Omit<Conten
     review_note: item.reviewNote?.trim() || null,
     ai_generated: Boolean(item.aiGenerated),
     audio_url: item.audioUrl ?? null,
+    action: item.action ?? null,
   };
 }
 

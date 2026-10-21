@@ -106,13 +106,17 @@ export default function ActionFeed() {
   const top = useRef<HTMLDivElement>(null);
   const filter = tried.filter;
 
-  const all = useMemo<Card[]>(
-    () => items.flatMap((item) => {
+  // New cards from the Studio's Card maker come first (newest on top), then the built-in feed
+  const all = useMemo<Card[]>(() => {
+    const cards = items.flatMap((item) => {
       const spec = actionOf(item);
       return spec && item.status !== "archived" ? [{ item, spec }] : [];
-    }),
-    [items],
-  );
+    });
+    const fresh = cards
+      .filter((c) => !c.item.builtIn && c.item.id.startsWith("card-"))
+      .sort((a, b) => (b.item.publishedAt ?? "").localeCompare(a.item.publishedAt ?? ""));
+    return [...fresh, ...cards.filter((c) => !fresh.includes(c))];
+  }, [items]);
 
   // His challenge first; what he already did sinks to the bottom (still there to repeat).
   // The order is fixed when he opens the feed or changes the challenge, so cards don't jump under his thumb.
@@ -232,8 +236,8 @@ function EndOfFeed({ filter, onPick, t }: { filter: FeedFilter; onPick: (id: Fee
   );
 }
 
-/** One card in the feed, Instagram-post style. */
-function ActionPost({ card, first, done, liked, saved }: { card: Card; first: boolean; done: boolean; liked: boolean; saved: boolean }) {
+/** One card in the feed, Instagram-post style. Also used by the Studio's Card maker preview. */
+export function ActionPost({ card, first, done, liked, saved }: { card: Card; first: boolean; done: boolean; liked: boolean; saved: boolean }) {
   const { item, spec } = card;
   const t = useT();
   const sw = t.lang === "sw";
@@ -247,6 +251,7 @@ function ActionPost({ card, first, done, liked, saved }: { card: Card; first: bo
 
   const slides: React.ReactNode[] = [
     <HookSlide key="hook" item={item} spec={spec} title={title} hook={hook} first={first} t={t} />,
+    ...(item.videoUrl || item.audioUrl ? [<MediaSlide key="media" item={item} t={t} />] : []),
     ...(need?.length ? [<NeedSlide key="need" need={need} t={t} />] : []),
     ...spec.steps.map((s, i) => (
       <StepSlide key={`s${i}`} n={i + 1} total={spec.steps.length} title={sw ? s.titleSw : s.title} text={sw ? s.textSw : s.text} t={t} />
@@ -445,6 +450,32 @@ function HookSlide({ item, spec, title, hook, first, t }: { item: ContentItem; s
           </span>
           {t(steps === 1 ? "Swipe for the step" : "Swipe for {n} steps", { n: steps })}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function MediaSlide({ item, t }: { item: ContentItem; t: T }) {
+  if (item.videoUrl) {
+    return (
+      <video
+        src={item.videoUrl}
+        poster={item.coverImageUrl}
+        controls
+        playsInline
+        preload="metadata"
+        onEnded={() => trackContent(item.id, "complete")}
+        className="h-full w-full bg-black object-cover"
+      />
+    );
+  }
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      <Cover item={item} className="absolute inset-0 h-full w-full" showPlay={false} />
+      <div className="absolute inset-0 bg-black/55" />
+      <div className="absolute inset-x-0 bottom-0 p-5">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t("Listen")}</p>
+        <audio src={item.audioUrl} controls preload="metadata" onEnded={() => trackContent(item.id, "complete")} className="w-full" />
       </div>
     </div>
   );

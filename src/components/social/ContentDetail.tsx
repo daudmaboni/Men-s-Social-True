@@ -121,6 +121,13 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
               <p className="text-center text-sm text-mint">{t("Audio coming soon")}</p>
             )}
           </div>
+        ) : item.action && item.videoUrl ? (
+          <video src={item.videoUrl} poster={item.coverImageUrl} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
+        ) : item.action && item.audioUrl ? (
+          <div className="space-y-3 bg-forest-deep p-4">
+            <Cover item={item} className="aspect-[2/1] w-full rounded-2xl" showPlay={false} />
+            <audio src={item.audioUrl} controls preload="metadata" className="w-full" />
+          </div>
         ) : item.kind === "video" ? (
           <div className="relative">
             <Cover item={item} className="aspect-video w-full" showPlay={false} />

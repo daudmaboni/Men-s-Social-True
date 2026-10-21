@@ -72,11 +72,13 @@ const BASE_COLUMNS =
   "id,status,kind,topic,title,title_sw,summary,minutes,priority,tags,body,body_sw,key_points,question,quiz,tool,source,review,cover,cover_image_url,origin,in_man_feed,points,published_at,updated_at";
 const V4_COLUMNS = `${BASE_COLUMNS},featured,video_url,summary_sw`;
 const V6_COLUMNS = `${V4_COLUMNS},publish_at,review_note,ai_generated,audio_url`;
+const V11_COLUMNS = `${V6_COLUMNS},action`;
 const V4_FIELDS = ["featured", "video_url", "summary_sw"] as const;
 const V6_FIELDS = ["publish_at", "review_note", "ai_generated", "audio_url"] as const;
 /** True when Supabase hasn't run a newer migration yet (a column the app asks for isn't there). */
 const missingColumn = (msg: string) => /column|schema cache/i.test(msg) && /featured|video_url|summary_sw|publish_at|review_note|ai_generated|audio_url/.test(msg);
 const NEEDS_0004 = "To pin Featured items, add videos or a Kiswahili summary, run supabase/migrations/0004_studio_places_and_account_fix.sql in Supabase first.";
+const NEEDS_0011 = "Cards from the Card maker need supabase/migrations/0011_action_cards.sql. Run it in Supabase first.";
 const NEEDS_0006 = "Review, scheduling, audio and AI drafts need supabase/migrations/0006_admin_control_center.sql. Run it in Supabase first.";
 
 function supabaseRepo(): ContentRepo {
@@ -84,8 +86,8 @@ function supabaseRepo(): ContentRepo {
   const rows = (data: unknown) =>
     ((data as Partial<ContentRow>[]) ?? []).map(rowToItem).filter((x): x is ContentItem => x !== null);
   // Works before and after migrations 0004 and 0006: steps down to older columns if new ones aren't there yet
-  let level: 6 | 4 | 0 = 6;
-  const columns = () => (level === 6 ? V6_COLUMNS : level === 4 ? V4_COLUMNS : BASE_COLUMNS);
+  let level: 11 | 6 | 4 | 0 = 11;
+  const columns = () => (level === 11 ? V11_COLUMNS : level === 6 ? V6_COLUMNS : level === 4 ? V4_COLUMNS : BASE_COLUMNS);
   async function select(published: boolean) {
     const run = () => {
       const q = sb.from("content_items").select(columns());
@@ -93,7 +95,7 @@ function supabaseRepo(): ContentRepo {
     };
     let { data, error } = await run();
     while (error && level > 0 && missingColumn(error.message)) {
-      level = level === 6 ? 4 : 0;
+      level = level === 11 ? 6 : level === 6 ? 4 : 0;
       ({ data, error } = await run());
     }
     if (error) throw new Error(error.message);
@@ -108,6 +110,10 @@ function supabaseRepo(): ContentRepo {
     listAll: () => select(false),
     async save(item, status) {
       const row: Record<string, unknown> = { ...itemToRow(item, status) };
+      if (level < 11) {
+        if (item.action) throw new Error(NEEDS_0011);
+        delete row.action;
+      }
       if (level < 6) {
         if (status === "review" || item.publishAt || item.aiGenerated || item.audioUrl || item.reviewNote) throw new Error(NEEDS_0006);
         V6_FIELDS.forEach((f) => delete row[f]);
@@ -117,7 +123,7 @@ function supabaseRepo(): ContentRepo {
         V4_FIELDS.forEach((f) => delete row[f]);
       }
       const { data, error } = await sb.from("content_items").upsert(row).select(columns()).single();
-      if (error) throw new Error(missingColumn(error.message) ? (level === 6 ? NEEDS_0006 : NEEDS_0004) : friendlyDb(error.message));
+      if (error) throw new Error(missingColumn(error.message) ? (/action/.test(error.message) ? NEEDS_0011 : level === 6 ? NEEDS_0006 : NEEDS_0004) : friendlyDb(error.message));
       notify();
       return rowToItem(data as Partial<ContentRow>)!;
     },
