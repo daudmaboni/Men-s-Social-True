@@ -256,7 +256,7 @@ function ItemCard({ it, onDone, canRestrict }: { it: Item; onDone: () => void; c
       </div>
       {it.type === "post" ? <p className="mt-2 text-sm font-semibold">{it.title}</p> : <p className="mt-2 text-xs text-ink-soft">Reply to: {it.title}</p>}
       {it.body && <p className="mt-1 whitespace-pre-line text-sm text-ink-soft">{it.body}</p>}
-      <p className="mt-2 text-[11px] text-ink-soft">
+      <p className="mt-2 text-[0.6875rem] text-ink-soft">
         Shown as: {it.anonymous || !it.display_name ? "Anonymous member" : it.display_name} · Account: {it.author_label ?? "—"}
         {it.type === "post" && ` · ${it.reply_count} replies`}
       </p>

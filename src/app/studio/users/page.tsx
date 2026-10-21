@@ -139,7 +139,7 @@ export default function UsersPage() {
                         {u.email ?? "(phone account)"}
                       </button>
                       {u.notes > 0 && (
-                        <span className="ml-2 text-[11px] text-ink-soft">
+                        <span className="ml-2 text-[0.6875rem] text-ink-soft">
                           <StickyNote size={11} className="inline" /> {u.notes}
                         </span>
                       )}
@@ -204,7 +204,7 @@ export default function UsersPage() {
               return rows.length ? (
                 <>
                   <RankBars rows={rows.sort((a, b) => b.n - a.n)} unit="men" />
-                  {hidden > 0 && <p className="mt-3 text-[11px] text-ink-soft">{hidden} more topic{hidden > 1 ? "s" : ""} with fewer than 5 followers.</p>}
+                  {hidden > 0 && <p className="mt-3 text-[0.6875rem] text-ink-soft">{hidden} more topic{hidden > 1 ? "s" : ""} with fewer than 5 followers.</p>}
                 </>
               ) : (
                 <p className="text-sm text-ink-soft">No topic has 5 or more followers yet.</p>
@@ -228,7 +228,7 @@ export default function UsersPage() {
           ) : (
             <p className="text-sm text-ink-soft">{adoption.error ?? "Loading…"}</p>
           )}
-          {adoption.data && <p className="mt-3 text-[11px] text-ink-soft">Out of {adoption.data.synced_users} accounts that have saved data. Guests (phone only) aren&apos;t counted.</p>}
+          {adoption.data && <p className="mt-3 text-[0.6875rem] text-ink-soft">Out of {adoption.data.synced_users} accounts that have saved data. Guests (phone only) aren&apos;t counted.</p>}
         </Panel>
       </div>
 
@@ -332,7 +332,7 @@ function UserDrawer({ user: u, onClose, onChanged, canRestrict, canWarn, canDele
             {notes.data?.map((n) => (
               <li key={n.id} className="rounded-xl bg-bg px-3 py-2">
                 <p className="whitespace-pre-line text-sm">{n.body}</p>
-                <p className="mt-1 text-[11px] text-ink-soft">{fmtDate(n.created_at, true)}</p>
+                <p className="mt-1 text-[0.6875rem] text-ink-soft">{fmtDate(n.created_at, true)}</p>
               </li>
             ))}
             {notes.error && <li className="text-xs text-red-700">{notes.error}</li>}

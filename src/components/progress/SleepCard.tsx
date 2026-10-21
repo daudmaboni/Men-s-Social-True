@@ -217,10 +217,10 @@ export default function SleepCard({ period }: { period: Period }) {
         {category ? ` · ${t(CATEGORY_LABEL[category])}` : ""}
         {lastNight.meta?.quality ? ` · ${t("Quality")}: ${t(RATING_LABELS[lastNight.meta.quality - 1])}` : ""}
       </p>
-      <p className="mt-1 text-[11px] font-semibold text-forest">{sourceLabel}</p>
+      <p className="mt-1 text-[0.6875rem] font-semibold text-forest">{sourceLabel}</p>
       {st === "estimated" ? (
         <>
-          <p className="mt-2 rounded-2xl bg-bg px-3 py-2 text-[11px] leading-relaxed text-ink-soft">
+          <p className="mt-2 rounded-2xl bg-bg px-3 py-2 text-[0.6875rem] leading-relaxed text-ink-soft">
             {how === "sleep_api"
               ? t("Google's sleep detection on your phone worked this out from movement and light. It can be a little off.")
               : t("This is the time between closing the app at night and opening it in the morning. It may be longer than your real sleep.")}
@@ -277,7 +277,7 @@ export default function SleepCard({ period }: { period: Period }) {
           <button onClick={() => sleepTracker.startNight(now)} className={`mt-4 flex items-center justify-center gap-2 ${primary}`}>
             <Moon size={16} /> {t("Going to sleep")}
           </button>
-          <p className="mt-2 text-center text-[11px] text-ink-soft">{t("Tap again with \"I'm awake\" in the morning.")}</p>
+          <p className="mt-2 text-center text-[0.6875rem] text-ink-soft">{t("Tap again with \"I'm awake\" in the morning.")}</p>
         </>
       ) : (
         <button onClick={() => openLog()} className={`mt-4 ${primary}`}>
@@ -292,7 +292,7 @@ export default function SleepCard({ period }: { period: Period }) {
     <div className="mt-5 flex items-start justify-between gap-3 border-t border-line pt-4">
       <div className="min-w-0">
         <p className="text-sm font-semibold">{t("Automatic estimate")}</p>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-ink-soft">
+        <p className="mt-0.5 text-[0.6875rem] leading-relaxed text-ink-soft">
           {tracker.auto
             ? t("On. Each morning we estimate your night from when you last closed and first opened this app. Only those times are noted, on this phone.")
             : t("Off. Turn it on and we'll estimate your night from when you close and open this app. It's a guess, not a measurement.")}
@@ -353,7 +353,7 @@ export default function SleepCard({ period }: { period: Period }) {
             <Stat label={t("Usual bedtime")} value={summary.bedtime ?? "—"} hint={t("average")} />
             <Stat label={t("Usual wake-up")} value={summary.wakeTime ?? "—"} hint={t("average")} />
           </div>
-          <p className="mt-3 text-[11px] text-ink-soft">
+          <p className="mt-3 text-[0.6875rem] text-ink-soft">
             {t("{n} nights missing", { n: summary.missing })}
             {summary.lowConfidence > 0 ? ` · ${t("{n} unconfirmed estimates", { n: summary.lowConfidence })}` : ""}
             {summary.change !== null ? ` · ${summary.change >= 0 ? "+" : "−"}${duration(Math.abs(summary.change))} ${t("vs the {n} days before", { n: span })}` : ""}
@@ -364,7 +364,7 @@ export default function SleepCard({ period }: { period: Period }) {
             <p className="mb-3 text-xs font-medium text-ink-soft">{t("Last {n} nights", { n: period })}</p>
             <DayBars keys={keys} values={values} target={goal} format={duration} />
           </div>
-          <p className="mt-3 text-[11px] text-ink-soft">{t("Sleep times are your own or estimates. They're not a medical measurement.")}</p>
+          <p className="mt-3 text-[0.6875rem] text-ink-soft">{t("Sleep times are your own or estimates. They're not a medical measurement.")}</p>
         </section>
       )}
 
@@ -423,7 +423,7 @@ export default function SleepCard({ period }: { period: Period }) {
                 <button
                   key={label}
                   onClick={() => setQuality(quality === i + 1 ? null : i + 1)}
-                  className={`rounded-xl py-2 text-[10px] font-semibold transition-colors ${
+                  className={`rounded-xl py-2 text-[0.625rem] font-semibold transition-colors ${
                     quality === i + 1 ? "bg-forest text-white" : "ring-1 ring-line"
                   }`}
                 >
@@ -463,8 +463,8 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
   return (
     <div className="rounded-2xl bg-bg p-3">
       <p className="text-lg font-bold">{value}</p>
-      <p className="text-[11px] font-medium">{label}</p>
-      <p className="text-[10px] text-ink-soft">{hint}</p>
+      <p className="text-[0.6875rem] font-medium">{label}</p>
+      <p className="text-[0.625rem] text-ink-soft">{hint}</p>
     </div>
   );
 }
@@ -513,7 +513,7 @@ function PhoneDetection() {
     <div className="mt-5 flex items-start justify-between gap-3 border-t border-line pt-4">
       <div className="min-w-0">
         <p className="text-sm font-semibold">{t("Phone sleep detection")}</p>
-        <p className="mt-0.5 text-[11px] leading-relaxed text-ink-soft">
+        <p className="mt-0.5 text-[0.6875rem] leading-relaxed text-ink-soft">
           {!st.available
             ? t("This phone doesn't have Google Play services, so it can't detect sleep. Use the taps instead.")
             : st.permission === "denied"

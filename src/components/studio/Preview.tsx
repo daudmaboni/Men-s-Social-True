@@ -21,7 +21,7 @@ export default function Preview({ item }: { item: ContentItem }) {
         <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft">
           Phone preview
         </p>
-        <div className="inline-flex rounded-full bg-surface p-0.5 text-[11px] font-semibold ring-1 ring-line">
+        <div className="inline-flex rounded-full bg-surface p-0.5 text-[0.6875rem] font-semibold ring-1 ring-line">
           {(["en", "sw"] as const).map((l) => (
             <button
               key={l}
@@ -40,7 +40,7 @@ export default function Preview({ item }: { item: ContentItem }) {
           <div className="overflow-hidden rounded-3xl bg-surface ring-1 ring-line">
             <Cover item={item} className="aspect-[16/10] w-full" />
             <div className="p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-forest">
+              <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-forest">
                 {KIND_LABEL[item.kind]} · {item.minutes} min
               </p>
               <p className="mt-1 font-bold leading-snug">{title}</p>
@@ -53,7 +53,7 @@ export default function Preview({ item }: { item: ContentItem }) {
             </div>
           </div>
 
-          <p className="text-center text-[10px] uppercase tracking-wider text-ink-soft">
+          <p className="text-center text-[0.625rem] uppercase tracking-wider text-ink-soft">
             Opened page
           </p>
 
@@ -70,14 +70,14 @@ export default function Preview({ item }: { item: ContentItem }) {
             </div>
           )}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-forest">
+            <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-forest">
               {topic} · {KIND_LABEL[item.kind]}
             </p>
             <h2 className="mt-1 text-xl font-bold leading-tight">{title}</h2>
             {!sw && item.summary && (
               <p className="mt-1 text-sm text-ink-soft">{item.summary}</p>
             )}
-            <p className="mt-2 flex items-start gap-1 rounded-xl bg-surface px-2 py-1.5 text-[10px] text-ink-soft ring-1 ring-line">
+            <p className="mt-2 flex items-start gap-1 rounded-xl bg-surface px-2 py-1.5 text-[0.625rem] text-ink-soft ring-1 ring-line">
               <ShieldCheck size={11} className="mt-px shrink-0 text-forest" />
               {item.source}
               {item.review === "reviewed" ? " · Reviewed" : ""}
@@ -135,7 +135,7 @@ export default function Preview({ item }: { item: ContentItem }) {
             </div>
           )}
 
-          <p className="text-center text-[10px] text-ink-soft">
+          <p className="text-center text-[0.625rem] text-ink-soft">
             General education, not medical advice.
           </p>
         </div>

@@ -50,14 +50,14 @@ export default function Countdown({ forLesson, tone = "dark", className = "" }: 
         </svg>
         <span className="text-sm font-bold tabular-nums">{secs}</span>
       </span>
-      <span className="text-[11px] font-semibold leading-tight">{t("Next lesson")}</span>
+      <span className="text-[0.6875rem] font-semibold leading-tight">{t("Next lesson")}</span>
       <button
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           coursePlayer.cancelCountdown();
         }}
-        className={`flex h-8 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold ${dark ? "bg-white/15 hover:bg-white/25" : "bg-bg hover:bg-line"}`}
+        className={`flex h-8 items-center gap-1 rounded-full px-2.5 text-[0.6875rem] font-bold ${dark ? "bg-white/15 hover:bg-white/25" : "bg-bg hover:bg-line"}`}
         aria-label={t("Cancel")}
       >
         <X size={13} /> {t("Cancel")}

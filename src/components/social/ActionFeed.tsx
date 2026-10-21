@@ -155,7 +155,7 @@ export default function ActionFeed() {
   return (
     <div className="mx-auto w-full max-w-[480px] space-y-4">
       <section aria-labelledby="challenge-h" className="-mx-5 scroll-mt-4 lg:mx-0" ref={top}>
-        <h2 id="challenge-h" className="px-5 font-display text-[20px] font-bold leading-tight lg:px-0">
+        <h2 id="challenge-h" className="px-5 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
           {t("What are you dealing with?")}
         </h2>
         <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-5 pb-1 lg:px-0">
@@ -182,7 +182,7 @@ export default function ActionFeed() {
                     </span>
                   </span>
                 </span>
-                <span className={`line-clamp-2 text-center text-[11px] leading-tight ${on ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>{t(label)}</span>
+                <span className={`line-clamp-2 text-center text-[0.6875rem] leading-tight ${on ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>{t(label)}</span>
               </button>
             );
           })}
@@ -280,11 +280,11 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
           <TypeIcon size={16} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-bold leading-tight">{t(TYPE_LABEL[spec.type])}</p>
-          <p className="truncate text-[11px] text-ink-soft">{t("{n} min", { n: item.minutes })} · {item.origin ? "@kayaniherbs" : "Kayani Herbs"}</p>
+          <p className="truncate text-[0.8125rem] font-bold leading-tight">{t(TYPE_LABEL[spec.type])}</p>
+          <p className="truncate text-[0.6875rem] text-ink-soft">{t("{n} min", { n: item.minutes })} · {item.origin ? "@kayaniherbs" : "Kayani Herbs"}</p>
         </div>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${spec.results === "tonight" ? "bg-honey text-on-honey" : "bg-mint text-forest"}`}
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ${spec.results === "tonight" ? "bg-honey text-on-honey" : "bg-mint text-forest"}`}
         >
           {t(RESULT_LABEL[spec.results])}
         </span>
@@ -327,7 +327,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
       </div>
 
       <div className="px-3 pb-3">
-        <p className="line-clamp-2 text-[14px] font-bold leading-snug">{title}</p>
+        <p className="line-clamp-2 text-[0.875rem] font-bold leading-snug">{title}</p>
         <div className="mt-2 flex gap-2">
           <button
             onClick={() => {
@@ -405,7 +405,7 @@ function Carousel({ children, label, t }: { children: React.ReactNode[]; label: 
           </div>
         ))}
       </div>
-      <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-bold tabular-nums text-white backdrop-blur">
+      <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-black/45 px-2 py-0.5 text-[0.6875rem] font-bold tabular-nums text-white backdrop-blur">
         {index + 1}/{count}
       </span>
       {/* Arrows for mouse users on a computer */}
@@ -441,10 +441,10 @@ function HookSlide({ item, spec, title, hook, first, t }: { item: ContentItem; s
       <Cover item={item} className="absolute inset-0 h-full w-full" showPlay={false} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/5" />
       <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5 text-white">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t(TYPE_LABEL[spec.type])}</p>
-        <h3 className="mt-1 line-clamp-3 font-display text-[23px] font-bold leading-[1.1]">{title}</h3>
-        <p className="mt-1.5 line-clamp-2 text-[14px] leading-snug text-white/85">{hook}</p>
-        <p className="mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-white">
+        <p className="text-[0.6875rem] font-bold uppercase tracking-wider text-mint-strong">{t(TYPE_LABEL[spec.type])}</p>
+        <h3 className="mt-1 line-clamp-3 font-display text-[1.4375rem] font-bold leading-[1.1]">{title}</h3>
+        <p className="mt-1.5 line-clamp-2 text-[0.875rem] leading-snug text-white/85">{hook}</p>
+        <p className="mt-2.5 flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white">
           <span className="inline-flex w-5 shrink-0 justify-center">
             <Hand size={15} className={first ? "swipe-hand" : ""} aria-hidden />
           </span>
@@ -474,7 +474,7 @@ function MediaSlide({ item, t }: { item: ContentItem; t: T }) {
       <Cover item={item} className="absolute inset-0 h-full w-full" showPlay={false} />
       <div className="absolute inset-0 bg-black/55" />
       <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t("Listen")}</p>
+        <p className="mb-2 text-[0.6875rem] font-bold uppercase tracking-wider text-mint-strong">{t("Listen")}</p>
         <audio src={item.audioUrl} controls preload="metadata" onEnded={() => trackContent(item.id, "complete")} className="w-full" />
       </div>
     </div>
@@ -493,10 +493,10 @@ function Frame({ className, children }: { className: string; children: React.Rea
 function NeedSlide({ need, t }: { need: string[]; t: T }) {
   return (
     <Frame className="bg-mint text-forest-deep">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-forest">{t("You need")}</p>
+      <p className="text-[0.6875rem] font-bold uppercase tracking-wider text-forest">{t("You need")}</p>
       <ul className={`mt-3 ${need.length > 4 ? "space-y-1.5" : "space-y-2.5"}`}>
         {need.map((n, i) => (
-          <li key={i} className={`flex items-start gap-2.5 font-semibold leading-snug ${need.length > 4 ? "text-[14px]" : "text-[16px]"}`}>
+          <li key={i} className={`flex items-start gap-2.5 font-semibold leading-snug ${need.length > 4 ? "text-[0.875rem]" : "text-[1rem]"}`}>
             <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-forest text-white">
               <Check size={12} />
             </span>
@@ -512,13 +512,13 @@ function StepSlide({ n, total, title, text, t }: { n: number; total: number; tit
   const long = text.length > 120;
   return (
     <div className="relative h-full w-full overflow-hidden bg-forest-deep text-white">
-      <span className="pointer-events-none absolute -right-3 -top-8 font-display text-[160px] font-bold leading-none text-white/[0.07]" aria-hidden>
+      <span className="pointer-events-none absolute -right-3 -top-8 font-display text-[10rem] font-bold leading-none text-white/[0.07]" aria-hidden>
         {n}
       </span>
       <Frame className="">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t("Step {n} of {total}", { n, total })}</p>
-        {title && <p className="mt-2 font-display text-[21px] font-bold leading-tight">{title}</p>}
-        <p className={`${title ? `mt-1.5 ${long ? "text-[15px]" : "text-[16px]"}` : `mt-2 font-semibold ${long ? "text-[16px]" : "text-[19px]"}`} leading-snug text-white/95`}>{text}</p>
+        <p className="text-[0.6875rem] font-bold uppercase tracking-wider text-mint-strong">{t("Step {n} of {total}", { n, total })}</p>
+        {title && <p className="mt-2 font-display text-[1.3125rem] font-bold leading-tight">{title}</p>}
+        <p className={`${title ? `mt-1.5 ${long ? "text-[0.9375rem]" : "text-[1rem]"}` : `mt-2 font-semibold ${long ? "text-[1rem]" : "text-[1.1875rem]"}`} leading-snug text-white/95`}>{text}</p>
       </Frame>
     </div>
   );
@@ -527,9 +527,9 @@ function StepSlide({ n, total, title, text, t }: { n: number; total: number; tit
 function WhySlide({ why, t }: { why: string; t: T }) {
   return (
     <Frame className="bg-surface">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-forest">{t("The secret")}</p>
-      <p className={`mt-2 font-display font-bold leading-snug text-ink ${why.length > 110 ? "text-[17px]" : "text-[19px]"}`}>{why}</p>
-      <p className="mt-3 text-[13px] text-ink-soft">{t("Tried it? Tap \"I did it\" below.")}</p>
+      <p className="text-[0.6875rem] font-bold uppercase tracking-wider text-forest">{t("The secret")}</p>
+      <p className={`mt-2 font-display font-bold leading-snug text-ink ${why.length > 110 ? "text-[1.0625rem]" : "text-[1.1875rem]"}`}>{why}</p>
+      <p className="mt-3 text-[0.8125rem] text-ink-soft">{t("Tried it? Tap \"I did it\" below.")}</p>
     </Frame>
   );
 }

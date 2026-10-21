@@ -252,7 +252,7 @@ function Admins() {
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-[11px] text-ink-soft">The database enforces these roles. Hiding a button is only a convenience.</p>
+        <p className="mt-4 text-[0.6875rem] text-ink-soft">The database enforces these roles. Hiding a button is only a convenience.</p>
       </Panel>
       <Confirm
         open={removing !== null}
@@ -502,7 +502,7 @@ function Security() {
         <button className={`${btn.ghost} mt-4`} onClick={() => setConfirm(true)}>
           Sign out on all devices
         </button>
-        <p className="mt-2 text-[11px] text-ink-soft">Use this if a phone or computer with your admin login was lost or shared.</p>
+        <p className="mt-2 text-[0.6875rem] text-ink-soft">Use this if a phone or computer with your admin login was lost or shared.</p>
       </Panel>
       <Panel title="Privacy and data">
         <ul className="space-y-2 text-sm text-ink-soft">

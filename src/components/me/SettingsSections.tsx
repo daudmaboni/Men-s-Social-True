@@ -18,6 +18,9 @@ import type { AccountState } from "@/lib/account/useAccount";
 import { deleteCloudData, stopSync } from "@/lib/account/sync";
 import { useSupportShare } from "@/lib/account/share";
 import { useT } from "@/lib/i18n";
+import FoldRow from "@/components/motion/FoldRow";
+import { FontStylePicker, TextSizePicker } from "@/components/me/FontChoices";
+import { TEXT_SIZES, fontById, useFont, useTextSize } from "@/lib/fonts";
 
 /* ───────── Goals and topics ───────── */
 export function GoalsCard({ water, sleep, interests }: { water: number | null; sleep: number | null; interests: TopicId[] }) {
@@ -106,17 +109,21 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
   const theme = useThemePref();
   const accent = useAccent();
   const t = useT();
+  const font = fontById(useFont("app"));
+  const size = useTextSize("app");
+  const fontName = font.id === "kayani" || font.id === "system" ? t(font.name) : font.name;
+  const sizeName = TEXT_SIZES.find((z) => z.id === size)?.heading ?? "Normal";
   return (
     <section className="divide-y divide-line rounded-3xl bg-surface ring-1 ring-line">
-      <div className="p-5">
-        <div className="flex items-center gap-3">
-          <MoonStar size={18} className="shrink-0 text-forest" />
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">{t("Appearance")}</p>
-            <p className="text-xs text-ink-soft">{t("Tip: spread two fingers apart for dark, pinch them together for light.")}</p>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-3 rounded-full bg-bg p-1 text-xs font-semibold ring-1 ring-line" role="radiogroup" aria-label={t("Appearance")}>
+      <FoldRow
+        icon={<MoonStar size={18} className="shrink-0 text-forest" />}
+        title={t("Appearance")}
+        sub={[t(theme === "light" ? "Light" : theme === "dark" ? "Dark" : "Auto"), t(ACCENTS.find((a) => a.id === accent)?.label ?? "Green"), fontName, t(sizeName)].join(" · ")}
+        showMore={t("Show more")}
+        showLess={t("Show less")}
+      >
+        <p className="mb-3 text-xs text-ink-soft">{t("Tip: spread two fingers apart for dark, pinch them together for light.")}</p>
+        <div className="grid grid-cols-3 rounded-full bg-bg p-1 text-xs font-semibold ring-1 ring-line" role="radiogroup" aria-label={t("Appearance")}>
           {(["light", "dark", "auto"] as ThemePref[]).map((m) => (
             <button
               key={m}
@@ -154,7 +161,13 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
             </button>
           ))}
         </div>
-      </div>
+        <div className="mt-4">
+          <FontStylePicker scope="app" t={t} onPicked={(name) => showToast(t("Font: {name}", { name }))} />
+        </div>
+        <div className="mt-4">
+          <TextSizePicker scope="app" t={t} />
+        </div>
+      </FoldRow>
       <div className="flex items-center gap-3 p-5">
         <Globe size={18} className="shrink-0 text-forest" />
         <div className="min-w-0 flex-1">

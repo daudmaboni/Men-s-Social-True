@@ -105,7 +105,7 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className={`text-sm font-medium ${closed ? "text-ink-soft line-through decoration-line" : ""}`}>{t(title)}</p>
-            <p className="text-[11px] text-ink-soft">
+            <p className="text-[0.6875rem] text-ink-soft">
               {s === "skipped"
                 ? t("Skipped today")
                 : s === "later"
@@ -149,7 +149,7 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
             {closed && (
               <button
                 onClick={() => feedStore.clearChoice(a.id)}
-                className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-forest"
+                className="mt-1 flex items-center gap-1 text-[0.6875rem] font-semibold text-forest"
               >
                 <Undo2 size={11} /> {t("Undo")}
               </button>

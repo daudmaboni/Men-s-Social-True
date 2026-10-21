@@ -36,7 +36,7 @@ export default function SideNav() {
         <BrandMark size={40} />
         <span className="leading-tight">
           <span className="block text-base font-semibold">Men&apos;s Social</span>
-          <span className="block text-[11px] text-ink-soft">Kayani</span>
+          <span className="block text-[0.6875rem] text-ink-soft">Kayani</span>
         </span>
       </Link>
 
@@ -71,7 +71,7 @@ export default function SideNav() {
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold">{t(label)}</span>
-                <span className="block truncate text-[11px] font-normal opacity-80">{t(about)}</span>
+                <span className="block truncate text-[0.6875rem] font-normal opacity-80">{t(about)}</span>
               </span>
             </Link>
           );

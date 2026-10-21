@@ -72,7 +72,7 @@ export default function MeTab() {
       {acc.status === "signedIn" && <NotificationPrefs />}
       <PrivacyCard acc={acc} />
       </div>
-      <p className="pb-2 lg:col-span-12 text-center text-[11px] text-ink-soft">{t("Kayani Men's Social · test version")}</p>
+      <p className="pb-2 lg:col-span-12 text-center text-[0.6875rem] text-ink-soft">{t("Kayani Men's Social · test version")}</p>
     </div>
   );
 }

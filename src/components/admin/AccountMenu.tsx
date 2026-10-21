@@ -1,11 +1,12 @@
 "use client";
 
 // Bottom of the Studio sidebar: one clean row (avatar, name, role). Tapping it opens a small card with
-// Appearance (light / dark / auto), Colour, Account settings and Sign out — so the menu stays about navigation.
+// Appearance (light / dark / auto), Colour, Font style, Text size, Account settings and Sign out — so the menu stays about navigation.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, ChevronUp, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
+import { FontStylePicker, TextSizePicker } from "@/components/me/FontChoices";
 import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 
 const THEMES: { id: ThemePref; label: string; Icon: typeof Sun }[] = [
@@ -69,7 +70,7 @@ export default function AccountMenu({
           <>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">{display}</span>
-              <span className="mt-0.5 inline-block rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest-deep">{role}</span>
+              <span className="mt-0.5 inline-block rounded-full bg-mint px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-forest-deep">{role}</span>
             </span>
             <ChevronUp size={16} className={`shrink-0 text-ink-soft transition-transform duration-200 ${open ? "" : "rotate-180"}`} aria-hidden />
           </>
@@ -80,7 +81,7 @@ export default function AccountMenu({
         <div
           role="menu"
           aria-label="Account"
-          className={`menu-pop absolute z-50 w-72 max-w-[calc(100vw-2rem)] rounded-2xl bg-surface p-3 shadow-2xl ring-1 ring-line ${
+          className={`menu-pop absolute z-50 max-h-[calc(100dvh-5rem)] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-surface p-3 shadow-2xl ring-1 ring-line ${
             compact ? "bottom-0 left-full ml-3" : "bottom-full left-0 mb-2"
           }`}
         >
@@ -95,14 +96,22 @@ export default function AccountMenu({
 
           {/* Appearance */}
           <div className="border-t border-line pt-3">
-            <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Appearance</p>
+            <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">Appearance</p>
             <ThemeChoice />
           </div>
 
           {/* Colour */}
           <div className="mt-3">
-            <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-ink-soft">Colour</p>
+            <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">Colour</p>
             <AccentChoice />
+          </div>
+
+          {/* Font style and text size (Step 66): the Studio keeps its own, separate from the men's app */}
+          <div className="mt-3">
+            <FontStylePicker scope="studio" />
+          </div>
+          <div className="mt-3 px-1">
+            <TextSizePicker scope="studio" />
           </div>
 
           {/* Links */}
@@ -159,7 +168,7 @@ export function ThemeChoice() {
             role="radio"
             aria-checked={on}
             onClick={(e) => setThemePref(id, { x: e.clientX, y: e.clientY })}
-            className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-[11px] font-semibold transition-colors ${
+            className={`flex flex-col items-center gap-1 rounded-xl py-2.5 text-[0.6875rem] font-semibold transition-colors ${
               on ? "bg-mint text-forest-deep ring-1 ring-forest/40" : "text-ink-soft ring-1 ring-line hover:bg-bg"
             }`}
           >
@@ -185,7 +194,7 @@ export function AccentChoice() {
             role="radio"
             aria-checked={on}
             onClick={(e) => setAccent(a.id, { x: e.clientX, y: e.clientY })}
-            className={`flex items-center gap-2 rounded-xl px-2 py-2 text-[11px] font-semibold transition-colors ${on ? "bg-bg ring-1 ring-ink/30" : "text-ink-soft ring-1 ring-line hover:bg-bg"}`}
+            className={`flex items-center gap-2 rounded-xl px-2 py-2 text-[0.6875rem] font-semibold transition-colors ${on ? "bg-bg ring-1 ring-ink/30" : "text-ink-soft ring-1 ring-line hover:bg-bg"}`}
           >
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white" style={{ background: a.swatch }} aria-hidden>
               {on && <Check size={12} strokeWidth={3} />}

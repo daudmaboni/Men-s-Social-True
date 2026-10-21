@@ -19,19 +19,19 @@ export default function FeaturedCard({ item, reason }: { item: ContentItem; reas
       <Link href={contentHref(item.id)} className="relative block" aria-label={title}>
         <Cover item={item} className="aspect-[2/1] w-full" />
         <div className="absolute left-4 top-4 flex gap-2">
-          <span className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold text-forest-deep">{t("Featured")}</span>
+          <span className="rounded-full bg-white/90 px-3 py-1 text-[0.6875rem] font-bold text-forest-deep">{t("Featured")}</span>
           {item.fixture && (
-            <span className="rounded-full bg-black/35 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">{t("Sample")}</span>
+            <span className="rounded-full bg-black/35 px-3 py-1 text-[0.6875rem] font-semibold text-white backdrop-blur">{t("Sample")}</span>
           )}
         </div>
       </Link>
 
       <div className="p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-mint-strong">
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-mint-strong">
           {topic} · {metaOf(item, t)}
         </p>
         <Link href={contentHref(item.id)}>
-          <h2 className="mt-1.5 text-[20px] font-bold leading-snug">{title}</h2>
+          <h2 className="mt-1.5 text-[1.25rem] font-bold leading-snug">{title}</h2>
         </Link>
         <p className="mt-1 line-clamp-2 text-sm text-mint">{summaryOf(item, t)}</p>
 
@@ -44,7 +44,7 @@ export default function FeaturedCard({ item, reason }: { item: ContentItem; reas
           </Link>
           <BookmarkButton contentId={item.id} variant="dark" />
         </div>
-        <p className="mt-2 line-clamp-1 text-[11px] text-mint/70">{reason}</p>
+        <p className="mt-2 line-clamp-1 text-[0.6875rem] text-mint/70">{reason}</p>
       </div>
     </article>
   );

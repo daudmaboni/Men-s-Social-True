@@ -156,7 +156,7 @@ export default function HydrationCard({ period }: { period: Period }) {
           >
             <Icon size={18} />
             <span className="text-xs font-semibold">+{ml} ml</span>
-            <span className="text-[10px] text-ink-soft">{t(label)}</span>
+            <span className="text-[0.625rem] text-ink-soft">{t(label)}</span>
           </button>
         ))}
         <button
@@ -165,7 +165,7 @@ export default function HydrationCard({ period }: { period: Period }) {
         >
           <Plus size={18} />
           <span className="text-xs font-semibold">{t("Custom")}</span>
-          <span className="text-[10px] text-ink-soft">{t("Any amount")}</span>
+          <span className="text-[0.625rem] text-ink-soft">{t("Any amount")}</span>
         </button>
       </div>
 
@@ -180,7 +180,7 @@ export default function HydrationCard({ period }: { period: Period }) {
               >
                 <span>
                   {r.value} ml
-                  <span className="ml-2 text-[11px] text-ink-soft">{t(SOURCE_LABEL[r.source])}</span>
+                  <span className="ml-2 text-[0.6875rem] text-ink-soft">{t(SOURCE_LABEL[r.source])}</span>
                 </span>
                 <span className="text-xs text-ink-soft">
                   {new Date(r.recordedAt).toLocaleTimeString(t.locale, {
@@ -290,8 +290,8 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
   return (
     <div className="rounded-2xl bg-bg p-3">
       <p className="text-lg font-bold">{value}</p>
-      <p className="text-[11px] font-medium">{label}</p>
-      <p className="text-[10px] text-ink-soft">{hint}</p>
+      <p className="text-[0.6875rem] font-medium">{label}</p>
+      <p className="text-[0.625rem] text-ink-soft">{hint}</p>
     </div>
   );
 }

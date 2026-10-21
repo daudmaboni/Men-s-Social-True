@@ -1128,7 +1128,7 @@ export default function Editor({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{v.item.title}</p>
-                    <p className="text-[11px] text-ink-soft">
+                    <p className="text-[0.6875rem] text-ink-soft">
                       <Clock size={11} className="mr-1 inline" />
                       {new Date(v.savedAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · was {v.status}
                     </p>
@@ -1203,7 +1203,7 @@ function QuizEditor({
               />
             </label>
           ))}
-          <p className="text-[11px] text-ink-soft">
+          <p className="text-[0.6875rem] text-ink-soft">
             Tick the circle next to the correct answer.
           </p>
           <input
@@ -1263,7 +1263,7 @@ function Field({
       <span className="text-xs font-semibold text-ink-soft">{label}</span>
       <div className="mt-1">{children}</div>
       {hint && (
-        <span className="mt-1 block text-[11px] text-ink-soft">{hint}</span>
+        <span className="mt-1 block text-[0.6875rem] text-ink-soft">{hint}</span>
       )}
     </Tag>
   );

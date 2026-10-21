@@ -134,9 +134,9 @@ function PostView() {
             </button>
           )}
         </div>
-        <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-forest">{t(topicLabel(post.topic))}</p>
+        <p className="mt-3 text-[0.6875rem] font-semibold uppercase tracking-wide text-forest">{t(topicLabel(post.topic))}</p>
         <h1 className="mt-0.5 text-xl font-bold leading-snug">{post.title}</h1>
-        {post.body && <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed">{post.body}</p>}
+        {post.body && <p className="mt-2 whitespace-pre-line text-[0.9375rem] leading-relaxed">{post.body}</p>}
         {post.status && post.status !== "visible" && <HiddenNote />}
         {post.wantsExpert && (
           <p className="mt-3 flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-xs text-ink-soft ring-1 ring-line">
@@ -225,7 +225,7 @@ function PostView() {
             {t("Reply")}
           </button>
         </div>
-        <p className="mt-2 flex items-start gap-1.5 text-[11px] text-ink-soft">
+        <p className="mt-2 flex items-start gap-1.5 text-[0.6875rem] text-ink-soft">
           <Lock size={11} className="mt-px shrink-0" /> {t("Don't share phone numbers, links or private details.")}
         </p>
       </div>

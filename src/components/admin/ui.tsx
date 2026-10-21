@@ -66,8 +66,8 @@ export function Stat({ label, value, hint, delta, unit = "" }: { label: string; 
           {unit && <span className="ml-0.5 text-base font-medium text-ink-soft">{unit}</span>}
         </p>
       )}
-      {deltaText && <p className={`mt-1 text-[11px] font-medium ${up ? "text-forest" : "text-ink-soft"}`}>{deltaText}</p>}
-      {hint && <p className="mt-1 text-[11px] text-ink-soft">{hint}</p>}
+      {deltaText && <p className={`mt-1 text-[0.6875rem] font-medium ${up ? "text-forest" : "text-ink-soft"}`}>{deltaText}</p>}
+      {hint && <p className="mt-1 text-[0.6875rem] text-ink-soft">{hint}</p>}
     </div>
   );
 }
@@ -153,7 +153,7 @@ export function Badge({ children, tone = "neutral" }: { children: React.ReactNod
     bad: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900",
     info: "bg-sky-50 text-sky-800 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900",
   }[tone];
-  return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${t}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold ring-1 ${t}`}>{children}</span>;
 }
 
 /* ───────── Dialogs ───────── */

@@ -280,7 +280,7 @@ function Assistant({ ready, items, canEdit }: { ready: boolean; items: ContentIt
             )}
           </div>
         )}
-        <p className="mt-3 text-[11px] text-ink-soft">{library.length} live items available as context.</p>
+        <p className="mt-3 text-[0.6875rem] text-ink-soft">{library.length} live items available as context.</p>
       </Panel>
     </div>
   );

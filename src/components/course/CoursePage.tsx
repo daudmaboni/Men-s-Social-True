@@ -54,7 +54,7 @@ export default function CoursePage() {
           <p className="flex items-center gap-1.5 text-xs font-semibold text-mint-strong">
             <Headphones size={14} /> {t("Audio course")} · {t("Free")}
           </p>
-          <h1 className="mt-2 text-[26px] font-bold leading-tight">{pick(sw, course.title, course.titleSw)}</h1>
+          <h1 className="mt-2 text-[1.625rem] font-bold leading-tight">{pick(sw, course.title, course.titleSw)}</h1>
           <p className="mt-2 text-sm leading-relaxed text-mint">{pick(sw, course.summary, course.summarySw)}</p>
           <div className="mt-4 flex items-end justify-between gap-3">
             <p className="text-xs text-mint">
@@ -81,7 +81,7 @@ export default function CoursePage() {
         </div>
       </section>
 
-      <p className="flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[11px] leading-snug text-ink-soft ring-1 ring-line">
+      <p className="flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[0.6875rem] leading-snug text-ink-soft ring-1 ring-line">
         <ShieldCheck size={13} className="mt-px shrink-0 text-forest" />
         <span>
           {pick(sw, course.credit, course.creditSw)} · {t("Lessons open one after another. Listen to {n}% of a lesson to open the next.", { n: course.passPercent })}
@@ -128,7 +128,7 @@ function Module({
           {complete ? <Check size={16} /> : index + 1}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium text-ink-soft">{t("Module {n}", { n: index + 1 })}</p>
+          <p className="text-[0.6875rem] font-medium text-ink-soft">{t("Module {n}", { n: index + 1 })}</p>
           <h2 className="truncate font-bold leading-tight">{title}</h2>
         </div>
         <span className="text-xs font-semibold tabular-nums text-ink-soft">
@@ -165,7 +165,7 @@ function Module({
                 <span className={`block text-sm font-semibold leading-snug ${open ? "" : "text-ink-soft"}`}>
                   {l.number}. {pick(sw, l.title, l.titleSw)}
                 </span>
-                <span className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-soft">
+                <span className="mt-0.5 flex items-center gap-1 text-[0.6875rem] text-ink-soft">
                   <Icon size={12} />
                   {l.state === "soon"
                     ? t("Coming soon")

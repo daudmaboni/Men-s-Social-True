@@ -31,7 +31,7 @@ export default function ReactionBar({
               e.stopPropagation();
               void c.react(targetId, r.kind);
             }}
-            className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all active:scale-95 ${
+            className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold transition-all active:scale-95 ${
               on ? "bg-mint text-forest-deep ring-1 ring-mint-strong" : "text-ink-soft ring-1 ring-line"
             }`}
           >

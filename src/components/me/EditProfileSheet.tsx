@@ -113,7 +113,7 @@ export default function EditProfileSheet({
             <input ref={file} type="file" accept="image/*" className="hidden" onChange={(e) => pickPhoto(e.target.files?.[0])} />
           </div>
         </div>
-        <p className="-mt-2 text-[11px] text-ink-soft">{t("Only you see your photo. Please don't use intimate photos.")}</p>
+        <p className="-mt-2 text-[0.6875rem] text-ink-soft">{t("Only you see your photo. Please don't use intimate photos.")}</p>
 
         {/* Name */}
         <label className="block">
@@ -128,7 +128,7 @@ export default function EditProfileSheet({
             placeholder={t("e.g. Juma")}
             className="mt-1 w-full rounded-2xl bg-bg px-4 py-3 text-sm outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
           />
-          <span className="mt-1 block text-[11px] text-ink-soft">
+          <span className="mt-1 block text-[0.6875rem] text-ink-soft">
             {t("Also your name in Community, unless you post anonymously.")}
           </span>
         </label>
@@ -177,7 +177,7 @@ export default function EditProfileSheet({
           </div>
         )}
 
-        <p className="text-[11px] text-ink-soft">{t("All optional and private to you. Kayani staff can't see it unless you share your records with support in Settings.")}</p>
+        <p className="text-[0.6875rem] text-ink-soft">{t("All optional and private to you. Kayani staff can't see it unless you share your records with support in Settings.")}</p>
 
         {error && (
           <p role="alert" className="text-xs text-red-700">

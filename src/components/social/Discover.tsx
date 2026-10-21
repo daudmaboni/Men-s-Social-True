@@ -190,7 +190,7 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
         if (!question) return null;
         return (
           <section key={s.id} aria-labelledby="sec-question" className={`rounded-3xl bg-mint/60 p-5 ${preview ? "" : "lg:p-7"}`}>
-            <p id="sec-question" className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-forest">
+            <p id="sec-question" className="flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-forest">
               <MessageCircle size={13} /> {title(s, "A question men often ask")}
             </p>
             <p className="mt-2 text-lg font-bold leading-snug text-forest-deep">&ldquo;{question.question}&rdquo;</p>
@@ -243,7 +243,7 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
                           {me.interests.includes(tile.id as never) && <span className="h-2 w-2 rounded-full bg-forest" aria-hidden />}
                           {t(tile.title)}
                         </span>
-                        <span className="flex items-center gap-1 text-[11px] text-ink-soft">
+                        <span className="flex items-center gap-1 text-[0.6875rem] text-ink-soft">
                           {t(tile.count === 1 ? "{n} item" : "{n} items", { n: tile.count })}
                           <ChevronRight size={14} aria-hidden />
                         </span>

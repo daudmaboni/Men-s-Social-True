@@ -113,7 +113,7 @@ export function UserProfile({ userId }: { userId: string }) {
             {p.warnings.map((w, i) => (
               <li key={i} className="rounded-xl bg-amber-50 px-3 py-2 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
                 <p>{w.message}</p>
-                <p className="mt-1 text-[11px] opacity-70">{fmtDate(w.created_at, true)}</p>
+                <p className="mt-1 text-[0.6875rem] opacity-70">{fmtDate(w.created_at, true)}</p>
               </li>
             ))}
           </ul>
@@ -154,9 +154,9 @@ function Section({ title, sub, children }: { title: string; sub?: string; childr
 function Tile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
     <div className="rounded-xl bg-bg px-3 py-2.5">
-      <p className="text-[11px] text-ink-soft">{label}</p>
+      <p className="text-[0.6875rem] text-ink-soft">{label}</p>
       <p className="mt-0.5 text-lg font-bold tabular-nums leading-tight">{value}</p>
-      {hint && <p className="text-[11px] text-ink-soft">{hint}</p>}
+      {hint && <p className="text-[0.6875rem] text-ink-soft">{hint}</p>}
     </div>
   );
 }
@@ -251,7 +251,7 @@ function AccountDetails({ p }: { p: Profile }) {
         </Row>
         <Row label="Account id">
           <button
-            className="inline-flex items-center gap-1 font-mono text-[11px] text-ink-soft hover:text-ink"
+            className="inline-flex items-center gap-1 font-mono text-[0.6875rem] text-ink-soft hover:text-ink"
             onClick={() => {
               void navigator.clipboard?.writeText(a.id);
               showToast("Account id copied");
@@ -290,7 +290,7 @@ function CourseProgressList({ progress, courses }: { progress: Record<string, Co
           </div>
         );
       })}
-      <p className="text-[11px] text-ink-soft">
+      <p className="text-[0.6875rem] text-ink-soft">
         Listened about {heardMin} min in total · last listened {ago(last)}
       </p>
     </div>
@@ -310,7 +310,7 @@ function CommunitySection({ c }: { c: Profile["community"] }) {
         <ul className="mt-2 space-y-2">
           {c.items.map((x) => (
             <li key={x.id} className="rounded-xl bg-bg px-3 py-2">
-              <p className="text-[11px] text-ink-soft">
+              <p className="text-[0.6875rem] text-ink-soft">
                 {x.type === "post" ? "Post" : `Reply to “${x.title ?? "a post"}”`} · {fmtDate(x.created_at)}
                 {x.anonymous ? " · anonymous" : ""}
                 {x.status !== "visible" ? ` · ${x.status}` : ""}
@@ -443,7 +443,7 @@ function RecordsView({ d }: { d: Private }) {
 
   return (
     <div className="space-y-5 rounded-2xl p-3 ring-2 ring-forest/30">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-forest">Shared by him · opening logged</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-forest">Shared by him · opening logged</p>
       <div className="flex items-center gap-3">
         {d.profile.photo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -523,7 +523,7 @@ function RecordsView({ d }: { d: Private }) {
             {notes.slice(0, 30).map((r) => (
               <li key={r.id} className="rounded-xl bg-bg px-3 py-2">
                 {r.note}
-                <span className="mt-0.5 block text-[11px] text-ink-soft">
+                <span className="mt-0.5 block text-[0.6875rem] text-ink-soft">
                   {r.metric} · {fmtDate(r.recordedAt, true)}
                 </span>
               </li>

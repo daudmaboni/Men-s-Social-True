@@ -257,7 +257,7 @@ export default function HomepagePage() {
                       {fmtDate(r.published_at, true)} {r.state === "published" && <Badge tone="good">Live</Badge>}
                     </p>
                     {r.note && <p className="text-xs text-ink-soft">{r.note}</p>}
-                    <p className="mt-1 text-[11px] text-ink-soft">
+                    <p className="mt-1 text-[0.6875rem] text-ink-soft">
                       {normalizeConfig(r.config)
                         .sections.filter((s) => s.visible)
                         .map((s) => SECTION_INFO[s.id].name)
@@ -364,7 +364,7 @@ function SectionEditor({ section: s, library, onChange }: { section: SectionConf
               );
             })}
           </div>
-          <p className="mt-1 text-[11px] text-ink-soft">Tiles show in the order you tap them.</p>
+          <p className="mt-1 text-[0.6875rem] text-ink-soft">Tiles show in the order you tap them.</p>
         </fieldset>
       ) : (
         <div>
@@ -377,7 +377,7 @@ function SectionEditor({ section: s, library, onChange }: { section: SectionConf
                 <li key={s.items![i]} className="flex items-center gap-2 rounded-xl bg-bg px-3 py-2 text-sm">
                   <span className="min-w-0 flex-1 truncate">
                     {c ? c.title : <span className="text-red-700">Not live any more: {s.items![i]} (ignored)</span>}
-                    {c && <span className="ml-1 text-[11px] text-ink-soft">· {KIND_LABEL[c.kind]}</span>}
+                    {c && <span className="ml-1 text-[0.6875rem] text-ink-soft">· {KIND_LABEL[c.kind]}</span>}
                   </span>
                   <button aria-label="Move up" disabled={i === 0} onClick={() => setItems(swap(s.items!, i, i - 1))} className="text-ink-soft disabled:opacity-25">
                     <ArrowUp size={13} />
@@ -402,7 +402,7 @@ function SectionEditor({ section: s, library, onChange }: { section: SectionConf
                 <li key={c.id}>
                   <button onClick={() => (setItems([...(s.items ?? []), c.id]), setQ(""))} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-bg">
                     <Plus size={13} className="text-forest" /> <span className="truncate">{c.title}</span>
-                    <span className="ml-auto shrink-0 text-[11px] text-ink-soft">{KIND_LABEL[c.kind]}</span>
+                    <span className="ml-auto shrink-0 text-[0.6875rem] text-ink-soft">{KIND_LABEL[c.kind]}</span>
                   </button>
                 </li>
               ))}

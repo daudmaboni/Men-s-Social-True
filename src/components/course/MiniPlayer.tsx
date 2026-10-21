@@ -38,7 +38,7 @@ export default function MiniPlayer() {
           <button onClick={open} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={t("Open the lesson")}>
             <CourseArt className={`h-11 w-11 shrink-0 rounded-xl ${p.playing ? "mini-pulse" : ""}`} size={18} />
             <span className="min-w-0 flex-1">
-              <span className="block text-[11px] font-semibold text-forest">{t("Lesson {n}", { n: l.number })}</span>
+              <span className="block text-[0.6875rem] font-semibold text-forest">{t("Lesson {n}", { n: l.number })}</span>
               <span className="block truncate text-sm font-semibold">{discreet ? "Men's Social" : l.title}</span>
             </span>
           </button>

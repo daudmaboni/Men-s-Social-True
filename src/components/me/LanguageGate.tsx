@@ -13,11 +13,11 @@ export default function LanguageGate() {
     <div role="dialog" aria-modal="true" aria-labelledby="lang-gate-h" className="fixed inset-0 z-[100] flex flex-col bg-forest-deep text-white">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-12">
         <BrandMark />
-        <h1 id="lang-gate-h" className="mt-10 font-display text-[32px] font-bold leading-tight">
+        <h1 id="lang-gate-h" className="mt-10 font-display text-[2rem] font-bold leading-tight">
           Chagua lugha
-          <span className="mt-1 block text-[20px] font-semibold text-mint">Choose your language</span>
+          <span className="mt-1 block text-[1.25rem] font-semibold text-mint">Choose your language</span>
         </h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-white/75">
+        <p className="mt-3 text-[0.9375rem] leading-relaxed text-white/75">
           Utaweza kubadilisha baadaye kwenye Mimi.
           <span className="block">You can change it later on Me.</span>
         </p>

@@ -35,7 +35,7 @@ export default function BadgesSection({ badges }: { badges: Badge[] }) {
                 <Lock size={12} className="absolute -bottom-0.5 -right-2 rounded-full bg-surface p-0.5 text-ink-soft" />
               )}
             </span>
-            <span className={`mt-1.5 text-[11px] font-semibold leading-tight ${b.earned ? "text-forest-deep" : "text-ink-soft"}`}>
+            <span className={`mt-1.5 text-[0.6875rem] font-semibold leading-tight ${b.earned ? "text-forest-deep" : "text-ink-soft"}`}>
               {name(b)}
             </span>
             {!b.earned && (

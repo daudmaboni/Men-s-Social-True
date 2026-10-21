@@ -153,7 +153,7 @@ function LoginForm({ onSignIn }: { onSignIn: (login: string, password: string, c
       >
         {busy && <Loader2 size={16} className="animate-spin" />} Sign in
       </button>
-      <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink-soft">
+      <p className="flex items-center justify-center gap-1.5 text-[0.6875rem] text-ink-soft">
         <ShieldCheck size={12} /> Next, you&apos;ll enter a code from your authenticator app.
       </p>
     </form>
@@ -233,7 +233,7 @@ function SetupTwoStep({ email, onStart, onVerify }: { email: string; onStart: ()
             )}
           </div>
           <CodeInput factorId={setup.factorId} onVerify={onVerify} button="Turn on and continue" />
-          <p className="text-[11px] text-ink-soft">
+          <p className="text-[0.6875rem] text-ink-soft">
             Lost your phone later? The owner can reset it in Supabase → Authentication → Users → your account → remove the authenticator.
             Then you set it up again here.
           </p>

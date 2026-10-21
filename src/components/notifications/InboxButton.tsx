@@ -49,7 +49,7 @@ export default function InboxButton() {
       >
         <Bell size={18} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] font-bold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -67,13 +67,13 @@ export default function InboxButton() {
                     {i.title}
                   </p>
                   <p className="mt-0.5 text-sm text-ink-soft">{i.body}</p>
-                  <p className="mt-1 text-[11px] text-ink-soft">{timeAgo(i.sent_at, new Date(), t.lang)}</p>
+                  <p className="mt-1 text-[0.6875rem] text-ink-soft">{timeAgo(i.sent_at, new Date(), t.lang)}</p>
                 </button>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-3 text-[11px] text-ink-soft">{t("Choose which messages you get on Me → Notifications.")}</p>
+        <p className="mt-3 text-[0.6875rem] text-ink-soft">{t("Choose which messages you get on Me → Notifications.")}</p>
       </Sheet>
     </>
   );

@@ -119,7 +119,7 @@ export default function Community() {
             {t("in Discover.")}
           </p>
         </div>
-        <p className="order-6 flex items-start justify-center gap-1.5 px-2 text-center lg:justify-start lg:text-left text-[11px] text-ink-soft">
+        <p className="order-6 flex items-start justify-center gap-1.5 px-2 text-center lg:justify-start lg:text-left text-[0.6875rem] text-ink-soft">
           <ShieldCheck size={12} className="mt-px shrink-0" />
           {c.mode === "server"
             ? t("Be kind. No selling, phone numbers or links. Posts are shared with all members and checked by our moderators.")

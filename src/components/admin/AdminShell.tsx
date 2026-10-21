@@ -134,7 +134,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             {!collapsed && (
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold leading-tight">Control Center</p>
-                <p className="truncate text-[11px] text-ink-soft">Men&apos;s Social</p>
+                <p className="truncate text-[0.6875rem] text-ink-soft">Men&apos;s Social</p>
               </div>
             )}
           </div>

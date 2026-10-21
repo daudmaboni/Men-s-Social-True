@@ -12,5 +12,5 @@ const STYLES: Record<MetricStatus, { text: string; cls: string }> = {
 export default function StatusBadge({ status, text }: { status: MetricStatus; text?: string }) {
   const s = STYLES[status];
   const t = useT();
-  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${s.cls}`}>{text ?? t(s.text)}</span>;
+  return <span className={`rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold ${s.cls}`}>{text ?? t(s.text)}</span>;
 }

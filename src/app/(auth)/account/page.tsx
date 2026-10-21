@@ -153,7 +153,7 @@ const way =
 
 function Soon() {
   const t = useT();
-  return <span className="rounded-full bg-bg px-2 py-0.5 text-[10px] text-ink-soft ring-1 ring-line">{t("Soon")}</span>;
+  return <span className="rounded-full bg-bg px-2 py-0.5 text-[0.625rem] text-ink-soft ring-1 ring-line">{t("Soon")}</span>;
 }
 
 function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => void; onDone: (msg: string) => void }) {

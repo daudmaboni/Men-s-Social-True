@@ -170,7 +170,7 @@ export default function NotificationsPage() {
                 <Send size={14} /> {when === "now" ? "Send" : "Schedule"}
               </button>
             </div>
-            <p className="text-[11px] text-ink-soft">Protections: the same message can&apos;t go out twice within 24 hours, and at most 3 messages go out in any 24 hours.</p>
+            <p className="text-[0.6875rem] text-ink-soft">Protections: the same message can&apos;t go out twice within 24 hours, and at most 3 messages go out in any 24 hours.</p>
           </div>
         </Panel>
 
@@ -185,7 +185,7 @@ export default function NotificationsPage() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold">{form.title || "Your title"}</p>
                 <p className="mt-0.5 text-xs text-ink-soft">{form.body || "Your message"}</p>
-                <p className="mt-1 text-[10px] text-ink-soft">just now{form.link ? ` · opens ${LINKS.find((l) => l.id === form.link)?.label}` : ""}</p>
+                <p className="mt-1 text-[0.625rem] text-ink-soft">just now{form.link ? ` · opens ${LINKS.find((l) => l.id === form.link)?.label}` : ""}</p>
               </div>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function NotificationsPage() {
             Messages arrive in the in-app inbox when he opens the app. Pop-up alerts on his lock screen need a push service: VAPID keys, a service
             worker and a small server sender (e.g. a Supabase Edge Function). Ask your developer to connect it; nothing here pretends it&apos;s sent as a push.
           </NotConnected>
-          <p className="flex items-start gap-2 text-[11px] text-ink-soft">
+          <p className="flex items-start gap-2 text-[0.6875rem] text-ink-soft">
             <Smartphone size={13} className="mt-0.5 shrink-0" /> Men turn types off on Me → Notifications. Warnings to a single man always arrive.
           </p>
         </div>

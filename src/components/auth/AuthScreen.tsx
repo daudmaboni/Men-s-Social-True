@@ -38,7 +38,7 @@ export default function AuthScreen({
           <div className="flex flex-col items-center pb-5 text-center">
             <BrandMark size={44} className="rounded-2xl shadow-lg shadow-forest/25" />
             <p className="mt-2 text-sm font-bold leading-tight">{title ?? "Men's Social"}</p>
-            {subtitle && <p className="text-[11px] text-ink-soft">{subtitle}</p>}
+            {subtitle && <p className="text-[0.6875rem] text-ink-soft">{subtitle}</p>}
           </div>
 
           {children}

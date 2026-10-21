@@ -570,7 +570,7 @@ function LessonRow({ lesson: l, editable, first, last, onEdit, onMove }: { lesso
           ) : (
             <Badge tone="good">Ready</Badge>
           )}
-          {l.kind !== "reading" && l.seconds ? <span className="text-[11px] text-ink-soft">{clock(l.seconds)}</span> : l.kind === "reading" && !needs ? <span className="text-[11px] text-ink-soft">{lessonMinutes(l)} min</span> : null}
+          {l.kind !== "reading" && l.seconds ? <span className="text-[0.6875rem] text-ink-soft">{clock(l.seconds)}</span> : l.kind === "reading" && !needs ? <span className="text-[0.6875rem] text-ink-soft">{lessonMinutes(l)} min</span> : null}
           {(l.caution || l.cautionSw) && <Badge tone="warn">Caution box</Badge>}
         </span>
       </button>
@@ -688,7 +688,7 @@ function LessonEditor({ courseId, lesson: l, editable, onChange, onDelete }: { c
             </button>
             {l.seconds ? <span className="text-xs text-ink-soft">Length {clock(l.seconds)}</span> : null}
           </div>
-          <p className="mt-2 text-[11px] text-ink-soft">{l.kind === "audio" ? "M4A or MP3, up to 40 MB." : "MP4, up to 50 MB."} Replacing a file keeps men&apos;s progress.</p>
+          <p className="mt-2 text-[0.6875rem] text-ink-soft">{l.kind === "audio" ? "M4A or MP3, up to 40 MB." : "MP4, up to 50 MB."} Replacing a file keeps men&apos;s progress.</p>
         </div>
       )}
 
@@ -766,7 +766,7 @@ function LessonEditor({ courseId, lesson: l, editable, onChange, onDelete }: { c
         <button type="button" className={btn.small} onClick={() => setAskDelete(true)}>
           <Trash2 size={13} /> Delete lesson
         </button>
-        <p className="self-center text-[11px] text-ink-soft">Changes are kept here; press Save draft to store them.</p>
+        <p className="self-center text-[0.6875rem] text-ink-soft">Changes are kept here; press Save draft to store them.</p>
       </div>
       <Confirm open={askDelete} title="Delete this lesson?" confirmLabel="Delete" danger onConfirm={onDelete} onClose={() => setAskDelete(false)}>
         Men who finished it keep their points. To keep it for later, use “Hide from men” instead.

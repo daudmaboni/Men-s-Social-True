@@ -12,7 +12,7 @@ import { useT } from "@/lib/i18n";
 export function Why({ text }: { text: string }) {
   const t = useT();
   return (
-    <details className="mt-1.5 text-[11px] text-ink-soft">
+    <details className="mt-1.5 text-[0.6875rem] text-ink-soft">
       <summary className="cursor-pointer select-none list-none font-medium underline decoration-line underline-offset-2">
         {t("Why am I seeing this?")}
       </summary>
@@ -64,7 +64,7 @@ export function TodayCard({ f }: { f: HomeFeed }) {
               </span>
             )}
           </div>
-          <p className="mt-2 text-[11px] text-mint/80">
+          <p className="mt-2 text-[0.6875rem] text-mint/80">
             {f.pointsToday > 0 ? t("+{n} today · ", { n: f.pointsToday }) : ""}
             {t("{n} points to Level {level}", { n: f.level.toNext, level: f.level.level + 1 })}
           </p>

@@ -126,7 +126,7 @@ export default function SwipeRow({
           <div className="flex items-center gap-2">
             {/* Long rows (a course's lessons): "3 / 37" instead of a dot for each */}
             {slides.length > 8 ? (
-              <span className="rounded-full bg-bg px-2.5 py-1 text-[11px] font-bold tabular-nums text-ink-soft ring-1 ring-line">
+              <span className="rounded-full bg-bg px-2.5 py-1 text-[0.6875rem] font-bold tabular-nums text-ink-soft ring-1 ring-line">
                 {index + 1} / {slides.length}
               </span>
             ) : (

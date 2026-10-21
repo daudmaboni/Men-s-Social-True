@@ -66,7 +66,7 @@ export default function CourseCard() {
           >
             <div className="h-full rounded-full bg-forest transition-[width] duration-700 ease-out" style={{ width: `${v.done ? Math.max(v.percent, 4) : 0}%` }} />
           </div>
-          <p className="mt-1.5 text-[11px] text-ink-soft">
+          <p className="mt-1.5 text-[0.6875rem] text-ink-soft">
             {t("{done} of {total} lessons", { done: v.done, total: v.total })} · {v.percent}%
           </p>
         </div>
@@ -131,25 +131,25 @@ function LessonCardView({ lesson: l, course, discreet, sw, p: live }: CardProps 
     >
       {/* Top: lesson number and state; the countdown sits at the top right when this lesson ends */}
       <div className="flex items-start justify-between gap-2">
-        <p className="min-w-0 truncate text-[11px] font-semibold text-forest">
+        <p className="min-w-0 truncate text-[0.6875rem] font-semibold text-forest">
           {t("Lesson {n}", { n: l.number })}
           {!discreet && mod ? ` · ${pick(sw, mod.title, mod.titleSw)}` : ""}
         </p>
         {mine && p.countdown ? null : l.state === "done" ? (
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-forest px-2 py-0.5 text-[10px] font-bold text-white">
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-forest px-2 py-0.5 text-[0.625rem] font-bold text-white">
             <Check size={11} /> {t("Done")}
           </span>
         ) : l.state === "locked" ? (
           <Lock size={14} className="shrink-0 text-ink-soft" aria-label={t("Locked")} />
         ) : l.state === "soon" ? (
-          <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-[10px] font-bold text-ink-soft">{t("Coming soon")}</span>
+          <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-[0.625rem] font-bold text-ink-soft">{t("Coming soon")}</span>
         ) : null}
       </div>
       {mine && p.countdown && <Countdown forLesson={l.id} tone="light" className="absolute right-2 top-2 z-10" />}
 
       <Link href={open ? `/man/course/${l.id}` : "/man/course"} className="mt-1 block">
-        <span className="line-clamp-2 text-[15px] font-bold leading-snug">{title}</span>
-        <span className="mt-1 flex items-center gap-1.5 text-[11px] text-ink-soft">
+        <span className="line-clamp-2 text-[0.9375rem] font-bold leading-snug">{title}</span>
+        <span className="mt-1 flex items-center gap-1.5 text-[0.6875rem] text-ink-soft">
           <KindIcon size={12} aria-hidden />
           {l.kind === "reading" ? t("Reading") : l.kind === "video" ? t("Video") : t("Audio")} ·{" "}
           {time > 1 && l.state !== "done" && l.kind !== "reading" ? t("From {time}", { time: clock(time) }) : t("{n} min", { n: lessonMinutes(l) })}
@@ -178,7 +178,7 @@ function LessonCardView({ lesson: l, course, discreet, sw, p: live }: CardProps 
             <KindIcon size={14} /> {l.kind === "reading" ? t("Read") : t("Watch")}
           </Link>
         ) : (
-          <span className="text-[11px] text-ink-soft">
+          <span className="text-[0.6875rem] text-ink-soft">
             {l.state === "soon" ? t("We're still adding this lesson.") : t("Opens after lesson {n}", { n: l.number - 1 })}
           </span>
         )}

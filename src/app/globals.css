@@ -94,8 +94,14 @@
   --color-honey: var(--honey);
   --color-on-honey: var(--on-honey);
   --color-kayani: var(--kayani);
-  --font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque Variable", "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  /* Font style chosen in Settings (Step 66, see fonts.css); Kayani's own fonts by default */
+  --font-sans: var(--app-font);
+  --font-display: var(--app-display);
+}
+
+:root {
+  --app-font: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  --app-display: "Bricolage Grotesque Variable", "Plus Jakarta Sans Variable", system-ui, sans-serif;
 }
 
 html {
@@ -107,7 +113,7 @@ html {
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  font-family: var(--app-font);
   -webkit-tap-highlight-color: transparent;
 }
 

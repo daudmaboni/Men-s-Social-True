@@ -3,7 +3,9 @@ import "@fontsource-variable/plus-jakarta-sans";
 // Kayani headline face (brand system: one font for headlines, one for everything else)
 import "@fontsource-variable/bricolage-grotesque";
 import "./globals.css";
+import "./fonts.css";
 import { THEME_BOOT_SCRIPT } from "@/lib/themeBoot";
+import FontScope from "@/components/FontScope";
 
 export const metadata: Metadata = {
   title: "Men's Social",
@@ -28,7 +30,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <FontScope />
+        {children}
+      </body>
     </html>
   );
 }

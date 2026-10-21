@@ -45,7 +45,7 @@ export default function DailyColumns({ data, label, unit, height = 160 }: { data
         <span className="text-xs text-ink-soft">
           {label}: <b className="font-semibold text-ink tabular-nums">{total.toLocaleString("en-GB")}</b> {unit}
         </span>
-        <button onClick={() => setTable((t) => !t)} className="text-[11px] font-semibold text-forest underline-offset-2 hover:underline">
+        <button onClick={() => setTable((t) => !t)} className="text-[0.6875rem] font-semibold text-forest underline-offset-2 hover:underline">
           {table ? "Show chart" : "Show as table"}
         </button>
       </figcaption>
@@ -151,7 +151,7 @@ export function RankBars({ rows, unit }: { rows: { label: string; n: number; sub
           <div className="mt-1 h-2 rounded-full bg-bg" aria-hidden>
             <div className="h-2 rounded-full bg-forest" style={{ width: `${Math.max(2, (r.n / max) * 100)}%` }} />
           </div>
-          {r.sub && <p className="mt-0.5 truncate text-[11px] text-ink-soft">{r.sub}</p>}
+          {r.sub && <p className="mt-0.5 truncate text-[0.6875rem] text-ink-soft">{r.sub}</p>}
         </li>
       ))}
     </ul>

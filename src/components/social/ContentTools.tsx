@@ -229,7 +229,7 @@ export function DoctorCheck() {
                   : "Small changes in sleep, stress and exercise often help. If things don't improve in a few weeks, see a doctor.",
             )}
           </p>
-          <p className={`mt-3 text-[11px] ${urgent ? "" : "text-mint/80"}`}>
+          <p className={`mt-3 text-[0.6875rem] ${urgent ? "" : "text-mint/80"}`}>
             {t("This is a simple guide, not a diagnosis. Your answers aren't saved.")}
           </p>
         </div>

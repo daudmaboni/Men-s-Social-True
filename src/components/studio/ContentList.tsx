@@ -302,13 +302,13 @@ export default function ContentList() {
                           </p>
                         </div>
                       </Link>
-                      <span className="hidden w-28 shrink-0 text-right text-[11px] tabular-nums text-ink-soft md:block" title="Last 30 days: views · finished · saved">
+                      <span className="hidden w-28 shrink-0 text-right text-[0.6875rem] tabular-nums text-ink-soft md:block" title="Last 30 days: views · finished · saved">
                         {stats === null ? "—" : s ? `${s.views} · ${s.completes} · ${s.saves}` : "0 · 0 · 0"}
                       </span>
                       {c.builtIn ? (
                         <Badge>{mine.has(c.id) ? "Edited copy exists" : "Built-in"}</Badge>
                       ) : (
-                        ds && <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${STATUS_STYLE[ds]}`}>{STATUS_LABEL[ds]}</span>
+                        ds && <span className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-semibold ring-1 ${STATUS_STYLE[ds]}`}>{STATUS_LABEL[ds]}</span>
                       )}
                       <Link href={`/studio/edit?copy=${encodeURIComponent(c.id)}`} aria-label={`Duplicate ${c.title}`} title="Duplicate" className="hidden shrink-0 text-ink-soft hover:text-ink sm:block">
                         <Copy size={15} />
@@ -404,26 +404,26 @@ function Calendar({ items }: { items: ContentItem[] }) {
           const inMonth = d.getMonth() === month.getMonth();
           return (
             <div key={d.toISOString()} className={`min-h-20 bg-surface p-1.5 ${inMonth ? "" : "opacity-40"}`}>
-              <p className={`mb-1 text-[11px] font-semibold ${key(d) === today ? "inline-block rounded-full bg-forest px-1.5 text-white" : "text-ink-soft"}`}>{d.getDate()}</p>
+              <p className={`mb-1 text-[0.6875rem] font-semibold ${key(d) === today ? "inline-block rounded-full bg-forest px-1.5 text-white" : "text-ink-soft"}`}>{d.getDate()}</p>
               <ul className="space-y-1">
                 {list.slice(0, 3).map(({ c, scheduled }) => (
                   <li key={c.id}>
                     <Link
                       href={`/studio/edit?id=${encodeURIComponent(c.id)}`}
-                      className={`block truncate rounded px-1 py-0.5 text-[10px] font-medium ${scheduled ? "bg-sky-50 text-sky-800 dark:bg-sky-950/40 dark:text-sky-200" : "bg-mint text-forest-deep"}`}
+                      className={`block truncate rounded px-1 py-0.5 text-[0.625rem] font-medium ${scheduled ? "bg-sky-50 text-sky-800 dark:bg-sky-950/40 dark:text-sky-200" : "bg-mint text-forest-deep"}`}
                       title={`${scheduled ? "Scheduled" : "Published"}: ${c.title}`}
                     >
                       {c.title}
                     </Link>
                   </li>
                 ))}
-                {list.length > 3 && <li className="text-[10px] text-ink-soft">+{list.length - 3} more</li>}
+                {list.length > 3 && <li className="text-[0.625rem] text-ink-soft">+{list.length - 3} more</li>}
               </ul>
             </div>
           );
         })}
       </div>
-      <p className="mt-2 flex flex-wrap gap-3 text-[11px] text-ink-soft">
+      <p className="mt-2 flex flex-wrap gap-3 text-[0.6875rem] text-ink-soft">
         <span className="flex items-center gap-1">
           <i className="inline-block h-2.5 w-2.5 rounded-sm bg-mint" /> Published
         </span>

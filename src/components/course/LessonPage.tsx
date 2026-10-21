@@ -105,10 +105,10 @@ export default function LessonPage({ id }: { id: string }) {
 
       {lesson.kind === "reading" ? (
         <header className="rounded-[28px] bg-forest-deep p-5 text-white">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-mint-strong">
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-mint-strong">
             {t("Module {n}", { n: lesson.moduleIndex + 1 })} · {pick(sw, mod.title, mod.titleSw)}
           </p>
-          <h1 className="mt-2 text-[24px] font-bold leading-tight">{pick(sw, lesson.title, lesson.titleSw)}</h1>
+          <h1 className="mt-2 text-[1.5rem] font-bold leading-tight">{pick(sw, lesson.title, lesson.titleSw)}</h1>
           <p className="mt-1 text-xs text-mint">{t("Reading")} · {t("{n} min", { n: lessonMinutes(lesson) })}</p>
         </header>
       ) : (
@@ -126,7 +126,7 @@ export default function LessonPage({ id }: { id: string }) {
         </p>
       )}
 
-      {summary && <p className="px-1 text-[15px] leading-relaxed text-ink-soft">{summary}</p>}
+      {summary && <p className="px-1 text-[0.9375rem] leading-relaxed text-ink-soft">{summary}</p>}
 
       {lesson.kind === "reading" && <Reading lesson={lesson} done={done} hasNext={Boolean(nextLesson)} />}
 
@@ -167,7 +167,7 @@ export default function LessonPage({ id }: { id: string }) {
             <ArrowRight size={18} />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[11px] font-semibold text-mint-strong">{t("Next lesson")} · {nextLesson.number}</span>
+            <span className="block text-[0.6875rem] font-semibold text-mint-strong">{t("Next lesson")} · {nextLesson.number}</span>
             <span className="block truncate text-sm font-semibold">{pick(sw, nextLesson.title, nextLesson.titleSw)}</span>
           </span>
         </Link>
@@ -182,7 +182,7 @@ export default function LessonPage({ id }: { id: string }) {
         <ListOrdered size={16} /> {t("All lessons")}
       </Link>
 
-      <p className="flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[11px] leading-snug text-ink-soft ring-1 ring-line">
+      <p className="flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[0.6875rem] leading-snug text-ink-soft ring-1 ring-line">
         <ShieldCheck size={13} className="mt-px shrink-0 text-forest" />
         <span>{pick(sw, course.credit, course.creditSw)}</span>
       </p>
@@ -226,10 +226,10 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
         <CourseArt className={`h-28 w-28 rounded-[28px] shadow-lg transition-transform duration-500 ${playing ? "scale-105" : ""}`} size={40} />
       </div>
       <div className="px-5 pb-5 pt-5 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-mint-strong">
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-mint-strong">
           {t("Module {n}", { n: lesson.moduleIndex + 1 })} · {moduleTitle}
         </p>
-        <h1 className="mt-1.5 text-[24px] font-bold leading-tight">{pick(sw, lesson.title, lesson.titleSw)}</h1>
+        <h1 className="mt-1.5 text-[1.5rem] font-bold leading-tight">{pick(sw, lesson.title, lesson.titleSw)}</h1>
         {!sw && <p className="mt-1 text-xs text-mint">{t("In Kiswahili")}</p>}
 
         <input
@@ -244,7 +244,7 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
           className="course-range mt-5 w-full disabled:opacity-60"
           style={{ ["--pct" as string]: `${duration ? (time / duration) * 100 : 0}%` }}
         />
-        <div className="mt-1 flex justify-between text-left text-[11px] tabular-nums text-mint">
+        <div className="mt-1 flex justify-between text-left text-[0.6875rem] tabular-nums text-mint">
           <span>{clock(time)}</span>
           <span>-{clock(Math.max(0, duration - time))}</span>
         </div>
@@ -258,7 +258,7 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
           </button>
           <button onClick={() => mine && coursePlayer.skip(-15)} disabled={!mine} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white disabled:opacity-40" aria-label={t("Back 15 seconds")}>
             <RotateCcw size={26} />
-            <span className="absolute text-[9px] font-bold">15</span>
+            <span className="absolute text-[0.5625rem] font-bold">15</span>
           </button>
           <button
             onClick={() => (mine ? coursePlayer.toggle() : load(true))}
@@ -269,7 +269,7 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
           </button>
           <button onClick={() => mine && coursePlayer.skip(15)} disabled={!mine} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white disabled:opacity-40" aria-label={t("Forward 15 seconds")}>
             <RotateCw size={26} />
-            <span className="absolute text-[9px] font-bold">15</span>
+            <span className="absolute text-[0.5625rem] font-bold">15</span>
           </button>
           <span className="w-14" />
         </div>
@@ -290,7 +290,7 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
             </span>
           )}
         </div>
-        <p className="mt-2 text-[11px] text-mint/80">{t("Keeps playing when you leave this page.")}</p>
+        <p className="mt-2 text-[0.6875rem] text-mint/80">{t("Keeps playing when you leave this page.")}</p>
       </div>
     </section>
   );
@@ -452,10 +452,10 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
         </>
       )}
       <div className={`px-5 pb-5 ${lesson.kind === "video" ? "pt-4" : "pt-5 text-center"}`}>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-mint-strong">
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-mint-strong">
           {t("Module {n}", { n: lesson.moduleIndex + 1 })} · {moduleTitle}
         </p>
-        <h1 className="mt-1.5 text-[24px] font-bold leading-tight">{pick(sw, lesson.title, lesson.titleSw)}</h1>
+        <h1 className="mt-1.5 text-[1.5rem] font-bold leading-tight">{pick(sw, lesson.title, lesson.titleSw)}</h1>
         {!sw && <p className="mt-1 text-xs text-mint">{t("In Kiswahili")}</p>}
 
         {lesson.kind === "audio" && (
@@ -477,7 +477,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
               className="course-range mt-5 w-full"
               style={{ ["--pct" as string]: `${duration ? (time / duration) * 100 : 0}%` }}
             />
-            <div className="mt-1 flex justify-between text-left text-[11px] tabular-nums text-mint">
+            <div className="mt-1 flex justify-between text-left text-[0.6875rem] tabular-nums text-mint">
               <span>{clock(time)}</span>
               <span>-{clock(Math.max(0, duration - time))}</span>
             </div>
@@ -487,7 +487,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
               </button>
               <button onClick={() => skip(-15)} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white" aria-label={t("Back 15 seconds")}>
                 <RotateCcw size={26} />
-                <span className="absolute text-[9px] font-bold">15</span>
+                <span className="absolute text-[0.5625rem] font-bold">15</span>
               </button>
               <button
                 onClick={toggle}
@@ -498,7 +498,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
               </button>
               <button onClick={() => skip(15)} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white" aria-label={t("Forward 15 seconds")}>
                 <RotateCw size={26} />
-                <span className="absolute text-[9px] font-bold">15</span>
+                <span className="absolute text-[0.5625rem] font-bold">15</span>
               </button>
               <span className="w-14" />
             </div>
@@ -545,7 +545,7 @@ function Reading({ lesson, done, hasNext }: { lesson: FlatLesson; done: boolean;
           ))}
         </div>
       )}
-      <div lang={lang} className="space-y-3 rounded-3xl bg-surface p-5 text-[15px] leading-relaxed ring-1 ring-line">
+      <div lang={lang} className="space-y-3 rounded-3xl bg-surface p-5 text-[0.9375rem] leading-relaxed ring-1 ring-line">
         {body.map((p, i) =>
           p.startsWith("## ") ? (
             <h2 key={i} className="pt-2 text-lg font-bold">

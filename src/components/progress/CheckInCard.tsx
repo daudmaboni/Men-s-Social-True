@@ -85,7 +85,7 @@ export default function CheckInCard({ period }: { period: Period }) {
                     }`}
                   >
                     <span className="text-sm font-bold">{i + 1}</span>
-                    <span className={`text-[9px] ${selected ? "text-mint" : "text-ink-soft"}`}>{t(label)}</span>
+                    <span className={`text-[0.5625rem] ${selected ? "text-mint" : "text-ink-soft"}`}>{t(label)}</span>
                   </button>
                 );
               })}
@@ -99,7 +99,7 @@ export default function CheckInCard({ period }: { period: Period }) {
                 {avg === null ? <span className="text-ink-soft">—</span> : score(avg)}
                 <span className="text-sm font-medium text-ink-soft"> {t("/ 5 average")}</span>
               </p>
-              <p className="text-[11px] text-ink-soft">
+              <p className="text-[0.6875rem] text-ink-soft">
                 {t("{n} of {days} days answered", { n: recorded, days })}
                 {change !== null && ` · ${t("{change} vs previous {days} days", { change: t(signed(change)), days })}`}
               </p>
@@ -115,7 +115,7 @@ export default function CheckInCard({ period }: { period: Period }) {
     );
   });
   const note = (
-    <p className="mt-4 text-[11px] text-ink-soft">
+    <p className="mt-4 text-[0.6875rem] text-ink-soft">
       {t("These are your own ratings. They help you notice patterns over time — they are not a medical measurement.")}
     </p>
   );

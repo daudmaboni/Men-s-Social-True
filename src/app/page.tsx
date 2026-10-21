@@ -153,7 +153,7 @@ export default function Welcome() {
       {/* Hero card */}
       <section className="kayani-arcs rise rise-2 rounded-3xl bg-forest-deep p-6 text-white lg:mt-0 lg:flex lg:flex-col lg:justify-center lg:p-12">
         <p className="text-sm text-mint-strong">Kayani Men&apos;s Social</p>
-        <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] lg:text-[48px]">{t.tagline}</h1>
+        <h1 className="mt-2 text-[1.875rem] font-extrabold leading-[1.05] lg:text-[3rem]">{t.tagline}</h1>
         <ul className="mt-6 space-y-3 lg:mt-8 lg:space-y-4">
           {t.points.map((p) => (
             <li key={p} className="flex items-start gap-3 text-sm text-mint lg:text-base">
@@ -213,7 +213,7 @@ export default function Welcome() {
               className="mt-2 w-full rounded-full bg-mint py-3 text-forest-deep transition-transform active:scale-[0.98]"
             >
               <span className="block text-sm font-semibold">{t.guest}</span>
-              <span className="block text-[11px] text-forest">{t.guestNote}</span>
+              <span className="block text-[0.6875rem] text-forest">{t.guestNote}</span>
             </button>
             <button
               onClick={() => enter("/account?mode=signup&next=/social")}
@@ -236,7 +236,7 @@ export default function Welcome() {
               className="mt-2 w-full rounded-full bg-mint py-3 text-forest-deep transition-transform active:scale-[0.98]"
             >
               <span className="block text-sm font-semibold">{t.guest}</span>
-              <span className="block text-[11px] text-forest">{t.guestNote}</span>
+              <span className="block text-[0.6875rem] text-forest">{t.guestNote}</span>
             </button>
             <button
               onClick={() => enter("/account?mode=login&next=/social")}

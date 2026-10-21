@@ -148,7 +148,7 @@ export default function AnalyticsPage() {
                     {content.rows.slice(0, 15).map((r) => (
                       <tr key={r.id}>
                         <td className="max-w-xs truncate py-2 pr-3">
-                          {r.title} <span className="text-[11px] text-ink-soft">· {r.kind ? KIND_LABEL[r.kind] : ""}</span>
+                          {r.title} <span className="text-[0.6875rem] text-ink-soft">· {r.kind ? KIND_LABEL[r.kind] : ""}</span>
                         </td>
                         <td className="py-2 pr-3 text-right tabular-nums">{r.views}</td>
                         <td className="py-2 pr-3 text-right tabular-nums">{r.completes}</td>
@@ -231,10 +231,10 @@ export default function AnalyticsPage() {
                   <dd className="text-lg font-semibold">{d.community.replies}</dd>
                 </div>
               </dl>
-              <p className="mt-3 text-[11px] text-ink-soft">Shares: the app has no share button yet, so shares aren&apos;t measured.</p>
+              <p className="mt-3 text-[0.6875rem] text-ink-soft">Shares: the app has no share button yet, so shares aren&apos;t measured.</p>
             </Panel>
           </div>
-          <p className="text-[11px] text-ink-soft">{library.length} items are live in the app (Studio + built-in).</p>
+          <p className="text-[0.6875rem] text-ink-soft">{library.length} items are live in the app (Studio + built-in).</p>
         </>
       )}
     </div>

@@ -143,15 +143,15 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
       </div>
 
       <header>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-forest">
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-forest">
           <Link href={`/social/topic/${item.topic}`} className="underline-offset-2 hover:underline">
             {topicTitle(item.topic, t)}
           </Link>{" "}
           · {metaOf(item, t)}
         </p>
-        <h1 className="mt-2 text-[26px] font-bold leading-tight">{title}</h1>
-        {(lang !== "sw" || item.summarySw) && <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{lang === "sw" && item.summarySw ? item.summarySw : item.summary}</p>}
-        <p className="mt-3 flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[11px] leading-snug text-ink-soft ring-1 ring-line">
+        <h1 className="mt-2 text-[1.625rem] font-bold leading-tight">{title}</h1>
+        {(lang !== "sw" || item.summarySw) && <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">{lang === "sw" && item.summarySw ? item.summarySw : item.summary}</p>}
+        <p className="mt-3 flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[0.6875rem] leading-snug text-ink-soft ring-1 ring-line">
           <ShieldCheck size={13} className="mt-px shrink-0 text-forest" />
           <span>
             {item.source}
@@ -199,7 +199,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
       )}
 
       {body && (
-        <div lang={sw ? "sw" : "en"} className="space-y-3 rounded-3xl bg-surface p-5 text-[15px] leading-relaxed ring-1 ring-line">
+        <div lang={sw ? "sw" : "en"} className="space-y-3 rounded-3xl bg-surface p-5 text-[0.9375rem] leading-relaxed ring-1 ring-line">
           {body.map((p, i) =>
             p.startsWith("## ") ? (
               <h2 key={i} className="pt-2 text-lg font-bold">

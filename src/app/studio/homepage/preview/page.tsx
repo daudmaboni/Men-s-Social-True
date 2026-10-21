@@ -70,7 +70,7 @@ export default function HomepagePreviewPage() {
               ))}
             </select>
           </label>
-          <p className="text-[11px] text-ink-soft">For You still changes per man. {unsaved ? "Your changes aren't saved yet — go back and save a draft or publish." : ""}</p>
+          <p className="text-[0.6875rem] text-ink-soft">For You still changes per man. {unsaved ? "Your changes aren't saved yet — go back and save a draft or publish." : ""}</p>
         </div>
 
         {/* The phone */}

@@ -76,7 +76,7 @@ export default function ManTab() {
         <TrendsSection />
       </div>
 
-      <p className="order-10 px-2 pt-2 text-center text-[11px] text-ink-soft lg:col-span-12">{t("Saved privately to your account.")}</p>
+      <p className="order-10 px-2 pt-2 text-center text-[0.6875rem] text-ink-soft lg:col-span-12">{t("Saved privately to your account.")}</p>
     </div>
   );
 }

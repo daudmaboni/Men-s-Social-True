@@ -66,7 +66,7 @@ export default function ProfileHero({
           <span className="absolute inset-[11px] block">
             <Avatar name={nickname} photo={profile.photo} className="h-full w-full text-xl" />
           </span>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-mint-strong px-2 py-0.5 text-[10px] font-bold text-forest-deep">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-mint-strong px-2 py-0.5 text-[0.625rem] font-bold text-forest-deep">
             {t("Level {n}", { n: level.level })}
           </span>
         </button>
@@ -83,7 +83,7 @@ export default function ProfileHero({
           <p className="mt-2 text-xs text-mint/90">{t("{n} points to level {level}", { n: level.toNext, level: level.level + 1 })}</p>
           <button
             onClick={() => setEditing(true)}
-            className="mt-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white ring-1 ring-white/20"
+            className="mt-2 rounded-full bg-white/10 px-3 py-1 text-[0.6875rem] font-semibold text-white ring-1 ring-white/20"
           >
             {t("Edit profile")}
           </button>

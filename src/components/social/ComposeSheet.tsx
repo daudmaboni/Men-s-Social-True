@@ -104,7 +104,7 @@ export default function ComposeSheet({ open, onClose }: { open: boolean; onClose
         <label className="flex items-center justify-between gap-3 rounded-2xl bg-mint/50 px-4 py-3">
           <span>
             <span className="block text-sm font-semibold text-forest-deep">{t("Post anonymously")}</span>
-            <span className="block text-[11px] text-forest">{t("No name or number is shown.")}</span>
+            <span className="block text-[0.6875rem] text-forest">{t("No name or number is shown.")}</span>
           </span>
           <input
             type="checkbox"
@@ -127,14 +127,14 @@ export default function ComposeSheet({ open, onClose }: { open: boolean; onClose
               placeholder="Baraka_DSM"
               className="mt-1 w-full rounded-2xl px-4 py-3 text-sm text-ink outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
             />
-            <span className="mt-1 block text-[11px]">{t("Don't use your real full name.")}</span>
+            <span className="mt-1 block text-[0.6875rem]">{t("Don't use your real full name.")}</span>
           </label>
         )}
 
         <label className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3 ring-1 ring-line">
           <span>
             <span className="block text-sm font-semibold">{t("Ask for an expert answer")}</span>
-            <span className="block text-[11px] text-ink-soft">
+            <span className="block text-[0.6875rem] text-ink-soft">
               {t("Verified professionals aren't available yet. Your question will be queued for when they join.")}
             </span>
           </span>
@@ -146,7 +146,7 @@ export default function ComposeSheet({ open, onClose }: { open: boolean; onClose
           />
         </label>
 
-        <p className="flex items-start gap-1.5 text-[11px] text-ink-soft">
+        <p className="flex items-start gap-1.5 text-[0.6875rem] text-ink-soft">
           <Lock size={12} className="mt-px shrink-0" />
           {t("Your Man tab records and check-ins are never shared here. No phone numbers, links or selling.")}
         </p>

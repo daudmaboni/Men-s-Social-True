@@ -20,10 +20,10 @@ export function ContentCard({ item, className = "w-44 shrink-0 snap-start" }: { 
     >
       <Cover item={item} className="h-24 w-full" />
       <div className="p-3">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-forest">
+        <p className="text-[0.625rem] font-semibold uppercase tracking-wide text-forest">
           {metaOf(item, t)}
         </p>
-        <p className="mt-1 line-clamp-3 text-[13px] font-semibold leading-snug">{titleOf(item, t)}</p>
+        <p className="mt-1 line-clamp-3 text-[0.8125rem] font-semibold leading-snug">{titleOf(item, t)}</p>
       </div>
     </Link>
   );
@@ -36,11 +36,11 @@ export function ContentRow({ item, reason }: { item: ContentItem; reason?: strin
     <Link href={contentHref(item.id)} className="flex items-center gap-3 rounded-3xl bg-surface p-3 ring-1 ring-line">
       <Cover item={item} className="h-16 w-16 shrink-0 rounded-2xl" showPlay={false} />
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-forest">
+        <p className="text-[0.625rem] font-semibold uppercase tracking-wide text-forest">
           {metaOf(item, t)}
         </p>
         <p className="line-clamp-2 text-sm font-semibold leading-snug">{titleOf(item, t)}</p>
-        {reason && <p className="mt-0.5 truncate text-[11px] text-ink-soft">{reason}</p>}
+        {reason && <p className="mt-0.5 truncate text-[0.6875rem] text-ink-soft">{reason}</p>}
       </div>
       <BookmarkButton contentId={item.id} variant="plain" />
     </Link>

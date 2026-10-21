@@ -60,14 +60,14 @@ export default function DayBars({
       {!dense && (
         <div className="mt-2 flex gap-2">
           {keys.map((k) => (
-            <span key={k} className="flex-1 text-center text-[11px] text-ink-soft">
+            <span key={k} className="flex-1 text-center text-[0.6875rem] text-ink-soft">
               {weekdayLetter(k, t.lang)}
             </span>
           ))}
         </div>
       )}
       {!compact && (
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink-soft">
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[0.6875rem] text-ink-soft">
         <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-forest-deep" /> {t("Goal reached")}</span>
         <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-mint-strong" /> {t("Recorded")}</span>
         <span className="flex items-center gap-1.5"><i className="hatch h-2 w-2 rounded-full" /> {t("Not recorded")}</span>
