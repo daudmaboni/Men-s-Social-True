@@ -10,6 +10,8 @@ import CoursePlayerHost from "@/components/course/CoursePlayerHost";
 import MiniPlayer from "@/components/course/MiniPlayer";
 import SleepWatcher from "@/components/progress/SleepWatcher";
 import LanguageGate from "@/components/me/LanguageGate";
+import OfflineSupport from "@/components/offline/OfflineSupport";
+import KitoLauncher from "@/components/kito/KitoLauncher";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -24,6 +26,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <CoursePlayerHost />
       <MiniPlayer />
       <SleepWatcher />
+      {/* Offline learning: downloads, service worker and the connection bar (Step 67) */}
+      <OfflineSupport />
+      {/* Kito, the learning assistant: floating button bottom right (Step 67) */}
+      <KitoLauncher />
       <BottomNav />
       {/* On a computer the tabs sit in a sidebar instead of the bottom bar */}
       <SideNav />

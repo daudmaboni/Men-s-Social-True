@@ -42,9 +42,22 @@ function keep(next: Record<string, Link>) {
   listeners.forEach((l) => l());
 }
 
-/** The address to play right now: a public address as it is, a private file's current link, or "" while it's being fetched. */
+/** Lessons downloaded to the phone (Step 67, offline/downloads.ts): ref → a local address that works with no internet. */
+const offline: Record<string, string> = {};
+export function setOfflineUrl(ref: string, url: string | null) {
+  const old = offline[ref];
+  if (old && old !== url) URL.revokeObjectURL(old);
+  if (url) offline[ref] = url;
+  else delete offline[ref];
+  listeners.forEach((l) => l());
+}
+export const isOffline = (ref: string | undefined | null) => Boolean(ref && offline[ref]);
+
+/** The address to play right now: the copy on the phone if he downloaded it, a public address as it is,
+ *  a private file's current link, or "" while it's being fetched. */
 export function playable(ref: string | undefined | null, now = Date.now()): string {
   if (!ref) return "";
+  if (offline[ref]) return offline[ref];
   if (!isPrivateRef(ref)) return ref;
   const l = all()[ref];
   return l && l.exp > now + 60_000 ? l.url : "";
@@ -75,6 +88,7 @@ export function fetchLinks(refs: string[], now = Date.now()): Promise<void> {
 
 /** The link for one file, fetching it if needed ("" if he isn't allowed or is offline). */
 export async function linkFor(ref: string): Promise<string> {
+  if (offline[ref]) return offline[ref];
   if (!isPrivateRef(ref)) return ref;
   if (!playable(ref)) await fetchLinks([ref]);
   return playable(ref);

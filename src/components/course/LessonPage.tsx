@@ -15,6 +15,7 @@ import { AlertTriangle, ArrowLeft, ArrowRight, Check, ListChecks, ListOrdered, L
 import CourseArt from "./CourseArt";
 import Countdown from "./Countdown";
 import { toPlayerLesson } from "./CoursePlayerHost";
+import { LessonDownloadButton } from "@/components/offline/SaveButtons";
 import { coursePlayer, useCoursePlayer } from "@/lib/course/player";
 import { useToast } from "@/components/motion/Toast";
 import { feedStore, useFeed } from "@/lib/feed/store";
@@ -118,6 +119,8 @@ export default function LessonPage({ id }: { id: string }) {
           <Player course={course} lesson={lesson} moduleTitle={pick(sw, mod.title, mod.titleSw)} done={done} hasNext={Boolean(nextLesson)} />
         )
       )}
+
+      {lesson.kind !== "reading" && <LessonDownloadButton lesson={lesson} />}
 
       {caution && (
         <p className="flex items-start gap-2 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200 dark:ring-amber-900">

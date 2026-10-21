@@ -3,6 +3,7 @@
 // The Admin Control Center frame: sign-in gate, sidebar (collapsible on desktop, a drawer on phones),
 // appearance controls, and the signed-in admin for every page underneath.
 
+import { FontStylePicker, TextSizePicker } from "@/components/me/FontChoices";
 import BrandMark from "@/components/brand/BrandMark";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -205,6 +206,9 @@ export function Appearance() {
     <div className="space-y-3">
       <ThemeChoice />
       <AccentChoice />
+      {/* Font style and text size for the Studio (Step 66) */}
+      <FontStylePicker scope="studio" />
+      <TextSizePicker scope="studio" />
     </div>
   );
 }

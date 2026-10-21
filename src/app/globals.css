@@ -682,3 +682,15 @@ button:disabled { cursor: not-allowed; }
 }
 /* Inside "Your trends" the chart card sits flat (no card inside a card) */
 .trend-inner > section { padding: 0; background: transparent; box-shadow: none; border-radius: 0; }
+
+/* Kito (Step 67): the floating button pops in; the window slides up on a phone, grows from the corner on a computer */
+.kito-fab { animation: kito-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.kito-panel { animation: kito-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@media (min-width: 1024px) { .kito-panel { transform-origin: bottom right; animation-name: kito-grow; } }
+@keyframes kito-pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+@keyframes kito-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes kito-grow { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
+/* Kito greets: a small nod every few seconds */
+.kito-wave { animation: kito-nod 6s ease-in-out 1.2s infinite; transform-origin: 50% 80%; }
+@keyframes kito-nod { 0%, 86%, 100% { transform: none; } 90% { transform: rotate(-8deg); } 94% { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .kito-fab, .kito-panel, .kito-wave { animation: none; } }

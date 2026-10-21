@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Check, ExternalLink, MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
 import Cover from "./Cover";
 import BookmarkButton from "./BookmarkButton";
+import { SaveGuideButton } from "@/components/offline/SaveButtons";
+import { useDownloads } from "@/lib/offline/downloads";
 import { ContentRow } from "./ContentCards";
 import { DoctorCheck, PelvicFloorTrainer, QuizRunner } from "./ContentTools";
 import { useToast } from "@/components/motion/Toast";
@@ -22,7 +24,9 @@ import GuestGuideCard from "@/components/account/GuestGuideCard";
 /** Full page for any piece of content: guide, article, video, quiz, tool or expert answer. */
 export default function ContentDetail({ id, back }: { id: string; back: { href: string; label: string } }) {
   const library = useLibrary();
-  const item = getContent(id, library.items);
+  // A guide saved for offline still opens when it's no longer in the content list on this phone (Step 67)
+  const saved = useDownloads().items[id];
+  const item = getContent(id, library.items) ?? (saved?.kind === "guide" ? (saved.item ?? null) : null);
   const feed = useFeed();
   const acc = useAccount();
   const showToast = useToast();
@@ -95,7 +99,10 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
         <Link href={back.href} className="flex items-center gap-1 text-sm text-ink-soft">
           <ArrowLeft size={16} /> {t(back.label)}
         </Link>
-        <BookmarkButton contentId={item.id} />
+        <div className="flex items-center gap-2">
+          <SaveGuideButton item={item} href={`/social/c/${item.id}`} />
+          <BookmarkButton contentId={item.id} />
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-[28px]">

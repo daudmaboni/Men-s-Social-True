@@ -457,3 +457,36 @@ describe("user profile and sharing with support (0012)", { timeout: 30_000 }, ()
     await fails(OWNER, "select public.admin_user_private($1, 'Helping with his water goal')", [JUMA]);
   });
 });
+
+describe("Kito, the members' assistant (0013)", { timeout: 30_000 }, () => {
+  const KITO = "00000000-0000-0000-0000-00000000000c";
+  beforeAll(async () => {
+    await db.query("insert into auth.users (id, email) values ($1, 'kito@x.co') on conflict do nothing", [KITO]);
+  });
+  it("signed-in men can ask; visitors can't", async () => {
+    const [{ id }] = await as<{ id: number }>(KITO, "select public.kito_allow('sw') as id");
+    expect(Number(id)).toBeGreaterThan(0);
+    await as(KITO, "select public.kito_done($1, 'answered', 3, 40, 300)", [id]);
+    await expect(as(null, "select public.kito_allow('en')")).rejects.toThrow(/permission denied/);
+  });
+  it("never keeps the question or the answer", async () => {
+    const cols = (await db.query<{ column_name: string }>("select column_name from information_schema.columns where table_name = 'kito_usage'")).rows.map((r) => r.column_name);
+    expect(cols.some((c) => /question|answer|text|body/.test(c))).toBe(false);
+    expect(await as(KITO, "select * from public.kito_usage")).toEqual([]); // men can't read the log
+  });
+  it("stops at 15 questions an hour per man", async () => {
+    for (let i = 0; i < 14; i++) await as(KITO, "select public.kito_allow('en')");
+    await expect(as(KITO, "select public.kito_allow('en')")).rejects.toThrow(/this hour/);
+  });
+  it("the owner's switch turns it off for everyone", async () => {
+    await db.query("update public.app_settings set value = 'false' where key = 'kito_enabled'");
+    await expect(as(JUMA, "select public.kito_allow('en')")).rejects.toThrow(/resting/);
+    await db.query("update public.app_settings set value = 'true' where key = 'kito_enabled'");
+  });
+  it("staff see totals only; men can't", async () => {
+    const [{ s }] = await as<{ s: Record<string, number> }>(ANALYST, "select public.admin_kito_stats(30) as s");
+    expect(Number(s.questions)).toBeGreaterThanOrEqual(15);
+    expect(Number(s.answered)).toBe(1);
+    await fails(KITO, "select public.admin_kito_stats(30)");
+  });
+});

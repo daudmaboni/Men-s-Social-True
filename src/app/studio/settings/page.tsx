@@ -281,10 +281,20 @@ function Features() {
   const owner = studio.can("settings.manage");
   const get = (k: string) => list.data?.find((s) => s.key === k)?.value;
   const ai = (get("ai_config") as { enabled?: boolean } | undefined) ?? {};
+  // Kito usage, totals only (0013); quietly empty before the update
+  const kito = useLoad(() => rpc<{ questions: number; men: number; answered: number; not_in_library: number }>("admin_kito_stats", { p_days: 30 }).catch(() => null), []);
   const switches = [
     { key: "community_enabled", label: "Community", on: get("community_enabled") !== false, about: "Off = men see “Community is paused”; nobody can post. Posts are kept." },
     { key: "notifications_enabled", label: "In-app notifications", on: get("notifications_enabled") !== false, about: "Off = inboxes show nothing new. Scheduled messages wait." },
     { key: "ai_config", label: "AI assistant", on: Boolean(ai.enabled), about: "Lets editors and writers use AI drafting (needs the server key). AI drafts still need a professional's check." },
+    {
+      key: "kito_enabled",
+      label: "Kito (members' assistant)",
+      on: get("kito_enabled") !== false,
+      about: `Answers men's questions from the published library and links the guides it used. Separate from staff AI. Needs database update 0013 and the server key.${
+        kito.data ? ` Last 30 days: ${kito.data.questions} questions from ${kito.data.men} men · ${kito.data.answered} answered from the library · ${kito.data.not_in_library} not in the library.` : ""
+      }`,
+    },
   ];
 
   return (

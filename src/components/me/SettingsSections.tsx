@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Download, Droplet, EyeOff, Globe, HeartHandshake, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
+import { ChevronRight, CloudDownload, Download, Droplet, EyeOff, Globe, HeartHandshake, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
 import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
@@ -317,6 +317,14 @@ export function PrivacyCard({ acc }: { acc: AccountState }) {
             />
           </label>
         )}
+        <Link href="/me/downloads" className="flex w-full items-center gap-3 p-5 text-left">
+          <CloudDownload size={18} className="shrink-0 text-forest" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">{t("My downloads")}</span>
+            <span className="block text-xs text-ink-soft">{t("Guides and lessons for when there's no internet.")}</span>
+          </span>
+          <ChevronRight size={16} className="text-ink-soft" />
+        </Link>
         <button onClick={download} className="flex w-full items-center gap-3 p-5 text-left">
           <Download size={18} className="shrink-0 text-forest" />
           <span className="flex-1 font-semibold">{t("Download my data")}</span>

@@ -12,20 +12,28 @@ import { coursePlayer, useCourseCardOnScreen, useCoursePlayer } from "@/lib/cour
 import { useFeed } from "@/lib/feed/store";
 import { useT } from "@/lib/i18n";
 
-export default function MiniPlayer() {
+/** Is the mini player on screen right now? (Kito's button moves up out of its way, Step 67.) */
+export function useMiniPlayerVisible(): boolean {
   const p = useCoursePlayer();
-  const feed = useFeed();
   const pathname = usePathname();
-  const router = useRouter();
-  const t = useT();
   const cardShown = useCourseCardOnScreen();
   const l = p.lesson;
   // Not on the lesson's own page (it has the big player), not in the Studio or sign-in screens
-  if (!l || pathname === `/man/course/${l.id}` || pathname.startsWith("/studio") || pathname.startsWith("/account")) return null;
+  if (!l || pathname === `/man/course/${l.id}` || pathname.startsWith("/studio") || pathname.startsWith("/account")) return false;
   // The course card on the Man tab is on screen and already has the controls
-  if (cardShown && pathname === "/man") return null;
+  if (cardShown && pathname === "/man") return false;
   // Only once he has actually started it
-  if (!p.playing && !p.countdown && p.time < 1 && !p.ended) return null;
+  return Boolean(p.playing || p.countdown || p.time >= 1 || p.ended);
+}
+
+export default function MiniPlayer() {
+  const p = useCoursePlayer();
+  const feed = useFeed();
+  const router = useRouter();
+  const t = useT();
+  const visible = useMiniPlayerVisible();
+  const l = p.lesson;
+  if (!visible || !l) return null;
 
   const discreet = feed.settings.discreet;
   const pct = p.duration ? Math.min(100, (p.time / p.duration) * 100) : 0;
