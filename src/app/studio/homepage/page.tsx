@@ -117,7 +117,7 @@ export default function HomepagePage() {
     <div>
       <PageHeader
         title="Homepage"
-        sub="What men see on Social → Discover. Changes reach the app as soon as you publish — no app update needed."
+        sub="Since Step 60, men see a feed of “do this” cards on Social → Discover (src/lib/content/actions.ts). This older section layout is kept for reference and is not shown to men."
         actions={
           <>
             <button onClick={() => setShowHistory(true)} className={btn.ghost}>

@@ -248,7 +248,8 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
         </button>
       )}
 
-      <p ref={endRef} className="px-2 text-center text-[11px] text-ink-soft">{t("General education, not medical advice.")}</p>
+      {/* Marks the end of the page, for "he read it all" */}
+      <p ref={endRef} aria-hidden className="h-px" />
 
       <GuestGuideCard next={`/social/c/${item.id}`} />
 

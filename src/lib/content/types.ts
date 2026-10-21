@@ -68,9 +68,40 @@ export interface ContentItem {
   updatedAt?: string;
   /** true = shipped with the app (catalog files), false/undefined = from the database */
   builtIn?: boolean;
+  /** Set on "do this" cards (actions.ts): steps, ingredients and timing for the Discover feed. */
+  action?: ActionSpec;
 }
 
 export type ContentStatus = "draft" | "review" | "published" | "archived";
+
+/** The challenges a man picks at the top of Discover. */
+export type ChallengeId = "last" | "hard" | "her" | "mixes" | "train" | "reset" | "desire";
+export type ActionType = "technique" | "position" | "mix" | "exercise" | "food" | "habit" | "mind";
+/** When he can expect to feel it. */
+export type ActionResult = "tonight" | "days" | "weeks2" | "weeks4" | "daily";
+
+/** One swipeable slide of an action card: a step, a position, a rule. */
+export interface ActionSlide {
+  title?: string;
+  titleSw?: string;
+  text: string;
+  textSw: string;
+}
+
+/** A "do this" card on Discover: something he can apply and feel, not just read. */
+export interface ActionSpec {
+  type: ActionType;
+  challenges: ChallengeId[];
+  results: ActionResult;
+  /** Ingredients or things to have ready. */
+  need?: string[];
+  needSw?: string[];
+  steps: ActionSlide[];
+  why?: string;
+  whySw?: string;
+  /** Opens a built-in tool from the card (e.g. the pelvic floor timer). */
+  tool?: "pelvic-floor";
+}
 
 export interface Topic {
   id: TopicId;

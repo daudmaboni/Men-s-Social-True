@@ -99,7 +99,6 @@ export default function CoursePage() {
         />
       ))}
 
-      <p className="px-2 text-center text-[11px] text-ink-soft">{t("General education, not medical advice.")}</p>
     </div>
   );
 }

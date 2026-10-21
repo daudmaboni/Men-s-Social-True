@@ -7,7 +7,7 @@
 
 import type { ContentItem } from "./types";
 
-const IG_SOURCE = "Adapted from Kayani Herbs on Instagram · Draft, pending review by a qualified health professional";
+const IG_SOURCE = "Adapted from Kayani Herbs on Instagram";
 
 export const INSTAGRAM_CONTENT: ContentItem[] = [
   {

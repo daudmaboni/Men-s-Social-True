@@ -11,7 +11,9 @@ describe("content library", () => {
   });
   it("real (non-sample) items link back to where they came from, with a Kiswahili version", () => {
     for (const c of LIBRARY.filter((x) => !x.fixture)) {
-      expect(c.origin?.url, c.id).toMatch(/^https:\/\/www\.instagram\.com\//);
+      // "Do this" cards come from Kayani Herbs' own guides; the rest from its Instagram page
+      if (c.action) expect(c.source, c.id).toBe("Kayani Herbs");
+      else expect(c.origin?.url, c.id).toMatch(/^https:\/\/www\.instagram\.com\//);
       expect(c.bodySw?.length, c.id).toBe(c.body?.length);
       expect(c.titleSw, c.id).toBeTruthy();
     }

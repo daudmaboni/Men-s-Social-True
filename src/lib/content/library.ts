@@ -5,6 +5,7 @@
 import type { ContentItem, Topic } from "./types";
 import { INSTAGRAM_CONTENT } from "./instagram";
 import { NIPATE_NINI } from "./nipate-nini";
+import { ACTION_CONTENT } from "./actions";
 
 export const TOPICS: Topic[] = [
   { id: "erection", title: "Erection health", short: "Erections" },
@@ -16,7 +17,7 @@ export const TOPICS: Topic[] = [
   { id: "wellbeing", title: "Sleep, stress and physical wellbeing", short: "Body and mind" },
 ];
 
-const DRAFT = "Men's Social editorial · Draft, pending review by a qualified health professional";
+const DRAFT = "Men's Social editorial";
 
 const EDITORIAL_SAMPLES: ContentItem[] = [
   // ───────────── Erection health ─────────────
@@ -511,4 +512,4 @@ const EDITORIAL_SAMPLES: ContentItem[] = [
 ];
 
 /** Everything in Discover: real content adapted from Instagram, plus editorial samples. */
-export const LIBRARY: ContentItem[] = [...INSTAGRAM_CONTENT, ...NIPATE_NINI, ...EDITORIAL_SAMPLES];
+export const LIBRARY: ContentItem[] = [...ACTION_CONTENT, ...INSTAGRAM_CONTENT, ...NIPATE_NINI, ...EDITORIAL_SAMPLES];

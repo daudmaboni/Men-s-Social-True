@@ -10,18 +10,16 @@ import { flushSync } from "react-dom";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, ChevronRight, MessageCircle, SlidersHorizontal } from "lucide-react";
 import FeaturedCard from "./FeaturedCard";
+import ActionFeed from "./ActionFeed";
 import SwipeRow from "@/components/motion/SwipeRow";
 import { ContentCard, ContentRow, contentHref } from "./ContentCards";
 import InterestsSheet from "./InterestsSheet";
 import { TOPICS } from "@/lib/content/library";
 import type { Personal } from "@/lib/content/select";
 import type { ContentItem } from "@/lib/content/types";
-import { useLibrary } from "@/lib/content/useLibrary";
-import { useSocial } from "@/lib/social/store";
 import { useT } from "@/lib/i18n";
 import { topicShort } from "@/lib/content/display";
 import { resolveDiscover, wordsFor, type HomepageConfig, type SectionConfig } from "@/lib/homepage/config";
-import { useHomepage } from "@/lib/homepage/useHomepage";
 
 export function DiscoverSkeleton() {
   const t = useT();
@@ -34,15 +32,12 @@ export function DiscoverSkeleton() {
   );
 }
 
+/** What men see on Discover: a feed of "do this" cards (see ActionFeed). */
 export default function Discover() {
-  const { interests, bookmarks, history, ready } = useSocial();
-  const { items } = useLibrary();
-  const config = useHomepage();
-  if (!ready) return <DiscoverSkeleton />;
-  return <DiscoverView me={{ interests, bookmarks, history }} items={items} config={config} />;
+  return <ActionFeed />;
 }
 
-/** The Discover page itself. Also used by Admin → Homepage to preview a layout before publishing. */
+/** The earlier sectioned Discover layout. Still used by Admin → Homepage to preview a layout. */
 export function DiscoverView({ me, items, config, preview = false }: { me: Personal; items: ContentItem[]; config: HomepageConfig; preview?: boolean }) {
   const [pickTopics, setPickTopics] = useState(false);
   const [topicsOpen, setTopicsOpen] = useState(false);
@@ -267,9 +262,6 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
     <div className={`stagger space-y-7 ${desk}`}>
       {config.sections.map(render)}
 
-      <p className={`px-2 text-center text-[11px] leading-relaxed text-ink-soft ${full}`}>
-        {t('All content here is general education, not medical advice. Items marked "Sample" are drafts that will be reviewed by a qualified health professional before launch.')}
-      </p>
 
       {!preview && <InterestsSheet open={pickTopics} onClose={() => setPickTopics(false)} current={me.interests} />}
     </div>

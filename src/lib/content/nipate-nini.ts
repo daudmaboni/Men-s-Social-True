@@ -6,7 +6,7 @@
 
 import type { ContentItem } from "./types";
 
-const DRAFT = "Men's Social editorial · Draft, pending review by a qualified health professional";
+const DRAFT = "Men's Social editorial";
 
 export const NIPATE_NINI_IDS = {
   lifestyle: "nn-lifestyle-changes",

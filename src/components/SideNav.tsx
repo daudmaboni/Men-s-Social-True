@@ -103,10 +103,6 @@ export default function SideNav() {
             </button>
           ))}
         </div>
-
-        <p className="px-2 text-[11px] leading-relaxed text-ink-soft">
-          {t("General education, not medical advice.")}
-        </p>
       </div>
     </aside>
   );

@@ -186,7 +186,6 @@ export default function LessonPage({ id }: { id: string }) {
         <ShieldCheck size={13} className="mt-px shrink-0 text-forest" />
         <span>{pick(sw, course.credit, course.creditSw)}</span>
       </p>
-      <p className="px-2 text-center text-[11px] text-ink-soft">{t("General education, not medical advice.")}</p>
     </article>
   );
 }
