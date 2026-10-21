@@ -1,15 +1,17 @@
 // "Do this" cards for the Discover feed: things a man can apply and feel, not just read about.
 // Taken from Kayani Herbs' own guides (Kayani Herbs Program, Mabao 3 Bila Break, Mkonga Nchi 7)
+// and from the @kayaniherbs Instagram page (actions-instagram.ts),
 // and rewritten as short steps, in English and Kiswahili.
 // Rules: no prices, phone numbers or product pushes; strong, specific results language, but never
 // "cures" or "100%". Where something is risky for some men, the step itself says what to do instead.
 
+import { INSTAGRAM_DEFS } from "./actions-instagram";
 import type { ActionResult, ActionSlide, ActionSpec, ActionType, ChallengeId, ContentItem, TopicId } from "./types";
 
-type Bi = [en: string, sw: string];
-type Step = Bi | { title: Bi; text: Bi };
+export type Bi = [en: string, sw: string];
+export type Step = Bi | { title: Bi; text: Bi };
 
-interface Def {
+export interface Def {
   id: string;
   type: ActionType;
   challenges: ChallengeId[];
@@ -23,6 +25,8 @@ interface Def {
   tool?: ActionSpec["tool"];
   cover: ContentItem["cover"];
   tags?: string[];
+  /** The Kayani Herbs Instagram post it came from. */
+  origin?: ContentItem["origin"];
 }
 
 const TOPIC_OF: Record<ChallengeId, TopicId> = {
@@ -72,6 +76,7 @@ function card(d: Def): ContentItem {
     review: "draft",
     fixture: false,
     cover: d.cover,
+    ...(d.origin ? { origin: d.origin } : {}),
     action: {
       type: d.type,
       challenges: d.challenges,
@@ -962,7 +967,21 @@ const DEFS: Def[] = [
   },
 ];
 
-export const ACTION_CONTENT: ContentItem[] = DEFS.map(card);
+// Instagram cards are spread evenly through the guide cards, so the feed keeps changing.
+const MIXED: Def[] = [
+  ...DEFS.map((d, i) => ({ d, at: (i + 0.5) / DEFS.length })),
+  ...INSTAGRAM_DEFS.map((d, i) => ({ d, at: (i + 0.75) / INSTAGRAM_DEFS.length })),
+]
+  .sort((a, b) => a.at - b.at)
+  .map((x) => x.d);
+// Never more than two drinks (or two of any kind) in a row: pull the next different card forward.
+for (let i = 2; i < MIXED.length; i++) {
+  if (MIXED[i].type !== MIXED[i - 1].type || MIXED[i].type !== MIXED[i - 2].type) continue;
+  const j = MIXED.findIndex((d, k) => k > i && d.type !== MIXED[i].type);
+  if (j > 0) MIXED.splice(i, 0, ...MIXED.splice(j, 1));
+}
+
+export const ACTION_CONTENT: ContentItem[] = MIXED.map(card);
 
 const BY_ID = new Map(ACTION_CONTENT.map((c) => [c.id, c.action!]));
 /** The steps of a built-in action card, even if staff later edited its words in the Studio. */

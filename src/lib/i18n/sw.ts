@@ -846,7 +846,7 @@ export const SW: Record<string, string> = {
   "Daily habit": "Tabia ya kila siku",
   "Mindset": "Akili",
   "Works tonight": "Inafanya kazi leo",
-  "Results in days": "Matokeo ndani ya siku chache",
-  "Feel it in 1–3 weeks": "Utaona ndani ya wiki 1–3",
-  "Feel it in 3–6 weeks": "Utaona ndani ya wiki 3–6",
+  "Results in days": "Ndani ya siku chache",
+  "Feel it in 1–3 weeks": "Ndani ya wiki 1–3",
+  "Feel it in 3–6 weeks": "Ndani ya wiki 3–6",
 };

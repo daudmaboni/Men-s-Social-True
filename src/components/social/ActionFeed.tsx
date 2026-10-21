@@ -276,7 +276,7 @@ function ActionPost({ card, first, done, liked, saved }: { card: Card; first: bo
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-bold leading-tight">{t(TYPE_LABEL[spec.type])}</p>
-          <p className="truncate text-[11px] text-ink-soft">{t("{n} min", { n: item.minutes })} · Kayani Herbs</p>
+          <p className="truncate text-[11px] text-ink-soft">{t("{n} min", { n: item.minutes })} · {item.origin ? "@kayaniherbs" : "Kayani Herbs"}</p>
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${spec.results === "tonight" ? "bg-honey text-on-honey" : "bg-mint text-forest"}`}
