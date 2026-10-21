@@ -92,7 +92,7 @@ export function ActionFeedSkeleton() {
           <div key={i} className="h-[68px] w-[68px] shrink-0 animate-pulse rounded-full bg-line" />
         ))}
       </div>
-      <div className="aspect-square animate-pulse rounded-[28px] bg-forest-deep/15" />
+      <div className="-mx-3 aspect-[5/4] animate-pulse rounded-[20px] bg-forest-deep/15 lg:mx-0" />
     </div>
   );
 }
@@ -153,7 +153,7 @@ export default function ActionFeed() {
   const current = CHALLENGES.find((c) => c.id === filter) ?? CHALLENGES[0];
 
   return (
-    <div className="mx-auto w-full max-w-[560px] space-y-5">
+    <div className="mx-auto w-full max-w-[480px] space-y-4">
       <section aria-labelledby="challenge-h" className="-mx-5 scroll-mt-4 lg:mx-0" ref={top}>
         <h2 id="challenge-h" className="px-5 font-display text-[20px] font-bold leading-tight lg:px-0">
           {t("What are you dealing with?")}
@@ -200,14 +200,14 @@ export default function ActionFeed() {
         </p>
       )}
 
-      <div className="space-y-6">
+      <div className="-mx-3 space-y-3 lg:mx-0 lg:space-y-4">
         {cards.slice(0, shown).map((c, i) => (
           <ActionPost key={`${filter}-${c.item.id}`} card={c} first={i === 0} done={Boolean(tried.done[c.item.id])} liked={Boolean(tried.liked[c.item.id])} saved={Boolean(social.bookmarks[c.item.id])} />
         ))}
       </div>
 
       {more ? (
-        <div ref={sentinel} className="h-[40vh] animate-pulse rounded-[28px] bg-surface ring-1 ring-line" aria-hidden />
+        <div ref={sentinel} className="-mx-3 h-[40vh] animate-pulse rounded-[20px] lg:mx-0 bg-surface ring-1 ring-line" aria-hidden />
       ) : (
         <EndOfFeed filter={filter} onPick={pick} t={t} />
       )}
@@ -217,7 +217,7 @@ export default function ActionFeed() {
 
 function EndOfFeed({ filter, onPick, t }: { filter: FeedFilter; onPick: (id: FeedFilter) => void; t: T }) {
   return (
-    <section className="rounded-[28px] bg-forest-deep p-6 text-center text-white">
+    <section className="rounded-[20px] bg-forest-deep p-5 text-center text-white">
       <p className="font-display text-xl font-bold">{t("That's everything for now")}</p>
       <p className="mt-1 text-sm text-mint">{t("Pick one you haven't done yet, and do it tonight.")}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -274,10 +274,10 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
   };
 
   return (
-    <article className="overflow-hidden rounded-[28px] bg-surface ring-1 ring-line" aria-label={title}>
-      <header className="flex items-center gap-3 px-4 py-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mint text-forest">
-          <TypeIcon size={17} aria-hidden />
+    <article className="overflow-hidden rounded-[20px] bg-surface ring-1 ring-line" aria-label={title}>
+      <header className="flex items-center gap-2.5 px-3 py-2">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-forest">
+          <TypeIcon size={16} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-bold leading-tight">{t(TYPE_LABEL[spec.type])}</p>
@@ -294,7 +294,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
         {slides}
       </Carousel>
 
-      <div className="flex items-center gap-1 px-2 pt-1">
+      <div className="flex items-center px-1">
         <IconButton
           label={t(liked ? "Helped ✓" : "This helped")}
           pressed={liked}
@@ -303,7 +303,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
             if (now) showToast(t("Glad it helped"));
           }}
         >
-          <Heart size={23} className={liked ? "text-red-500" : ""} fill={liked ? "currentColor" : "none"} />
+          <Heart size={22} className={liked ? "text-red-500" : ""} fill={liked ? "currentColor" : "none"} />
         </IconButton>
         <IconButton label={t("Share")} onClick={share}>
           <Send size={21} />
@@ -322,13 +322,13 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
             if (now) inviteToAccount("first-save");
           }}
         >
-          <Bookmark size={22} fill={saved ? "currentColor" : "none"} />
+          <Bookmark size={21} fill={saved ? "currentColor" : "none"} />
         </IconButton>
       </div>
 
-      <div className="px-4 pb-4">
-        <p className="text-[15px] font-bold leading-snug">{title}</p>
-        <div className="mt-3 flex gap-2">
+      <div className="px-3 pb-3">
+        <p className="line-clamp-2 text-[14px] font-bold leading-snug">{title}</p>
+        <div className="mt-2 flex gap-2">
           <button
             onClick={() => {
               const now = triedStore.toggleDone(item.id);
@@ -338,7 +338,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
               }
             }}
             aria-pressed={done}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-full py-3 text-sm font-bold transition-transform active:scale-[0.98] ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-sm font-bold transition-transform active:scale-[0.98] ${
               done ? "bg-mint text-forest" : "bg-forest text-white"
             }`}
           >
@@ -353,7 +353,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
           {spec.tool === "pelvic-floor" && (
             <Link
               href={contentHref(TIMER_ID)}
-              className="flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-3 text-sm font-bold text-forest ring-1 ring-line"
+              className="flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-forest ring-1 ring-line"
             >
               <Timer size={16} /> {t("Timer")}
             </Link>
@@ -371,7 +371,7 @@ function IconButton({ label, pressed, onClick, children }: { label: string; pres
       aria-label={label}
       aria-pressed={pressed}
       onClick={onClick}
-      className="flex h-11 w-11 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
+      className="flex h-10 w-10 items-center justify-center rounded-full text-ink transition-transform active:scale-90"
     >
       {children}
     </button>
@@ -400,12 +400,12 @@ function Carousel({ children, label, t }: { children: React.ReactNode[]; label: 
       {/* overflow-x-auto also tells the tab pager to leave this swipe alone */}
       <div ref={ref} onScroll={onScroll} className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain">
         {children.map((s, i) => (
-          <div key={i} className="aspect-square w-full shrink-0 snap-center" aria-roledescription="slide" aria-label={`${i + 1} / ${count}`} aria-hidden={i !== index}>
+          <div key={i} className="aspect-[5/4] w-full shrink-0 snap-center" aria-roledescription="slide" aria-label={`${i + 1} / ${count}`} aria-hidden={i !== index}>
             {s}
           </div>
         ))}
       </div>
-      <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-bold tabular-nums text-white backdrop-blur">
+      <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-full bg-black/45 px-2 py-0.5 text-[11px] font-bold tabular-nums text-white backdrop-blur">
         {index + 1}/{count}
       </span>
       {/* Arrows for mouse users on a computer */}
@@ -423,7 +423,7 @@ function Carousel({ children, label, t }: { children: React.ReactNode[]; label: 
       >
         <ChevronRight size={18} />
       </button>
-      <div className="flex justify-center gap-1.5 pt-3" aria-hidden>
+      <div className="flex justify-center gap-1.5 pt-2" aria-hidden>
         {children.map((_, i) => (
           <span key={i} className={`h-1.5 rounded-full transition-all ${i === index ? "w-4 bg-forest" : "w-1.5 bg-line"}`} />
         ))}
@@ -440,11 +440,11 @@ function HookSlide({ item, spec, title, hook, first, t }: { item: ContentItem; s
     <div className="relative h-full w-full overflow-hidden">
       <Cover item={item} className="absolute inset-0 h-full w-full" showPlay={false} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/5" />
-      <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5 text-white">
         <p className="text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t(TYPE_LABEL[spec.type])}</p>
-        <h3 className="mt-1.5 font-display text-[27px] font-bold leading-[1.1]">{title}</h3>
-        <p className="mt-2 text-[15px] leading-snug text-white/85">{hook}</p>
-        <p className="mt-4 flex items-center gap-1.5 text-[13px] font-semibold text-white">
+        <h3 className="mt-1 line-clamp-3 font-display text-[23px] font-bold leading-[1.1]">{title}</h3>
+        <p className="mt-1.5 line-clamp-2 text-[14px] leading-snug text-white/85">{hook}</p>
+        <p className="mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-white">
           <span className="inline-flex w-5 shrink-0 justify-center">
             <Hand size={15} className={first ? "swipe-hand" : ""} aria-hidden />
           </span>
@@ -473,7 +473,7 @@ function MediaSlide({ item, t }: { item: ContentItem; t: T }) {
     <div className="relative h-full w-full overflow-hidden">
       <Cover item={item} className="absolute inset-0 h-full w-full" showPlay={false} />
       <div className="absolute inset-0 bg-black/55" />
-      <div className="absolute inset-x-0 bottom-0 p-5">
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t("Listen")}</p>
         <audio src={item.audioUrl} controls preload="metadata" onEnded={() => trackContent(item.id, "complete")} className="w-full" />
       </div>
@@ -481,43 +481,55 @@ function MediaSlide({ item, t }: { item: ContentItem; t: T }) {
   );
 }
 
+/** A text slide: the words sit in the middle, and long text scrolls instead of being cut off. */
+function Frame({ className, children }: { className: string; children: React.ReactNode }) {
+  return (
+    <div className={`relative flex h-full w-full flex-col overflow-y-auto overflow-x-hidden px-5 py-4 ${className}`}>
+      <div className="relative my-auto">{children}</div>
+    </div>
+  );
+}
+
 function NeedSlide({ need, t }: { need: string[]; t: T }) {
   return (
-    <div className="flex h-full w-full flex-col justify-center bg-mint px-6 py-8 text-forest-deep">
+    <Frame className="bg-mint text-forest-deep">
       <p className="text-[11px] font-bold uppercase tracking-wider text-forest">{t("You need")}</p>
-      <ul className="mt-4 space-y-3">
+      <ul className={`mt-3 ${need.length > 4 ? "space-y-1.5" : "space-y-2.5"}`}>
         {need.map((n, i) => (
-          <li key={i} className="flex items-start gap-3 text-[17px] font-semibold leading-snug">
-            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-forest text-white">
-              <Check size={14} />
+          <li key={i} className={`flex items-start gap-2.5 font-semibold leading-snug ${need.length > 4 ? "text-[14px]" : "text-[16px]"}`}>
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-forest text-white">
+              <Check size={12} />
             </span>
             {n}
           </li>
         ))}
       </ul>
-    </div>
+    </Frame>
   );
 }
 
 function StepSlide({ n, total, title, text, t }: { n: number; total: number; title?: string; text: string; t: T }) {
+  const long = text.length > 120;
   return (
-    <div className="relative flex h-full w-full flex-col justify-center overflow-hidden bg-forest-deep px-6 py-8 text-white">
-      <span className="pointer-events-none absolute -right-4 -top-10 font-display text-[200px] font-bold leading-none text-white/[0.07]" aria-hidden>
+    <div className="relative h-full w-full overflow-hidden bg-forest-deep text-white">
+      <span className="pointer-events-none absolute -right-3 -top-8 font-display text-[160px] font-bold leading-none text-white/[0.07]" aria-hidden>
         {n}
       </span>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t("Step {n} of {total}", { n, total })}</p>
-      {title && <p className="mt-3 font-display text-[26px] font-bold leading-tight">{title}</p>}
-      <p className={`${title ? "mt-2 text-[17px]" : "mt-3 text-[21px] font-semibold"} leading-snug text-white/95`}>{text}</p>
+      <Frame className="">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-mint-strong">{t("Step {n} of {total}", { n, total })}</p>
+        {title && <p className="mt-2 font-display text-[21px] font-bold leading-tight">{title}</p>}
+        <p className={`${title ? `mt-1.5 ${long ? "text-[15px]" : "text-[16px]"}` : `mt-2 font-semibold ${long ? "text-[16px]" : "text-[19px]"}`} leading-snug text-white/95`}>{text}</p>
+      </Frame>
     </div>
   );
 }
 
 function WhySlide({ why, t }: { why: string; t: T }) {
   return (
-    <div className="flex h-full w-full flex-col justify-center bg-surface px-6 py-8">
+    <Frame className="bg-surface">
       <p className="text-[11px] font-bold uppercase tracking-wider text-forest">{t("The secret")}</p>
-      <p className="mt-3 font-display text-[22px] font-bold leading-snug text-ink">{why}</p>
-      <p className="mt-5 text-sm text-ink-soft">{t("Tried it? Tap \"I did it\" below.")}</p>
-    </div>
+      <p className={`mt-2 font-display font-bold leading-snug text-ink ${why.length > 110 ? "text-[17px]" : "text-[19px]"}`}>{why}</p>
+      <p className="mt-3 text-[13px] text-ink-soft">{t("Tried it? Tap \"I did it\" below.")}</p>
+    </Frame>
   );
 }
