@@ -14,6 +14,8 @@ const supabase = (() => {
   }
 })();
 const supabaseWs = supabase.replace(/^https:/, "wss:");
+// Card photos are read from the live project's public storage even when running without .env.local
+const photos = "https://oovvbluaiytosfmwpfbj.supabase.co";
 const turnstile = "https://challenges.cloudflare.com"; // the optional "are you a person?" check
 
 const csp = [
@@ -23,7 +25,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   // Data can only go to our own server and our Supabase project
   `connect-src 'self' ${supabase} ${supabaseWs} ${turnstile} ${dev ? "ws: http://localhost:*" : ""}`,
-  `img-src 'self' data: blob: ${supabase}`,
+  `img-src 'self' data: blob: ${supabase} ${photos}`,
   // Audio and video: uploads, plus direct links staff paste into the Studio
   `media-src 'self' blob: ${supabase} https:`,
   "font-src 'self' data:",

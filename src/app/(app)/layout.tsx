@@ -9,6 +9,7 @@ import ProfilePrompt from "@/components/me/ProfilePrompt";
 import CoursePlayerHost from "@/components/course/CoursePlayerHost";
 import MiniPlayer from "@/components/course/MiniPlayer";
 import SleepWatcher from "@/components/progress/SleepWatcher";
+import LanguageGate from "@/components/me/LanguageGate";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,6 +27,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <BottomNav />
       {/* On a computer the tabs sit in a sidebar instead of the bottom bar */}
       <SideNav />
+      {/* First open on this phone: pick Kiswahili or English before any content */}
+      <LanguageGate />
     </ToastProvider>
   );
 }

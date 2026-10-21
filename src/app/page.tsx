@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { account, AUTH_METHODS, useAccount } from "@/lib/account/useAccount";
 import { forgetAccount, knownAccount, type KnownAccount } from "@/lib/account/known";
 import { setLang, useLang } from "@/lib/me/lang";
+import LanguageGate from "@/components/me/LanguageGate";
 import { NIPATE_NINI_IDS } from "@/lib/content/nipate-nini";
 import SwipeRow from "@/components/motion/SwipeRow";
 import BrandMark from "@/components/brand/BrandMark";
@@ -123,6 +124,7 @@ export default function Welcome() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-8 pt-6 lg:max-w-5xl lg:px-10 lg:pt-8">
+      <LanguageGate />
       {/* Top bar: logo + language switch */}
       <header className="rise flex items-center justify-between">
         <div className="flex items-center gap-2">

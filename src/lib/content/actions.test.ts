@@ -37,3 +37,11 @@ describe("\"do this\" cards", () => {
     expect(actionOf({ id: "not-an-action" })).toBeUndefined();
   });
 });
+
+describe("card photos", () => {
+  it("every \"do this\" card has a photo", async () => {
+    const { PHOTO_OF } = await import("./card-photos");
+    const missing = ACTION_CONTENT.filter((c) => !PHOTO_OF[c.id] || !c.coverImageUrl).map((c) => c.id);
+    expect(missing).toEqual([]);
+  });
+});

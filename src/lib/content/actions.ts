@@ -6,6 +6,8 @@
 // "cures" or "100%". Where something is risky for some men, the step itself says what to do instead.
 
 import { INSTAGRAM_DEFS } from "./actions-instagram";
+import { PHOTO_OF, photoUrl } from "./card-photos";
+import { VOICE } from "./voice";
 import type { ActionResult, ActionSlide, ActionSpec, ActionType, ChallengeId, ContentItem, TopicId } from "./types";
 
 export type Bi = [en: string, sw: string];
@@ -45,7 +47,9 @@ function slide(s: Step): ActionSlide {
   return Array.isArray(s) ? { text: s[0], textSw: s[1] } : { title: s.title[0], titleSw: s.title[1], text: s.text[0], textSw: s.text[1] };
 }
 
-function card(d: Def): ContentItem {
+function card(raw: Def): ContentItem {
+  const v = VOICE[raw.id];
+  const d: Def = v ? { ...raw, title: v.t ?? raw.title, hook: v.h ?? raw.hook, why: v.w ?? raw.why } : raw;
   const steps = d.steps.map(slide);
   const lines = (sw: boolean) => {
     const L = (b: Bi) => b[sw ? 1 : 0];
@@ -56,7 +60,7 @@ function card(d: Def): ContentItem {
         const title = sw ? s.titleSw : s.title;
         return `${i + 1}. ${title ? `${title}: ` : ""}${sw ? s.textSw : s.text}`;
       }),
-      ...(d.why ? [sw ? "## Kwa nini inafanya kazi" : "## Why it works", L(d.why)] : []),
+      ...(d.why ? [sw ? "## Siri yake" : "## The secret", L(d.why)] : []),
     ];
   };
   return {
@@ -76,6 +80,7 @@ function card(d: Def): ContentItem {
     review: "draft",
     fixture: false,
     cover: d.cover,
+    ...(PHOTO_OF[d.id] ? { coverImageUrl: photoUrl(PHOTO_OF[d.id]) } : {}),
     ...(d.origin ? { origin: d.origin } : {}),
     action: {
       type: d.type,

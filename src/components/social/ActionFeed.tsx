@@ -1,7 +1,7 @@
 "use client";
 
 // Discover as a feed of things to DO, not things to read about.
-// Top: "What's your challenge?" circles, like Instagram stories. Below: one endless column of
+// Top: "What are you dealing with?" circles, like Instagram stories. Below: one endless column of
 // action cards. Each card is a carousel he swipes through: the hook, what he needs, the steps,
 // why it works. Then: "Useful", share, save, and "I did it".
 
@@ -152,9 +152,9 @@ export default function ActionFeed() {
     <div className="mx-auto w-full max-w-[560px] space-y-5">
       <section aria-labelledby="challenge-h" className="-mx-5 scroll-mt-4 lg:mx-0" ref={top}>
         <h2 id="challenge-h" className="px-5 font-display text-[20px] font-bold leading-tight lg:px-0">
-          {t("What's your challenge?")}
+          {t("What are you dealing with?")}
         </h2>
-        <div role="tablist" aria-label={t("What's your challenge?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-5 pb-1 lg:px-0">
+        <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-5 pb-1 lg:px-0">
           {CHALLENGES.map(({ id, label, icon: Icon }) => {
             const on = filter === id;
             const fresh = left(id);
@@ -214,7 +214,7 @@ export default function ActionFeed() {
 function EndOfFeed({ filter, onPick, t }: { filter: FeedFilter; onPick: (id: FeedFilter) => void; t: T }) {
   return (
     <section className="rounded-[28px] bg-forest-deep p-6 text-center text-white">
-      <p className="font-display text-xl font-bold">{t("You've seen them all")}</p>
+      <p className="font-display text-xl font-bold">{t("That's everything for now")}</p>
       <p className="mt-1 text-sm text-mint">{t("Pick one you haven't done yet, and do it tonight.")}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {CHALLENGES.filter((c) => c.id !== filter && c.id !== "all")
@@ -291,11 +291,11 @@ function ActionPost({ card, first, done, liked, saved }: { card: Card; first: bo
 
       <div className="flex items-center gap-1 px-2 pt-1">
         <IconButton
-          label={t(liked ? "Marked useful" : "Useful")}
+          label={t(liked ? "Helped ✓" : "This helped")}
           pressed={liked}
           onClick={() => {
             const now = triedStore.toggleLike(item.id);
-            if (now) showToast(t("Marked as useful"));
+            if (now) showToast(t("Glad it helped"));
           }}
         >
           <Heart size={23} className={liked ? "text-red-500" : ""} fill={liked ? "currentColor" : "none"} />
@@ -329,7 +329,7 @@ function ActionPost({ card, first, done, liked, saved }: { card: Card; first: bo
               const now = triedStore.toggleDone(item.id);
               if (now) {
                 trackContent(item.id, "complete");
-                showToast(t("Nice work. Keep it up."));
+                showToast(t("Nice one, bro. Keep going."));
               }
             }}
             aria-pressed={done}
@@ -484,7 +484,7 @@ function StepSlide({ n, total, title, text, t }: { n: number; total: number; tit
 function WhySlide({ why, t }: { why: string; t: T }) {
   return (
     <div className="flex h-full w-full flex-col justify-center bg-surface px-6 py-8">
-      <p className="text-[11px] font-bold uppercase tracking-wider text-forest">{t("Why it works")}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-forest">{t("The secret")}</p>
       <p className="mt-3 font-display text-[22px] font-bold leading-snug text-ink">{why}</p>
       <p className="mt-5 text-sm text-ink-soft">{t("Tried it? Tap \"I did it\" below.")}</p>
     </div>

@@ -27,6 +27,26 @@ export function setLang(lang: Lang) {
   listeners.forEach((l) => l());
 }
 
+/** Has he ever picked a language on this phone? (Until he does, the app asks before showing content.) */
+function chosen(): boolean {
+  try {
+    return localStorage.getItem(KEY) !== null;
+  } catch {
+    return true; // storage blocked: don't keep asking
+  }
+}
+
+export function useLangChosen(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    chosen,
+    () => true,
+  );
+}
+
 export function useLang(): Lang {
   return useSyncExternalStore(
     (cb) => {
