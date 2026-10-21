@@ -1,16 +1,19 @@
 "use client";
 
-// Admin → Users: find accounts, see engagement (never health records), add support notes,
-// warn, restrict or delete. Every action is checked and logged by the database.
+// Admin → Users: find accounts and open the full picture of each one (Step 65: account, app and
+// language, active days, course, community, messages, warnings, admin history). His health records
+// show only if HE chose to share them with support. Add support notes, warn, restrict or delete.
+// Every action is checked and logged by the database.
 
 import { useEffect, useState } from "react";
-import { Ban, MessageSquareWarning, Search, ShieldCheck, StickyNote, Trash2, UserCheck } from "lucide-react";
+import { Ban, HeartHandshake, MessageSquareWarning, Search, StickyNote, Trash2, UserCheck } from "lucide-react";
 import { useStudio } from "@/components/admin/AdminShell";
 import { RankBars } from "@/components/admin/Chart";
 import { Badge, Confirm, Drawer, Empty, ErrorBox, Loading, PageHeader, Panel, Segmented, ago, btn, downloadCsv, fmtDate, input, useLoad } from "@/components/admin/ui";
 import { useToast } from "@/components/motion/Toast";
 import { db, rpc } from "@/lib/admin/api";
 import { TOPICS } from "@/lib/content/library";
+import { UserProfile } from "@/components/admin/UserProfile";
 
 type U = {
   id: string;
@@ -31,8 +34,10 @@ type U = {
 };
 type Note = { id: number; body: string; created_at: string; author: string | null };
 type Adoption = { synced_users: number; water: number; sleep: number; checkin: number; activities: number; lessons: number; saved: number; topics_followed: Record<string, number | null>; min_group: number };
+type Extra = { id: string; lang: "en" | "sw" | null; platform: string | null; shared: boolean };
 type Filter = "all" | "new7" | "active30" | "inactive30" | "restricted" | "admins";
 const PAGE = 25;
+const PLATFORM_SHORT: Record<string, string> = { android: "Android", ios: "iPhone", pwa: "Home screen", web: "Browser" };
 
 export default function UsersPage() {
   const studio = useStudio();
@@ -50,6 +55,17 @@ export default function UsersPage() {
   const list = useLoad(() => rpc<U[]>("admin_users", { p_search: search, p_filter: filter, p_limit: PAGE, p_offset: page * PAGE }), [search, filter, page]);
   // After an action the list reloads; show the fresh row so the drawer reflects it (e.g. Restrict → Lift restriction).
   const open = picked ? (list.data?.find((x) => x.id === picked.id) ?? picked) : null;
+  // Language, app and sharing (database update 0012); the list still works without it
+  const extra = useLoad(async () => {
+    const ids = list.data?.map((u) => u.id) ?? [];
+    if (!ids.length) return {} as Record<string, Extra>;
+    try {
+      const rows = await rpc<Extra[]>("admin_users_extra", { p_ids: ids });
+      return Object.fromEntries(rows.map((r) => [r.id, r]));
+    } catch {
+      return {} as Record<string, Extra>;
+    }
+  }, [list.data]);
   const adoption = useLoad(() => rpc<Adoption>("admin_adoption"), []);
   const total = list.data?.[0]?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
@@ -58,7 +74,7 @@ export default function UsersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Users"
-        sub="Accounts and how they use the app. Check-ins, sleep, water, notes and profile details stay private — they aren't shown here."
+        sub="Every account and how he uses the app. Click a man to see everything. His check-ins, sleep, water, notes and profile appear only if he chose to share them with support."
         actions={
           list.data?.length ? (
             <button
@@ -66,7 +82,7 @@ export default function UsersPage() {
               onClick={() =>
                 downloadCsv(
                   "users",
-                  list.data!.map((u) => ({ email: u.email, joined: u.created_at, last_active: u.last_active, onboarded: u.onboarded, opened: u.opened, saved: u.saved, lessons: u.lessons, posts: u.posts, restricted_until: u.restricted_until, admin: u.admin_role })),
+                  list.data!.map((u) => ({ email: u.email, joined: u.created_at, last_active: u.last_active, language: extra.data?.[u.id]?.lang ?? "", app: extra.data?.[u.id]?.platform ?? "", shares_records: extra.data?.[u.id]?.shared ? "yes" : "no", onboarded: u.onboarded, opened: u.opened, saved: u.saved, lessons: u.lessons, posts: u.posts, restricted_until: u.restricted_until, admin: u.admin_role })),
                 )
               }
             >
@@ -103,12 +119,13 @@ export default function UsersPage() {
           {list.data.length === 0 ? (
             <Empty title="No accounts match">Try another search or filter.</Empty>
           ) : (
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[860px] text-sm">
               <thead className="text-left text-xs text-ink-soft">
                 <tr className="border-b border-line">
                   <th className="px-4 py-2.5 font-semibold">Account</th>
                   <th className="px-3 py-2.5 font-semibold">Joined</th>
                   <th className="px-3 py-2.5 font-semibold">Last active</th>
+                  <th className="px-3 py-2.5 font-semibold">Language · app</th>
                   <th className="px-3 py-2.5 font-semibold" title="Content opened · saved · lessons read · community posts">Engagement</th>
                   <th className="px-3 py-2.5 font-semibold">Set up</th>
                   <th className="px-3 py-2.5 font-semibold">Status</th>
@@ -129,6 +146,13 @@ export default function UsersPage() {
                     </td>
                     <td className="px-3 py-2.5 text-ink-soft">{fmtDate(u.created_at)}</td>
                     <td className="px-3 py-2.5 text-ink-soft">{u.last_active ? fmtDate(u.last_active) : u.last_sign_in_at ? `Signed in ${ago(u.last_sign_in_at)}` : "—"}</td>
+                    <td className="px-3 py-2.5 text-ink-soft">
+                      {(() => {
+                        const x = extra.data?.[u.id];
+                        if (!x?.lang && !x?.platform) return "—";
+                        return [x.lang === "sw" ? "SW" : x.lang === "en" ? "EN" : null, x.platform ? PLATFORM_SHORT[x.platform] ?? x.platform : null].filter(Boolean).join(" · ");
+                      })()}
+                    </td>
                     <td className="px-3 py-2.5 tabular-nums text-ink-soft">
                       {u.opened} · {u.saved} · {u.lessons} · {u.posts}
                     </td>
@@ -136,6 +160,11 @@ export default function UsersPage() {
                     <td className="space-x-1 px-3 py-2.5">
                       {u.admin_role && <Badge tone="info">Admin · {u.admin_role}</Badge>}
                       {u.restricted_until && <Badge tone="bad">Restricted to {fmtDate(u.restricted_until)}</Badge>}
+                      {extra.data?.[u.id]?.shared && (
+                        <Badge tone="good">
+                          <HeartHandshake size={11} /> Shares records
+                        </Badge>
+                      )}
                       {u.warnings > 0 && <Badge tone="warn">{u.warnings} warning{u.warnings > 1 ? "s" : ""}</Badge>}
                       {!u.admin_role && !u.restricted_until && !u.warnings && <Badge>Active</Badge>}
                     </td>
@@ -244,36 +273,8 @@ function UserDrawer({ user: u, onClose, onChanged, canRestrict, canWarn, canDele
   }
 
   return (
-    <Drawer open title={u.email ?? "Account"} onClose={onClose}>
+    <Drawer open wide title={u.email ?? "Account"} onClose={onClose}>
       <div className="space-y-5 text-sm">
-        <dl className="grid grid-cols-2 gap-3">
-          <div>
-            <dt className="text-xs text-ink-soft">Joined</dt>
-            <dd>{fmtDate(u.created_at)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-ink-soft">Last active</dt>
-            <dd>{u.last_active ? fmtDate(u.last_active) : "Not tracked yet"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-ink-soft">Last sign-in</dt>
-            <dd>{ago(u.last_sign_in_at)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-ink-soft">Set up (topics or name)</dt>
-            <dd>{u.onboarded ? "Yes" : "Not yet"}</dd>
-          </div>
-          <div className="col-span-2">
-            <dt className="text-xs text-ink-soft">Engagement</dt>
-            <dd>
-              {u.opened} opened · {u.saved} saved · {u.lessons} lessons · {u.posts} community posts
-            </dd>
-          </div>
-        </dl>
-        <p className="flex items-start gap-2 rounded-xl bg-bg px-3 py-2 text-xs text-ink-soft">
-          <ShieldCheck size={14} className="mt-0.5 shrink-0 text-forest" /> His check-ins, sleep, water, notes and profile details are private and not available to admins.
-        </p>
-
         {error && <ErrorBox error={error} />}
 
         {/* Actions */}
@@ -301,6 +302,8 @@ function UserDrawer({ user: u, onClose, onChanged, canRestrict, canWarn, canDele
           )}
         </div>
         {isAdmin && <p className="text-xs text-ink-soft">Admins can&apos;t be restricted here. Change their role in Settings → Admins first.</p>}
+
+        <UserProfile key={`${u.id}-${u.restricted_until}-${u.warnings}`} userId={u.id} />
 
         {/* Support notes: owners and moderators */}
         {canRestrict && (

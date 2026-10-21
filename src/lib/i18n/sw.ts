@@ -849,4 +849,12 @@ export const SW: Record<string, string> = {
   "Results in days": "Ndani ya siku chache",
   "Feel it in 1–3 weeks": "Ndani ya wiki 1–3",
   "Feel it in 3–6 weeks": "Ndani ya wiki 3–6",
+  // Step 65: sharing records with Kayani support
+  "Your check-ins, sleep, water and notes are saved privately in your account. You're sharing them with Kayani support (see below).": "Vipimo vyako, usingizi, maji na maelezo yamehifadhiwa kwa faragha kwenye akaunti yako. Umeamua kuvionyesha timu ya Kayani (tazama chini).",
+  "Share my records with Kayani support": "Ionyeshe timu ya Kayani rekodi zangu",
+  "Turn on only if you want our team to help with your progress. They'll see your check-ins, sleep, water, notes, profile and the topics you follow. Turn it off anytime.": "Washa tu kama unataka timu yetu ikusaidie kwenye maendeleo yako. Wataona vipimo vyako, usingizi, maji, maelezo, wasifu wako na mada unazofuatilia. Unaweza kuzima wakati wowote.",
+  "Kayani support can now see your records": "Timu ya Kayani sasa inaweza kuona rekodi zako",
+  "Your records are private again": "Rekodi zako ni siri tena",
+  "Couldn't change it. Check your internet.": "Imeshindikana kubadilisha. Angalia intaneti yako.",
+  "All optional and private to you. Kayani staff can't see it unless you share your records with support in Settings.": "Vyote si lazima na ni siri yako. Wafanyakazi wa Kayani hawawezi kuviona isipokuwa ukiamua kuwaonyesha rekodi zako kwenye Mipangilio.",
 };

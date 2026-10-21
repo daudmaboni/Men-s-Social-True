@@ -16,6 +16,8 @@ export type Perm =
   | "users.view"
   | "users.restrict"
   | "users.delete"
+  /** Open a man's health records — only while HE shares them with support (Step 65). Owners only. */
+  | "users.private"
   | "community.moderate"
   | "settings.manage"
   | "admins.manage";

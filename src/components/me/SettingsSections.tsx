@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Download, Droplet, EyeOff, Globe, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
+import { ChevronRight, Download, Droplet, EyeOff, Globe, HeartHandshake, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
 import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
@@ -16,6 +16,7 @@ import { progressStore } from "@/lib/progress/store";
 import AccountCard from "@/components/account/AccountCard";
 import type { AccountState } from "@/lib/account/useAccount";
 import { deleteCloudData, stopSync } from "@/lib/account/sync";
+import { useSupportShare } from "@/lib/account/share";
 import { useT } from "@/lib/i18n";
 
 /* ───────── Goals and topics ───────── */
@@ -211,6 +212,20 @@ export function PrivacyCard({ acc }: { acc: AccountState }) {
   const showToast = useToast();
   const t = useT();
   const [confirm, setConfirm] = useState(false);
+  const share = useSupportShare(signedIn ? acc.user.id : null);
+  const [shareBusy, setShareBusy] = useState(false);
+
+  async function toggleShare(on: boolean) {
+    setShareBusy(true);
+    try {
+      await share.set(on);
+      showToast(t(on ? "Kayani support can now see your records" : "Your records are private again"));
+    } catch {
+      showToast(t("Couldn't change it. Check your internet."));
+    } finally {
+      setShareBusy(false);
+    }
+  }
 
   function download() {
     try {
@@ -257,13 +272,38 @@ export function PrivacyCard({ acc }: { acc: AccountState }) {
             <p className="mt-1 text-sm text-ink-soft">
               {t(
                 signedIn
-                  ? "Your check-ins, sleep, water and notes are saved privately in your account. Only you can see them, not even Kayani staff."
+                  ? share.sharedAt
+                    ? "Your check-ins, sleep, water and notes are saved privately in your account. You're sharing them with Kayani support (see below)."
+                    : "Your check-ins, sleep, water and notes are saved privately in your account. Only you can see them, not even Kayani staff."
                   : "Your check-ins, sleep, water and notes stay on this phone.",
               )}{" "}
               {t("We never use them for adverts and never ask for intimate photos.")}
             </p>
           </div>
         </div>
+        {signedIn && share.ready && share.available && (
+          <label className="flex cursor-pointer items-center gap-3 p-5">
+            <HeartHandshake size={18} className="shrink-0 text-forest" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{t("Share my records with Kayani support")}</span>
+              <span className="block text-xs text-ink-soft">
+                {t("Turn on only if you want our team to help with your progress. They'll see your check-ins, sleep, water, notes, profile and the topics you follow. Turn it off anytime.")}
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={Boolean(share.sharedAt)}
+              disabled={shareBusy}
+              onChange={(e) => void toggleShare(e.target.checked)}
+              className="peer sr-only"
+            />
+            <span
+              aria-hidden
+              className="relative h-7 w-12 shrink-0 rounded-full bg-line transition-colors peer-checked:bg-forest peer-disabled:opacity-60 peer-focus-visible:ring-2 peer-focus-visible:ring-forest after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5"
+            />
+          </label>
+        )}
         <button onClick={download} className="flex w-full items-center gap-3 p-5 text-left">
           <Download size={18} className="shrink-0 text-forest" />
           <span className="flex-1 font-semibold">{t("Download my data")}</span>

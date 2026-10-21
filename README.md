@@ -58,6 +58,7 @@ Run the files in `supabase/migrations` **once each, in number order**, in Supaba
 | 0009 | Courses: drafts, publishing and history for the audio course on the Man tab |
 | 0010 | Course files for members only |
 | 0011 | Card maker: "do this" cards made in the Studio |
+| 0012 | Admin → Users full profile; men can share their records with support |
 
 Old files can be re-run safely; they won't switch off two-step sign-in. Don't edit an old migration to change the live database: add a new numbered file.
 

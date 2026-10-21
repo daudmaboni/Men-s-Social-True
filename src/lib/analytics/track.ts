@@ -3,10 +3,13 @@
 // Privacy-first counters for the admin dashboard (see migration 0006):
 // - which content was opened / finished / saved, counted per day with NO link to who
 // - search words per day (phone numbers and emails are never stored)
-// - the days a signed-in man opened the app (for daily/monthly active users)
+// - the days a signed-in man opened the app (for daily/monthly active users), with his language
+//   and which app he uses (Android app, home-screen app or browser) — shown on his Admin → Users page (Step 65)
 // Nothing here ever blocks the app: if it fails (offline, database not updated yet) it's silently skipped.
 
+import { Capacitor } from "@capacitor/core";
 import { getSupabase } from "../supabase/client";
+import { currentLang } from "../me/lang";
 
 const seen = new Set<string>();
 
@@ -37,10 +40,27 @@ export function trackSearch(term: string, results: number) {
 }
 
 let touched = "";
-/** A signed-in man used the app today (once a day). */
+
+/** Which app he's using: the Android app, the app added to his home screen, or a browser. */
+export function appPlatform(): "android" | "ios" | "pwa" | "web" {
+  try {
+    if (Capacitor.isNativePlatform()) return Capacitor.getPlatform() === "ios" ? "ios" : "android";
+    if (window.matchMedia?.("(display-mode: standalone)").matches) return "pwa";
+  } catch {}
+  return "web";
+}
+
+/** A signed-in man used the app today (once a day, or again when he changes language). */
 export function touchActivity() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (touched === today) return;
-  touched = today;
-  call("touch_activity", {});
+  const lang = currentLang();
+  const key = `${new Date().toISOString().slice(0, 10)}:${lang}`;
+  if (touched === key) return;
+  touched = key;
+  const sb = getSupabase();
+  if (!sb) return;
+  void sb.rpc("touch_activity", { p_lang: lang, p_platform: appPlatform() }).then(
+    // Database not updated to 0012 yet: the old version still counts the day
+    ({ error }) => error && call("touch_activity", {}),
+    () => {},
+  );
 }

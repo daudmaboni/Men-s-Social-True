@@ -7,6 +7,7 @@ import { useToast } from "@/components/motion/Toast";
 import { useT } from "@/lib/i18n";
 import { startSync, stopSync } from "@/lib/account/sync";
 import { touchActivity } from "@/lib/analytics/track";
+import { useLang } from "@/lib/me/lang";
 
 /** Invisible: when a man is signed in, keeps his phone and account in step. */
 export default function AccountSync() {
@@ -15,6 +16,7 @@ export default function AccountSync() {
   const t = useT();
   const user = acc.status === "signedIn" ? acc.user : null;
   const userId = user?.id ?? null;
+  const lang = useLang();
 
   // Remember this phone has a member (Welcome page says "Welcome back"), and greet him after Google:
   // a brand-new account gets "ready", a returning man gets "welcome back".
@@ -31,9 +33,12 @@ export default function AccountSync() {
   useEffect(() => {
     if (userId) {
       void startSync(userId);
-      touchActivity(); // counts him as active today (day only, nothing else)
     }
     else if (acc.status === "guest") stopSync({ clearPhone: false });
   }, [userId, acc.status]);
+  // Counts him as active today, with his language and app (sent again if he changes language)
+  useEffect(() => {
+    if (userId) touchActivity();
+  }, [userId, lang]);
   return null;
 }

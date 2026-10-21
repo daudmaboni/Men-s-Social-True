@@ -34,7 +34,8 @@ beforeAll(async () => {
     create role anon; create role authenticated;
     create schema auth;
     create table auth.users (id uuid primary key, email text, created_at timestamptz not null default now(),
-      last_sign_in_at timestamptz, banned_until timestamptz);
+      last_sign_in_at timestamptz, banned_until timestamptz, phone text, email_confirmed_at timestamptz,
+      raw_app_meta_data jsonb not null default '{}'::jsonb);
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(nullif(current_setting('request.jwt.claims', true), '')::json->>'sub', '')::uuid $$;
     create schema storage;
@@ -404,5 +405,55 @@ describe("course files are members only (0010)", { timeout: 30_000 }, () => {
     expect(n[0].n).toBe(2);
     const urls = await as<{ u: string }>(EDITOR, "select data->'modules'->0->'lessons'->0->>'mediaUrl' as u from public.course_versions where course_id = 'wz2'");
     expect(urls.map((r) => r.u)).toEqual([NEW, NEW]);
+  });
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type J = Record<string, any>;
+
+describe("user profile and sharing with support (0012)", { timeout: 30_000 }, () => {
+  it("staff see his account and app use, never his records", async () => {
+    await as(JUMA, "insert into public.user_data (user_id, kind, data) values ($1, 'social', $2) on conflict (user_id, kind) do update set data = excluded.data", [
+      JUMA,
+      JSON.stringify({ nickname: "Juma", interests: ["erection"], history: { a: "2026-10-01" }, bookmarks: {}, profile: { region: "Mwanza", ageRange: "25–34" } }),
+    ]);
+    await as(JUMA, "insert into public.user_data (user_id, kind, data) values ($1, 'progress', $2) on conflict (user_id, kind) do update set data = excluded.data", [
+      JUMA,
+      JSON.stringify({ records: [{ id: "r1", metric: "mood", value: 2, note: "rough day" }], goals: [] }),
+    ]);
+    await as(JUMA, "select public.touch_activity('sw', 'android')");
+    const [{ p }] = await as<{ p: J }>(ANALYST, "select public.admin_user_profile($1) as p", [JUMA]);
+    expect(p.account.email).toBe("ju•••@x.co");
+    expect(p.app).toMatchObject({ lang: "sw", platform: "android" });
+    expect(p.nickname).toBe("Juma");
+    expect(p.usage).toMatchObject({ opened: 1, topics: 1 });
+    expect(p.community.items).toBeNull(); // analysts don't read his posts
+    expect(p.can_open_private).toBe(false);
+    const text = JSON.stringify(p);
+    for (const secret of ["rough day", "Mwanza", "erection"]) expect(text).not.toContain(secret);
+    const [{ p: m }] = await as<{ p: J }>(MOD, "select public.admin_user_profile($1) as p", [JUMA]);
+    expect(Array.isArray(m.community.items)).toBe(true);
+  });
+  it("men can't read other men's profiles", async () => {
+    await fails(JUMA, "select public.admin_user_profile($1)", [OWNER]);
+    await fails(null, "select public.admin_user_profile($1)", [JUMA]);
+  });
+  it("his records open only after he shares them, only for owners, with a reason, and it's logged", async () => {
+    await fails(OWNER, "select public.admin_user_private($1, 'Helping with his water goal')", [JUMA]);
+    await as(JUMA, "insert into public.support_shares (user_id) values ($1)", [JUMA]);
+    await fails(JUMA, "insert into public.support_shares (user_id) values ($1)", [OWNER]); // only for himself
+    await fails(MOD, "select public.admin_user_private($1, 'Helping with his water goal')", [JUMA]);
+    await fails(OWNER, "select public.admin_user_private($1, 'x')", [JUMA]);
+    const [{ d }] = await as<{ d: J }>(OWNER, "select public.admin_user_private($1, 'Helping with his water goal') as d", [JUMA]);
+    expect(d.records[0].note).toBe("rough day");
+    expect(d.profile.region).toBe("Mwanza");
+    const log = await as<{ action: string }>(OWNER, "select action from public.admin_audit where target = $1 and action = 'user.private_view'", [JUMA]);
+    expect(log.length).toBe(1);
+    const extra = await as<{ shared: boolean; lang: string }>(ANALYST, "select shared, lang from public.admin_users_extra(array[$1::uuid])", [JUMA]);
+    expect(extra[0]).toEqual({ shared: true, lang: "sw" });
+  });
+  it("when he turns sharing off, it closes straight away", async () => {
+    await as(JUMA, "delete from public.support_shares where user_id = $1", [JUMA]);
+    await fails(OWNER, "select public.admin_user_private($1, 'Helping with his water goal')", [JUMA]);
   });
 });

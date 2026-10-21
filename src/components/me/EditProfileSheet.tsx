@@ -177,7 +177,7 @@ export default function EditProfileSheet({
           </div>
         )}
 
-        <p className="text-[11px] text-ink-soft">{t("All optional and private to you. Kayani staff can't see it.")}</p>
+        <p className="text-[11px] text-ink-soft">{t("All optional and private to you. Kayani staff can't see it unless you share your records with support in Settings.")}</p>
 
         {error && (
           <p role="alert" className="text-xs text-red-700">
