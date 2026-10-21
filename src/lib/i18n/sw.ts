@@ -811,7 +811,7 @@ export const SW: Record<string, string> = {
   "Off. Turn it on and your phone notices when you sleep, without tapping. Android will ask to allow \"Physical activity\".": "Imezimwa. Iwashe na simu yako itatambua unapolala, bila kubonyeza. Android itaomba kuruhusu \"Shughuli za mwili\".",
   "Open settings": "Fungua mipangilio",
   // Step 60: Discover as a feed of "do this" cards
-  "What are you dealing with?": "Unapitia Changamoto Gani Kwenye Kitandani?",
+  "What are you dealing with?": "Unapitia Changamoto Gani Kitandani?",
   "{n} things to try for: {challenge}": "Mambo {n} ya kujaribu: {challenge}",
   "Show all": "Onyesha yote",
   "That's everything for now": "Umeziona zote, kaka",
