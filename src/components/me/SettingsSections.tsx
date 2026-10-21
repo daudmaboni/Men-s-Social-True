@@ -346,11 +346,6 @@ export function PrivacyCard({ acc }: { acc: AccountState }) {
           </span>
           <ChevronRight size={16} className="text-ink-soft" />
         </Link>
-        <p className="p-5 text-xs leading-relaxed text-ink-soft">
-          {t(
-            "Men's Social gives general education, not medical advice. It doesn't diagnose or treat any condition. If something worries you, or symptoms last or get worse, please see a qualified health professional.",
-          )}
-        </p>
       </section>
 
       <Sheet open={confirm} onClose={() => setConfirm(false)} title={t("Delete everything?")}>

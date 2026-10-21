@@ -135,9 +135,6 @@ export default function Preview({ item }: { item: ContentItem }) {
             </div>
           )}
 
-          <p className="text-center text-[0.625rem] text-ink-soft">
-            General education, not medical advice.
-          </p>
         </div>
       </div>
     </div>

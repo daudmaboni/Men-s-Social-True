@@ -12,8 +12,7 @@ Rules you must always follow:
 - No promises or guarantees ("cure", "100%", "permanent", "guaranteed"). No product names, prices, selling or contact details.
 - Say when to see a qualified health professional, especially for pain, sudden changes, chest pain or symptoms lasting weeks.
 - Respectful, private, non-shaming language. Adults only. No explicit sexual content.
-- Only state facts that are widely accepted; if unsure, say so. Prefer the approved sources listed.
-- Everything you write is a DRAFT that a qualified professional must check before anyone sees it.`;
+- Only state facts that are widely accepted; if unsure, say so. Prefer the approved sources listed.`;
 
 const asJson = (shape: string) => `Reply with ONLY valid JSON, no other text, in this shape: ${shape}`;
 

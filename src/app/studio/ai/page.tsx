@@ -1,7 +1,7 @@
 "use client";
 
 // Admin → AI: drafting helpers (through /api/ai, only when connected), plus checks that need no AI:
-// topic gaps, content quality, the review queue, approved sources and usage.
+// topic gaps, content quality, AI drafts, approved sources and usage.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -46,7 +46,7 @@ export default function AiPage() {
     <div className="space-y-5">
       <PageHeader
         title="AI"
-        sub="Help with drafting, translating and checking. Nothing AI-written is published until a qualified professional has checked it — the database enforces this."
+        sub="Help with drafting, translating and checking. AI drafts can be published straight away from the editor."
         actions={
           <Segmented
             label="Section"
@@ -67,7 +67,7 @@ export default function AiPage() {
       ) : status.data && !status.data.configured ? (
         <NotConnected title="AI isn't connected yet">
           The assistant needs an AI API key on the server: add <code>ANTHROPIC_API_KEY</code> (and optionally <code>AI_MODEL</code>) to the hosting
-          environment, then restart. The key is never stored in the app or the database. Gaps, quality checks, sources and the review queue below work
+          environment, then restart. The key is never stored in the app or the database. Gaps, quality checks, sources and AI drafts below work
           without it.
         </NotConnected>
       ) : status.data && !status.data.enabled ? (
@@ -124,7 +124,7 @@ function Assistant({ ready, items, canEdit }: { ready: boolean; items: ContentIt
     const taken = new Set([...LIBRARY, ...items].map((c) => c.id));
     for (let n = 2; taken.has(id); n++) id = slugify(`${item.title} ${n}`);
     try {
-      await getContentRepo().save({ ...base, ...item, id, aiGenerated: true, review: "draft", source: "Men's Social editorial · AI-assisted draft, pending professional review" } as ContentItem, "draft");
+      await getContentRepo().save({ ...base, ...item, id, aiGenerated: true, review: "draft", source: "Kayani Herbs" } as ContentItem, "draft");
       showToast("Saved as a draft");
       window.location.href = `/studio/edit?id=${encodeURIComponent(id)}`;
     } catch (e) {
@@ -313,7 +313,6 @@ function Checks({ items, error }: { items: ContentItem[] | null; error: string |
         ...publishProblems(c),
         ...checkClaims(c).filter((x) => x.level === "block").map((x) => `Claim: “${x.match}” — ${x.message}`),
         ...(!c.titleSw ? ["No Kiswahili title"] : []),
-        ...(c.status === "published" && c.review !== "reviewed" ? ["Live but not marked as checked by a professional"] : []),
       ],
     }))
     .filter((x) => x.issues.length);
@@ -356,7 +355,7 @@ function Checks({ items, error }: { items: ContentItem[] | null; error: string |
           )}
         </Panel>
       </div>
-      <Panel title="Review queue" sub="AI-assisted drafts waiting for a professional's check.">
+      <Panel title="AI drafts" sub="Drafts made with AI help that aren't published yet.">
         {queue.length === 0 ? (
           <p className="text-sm text-ink-soft">Nothing waiting.</p>
         ) : (
@@ -372,7 +371,7 @@ function Checks({ items, error }: { items: ContentItem[] | null; error: string |
           </ul>
         )}
       </Panel>
-      <Panel title="Quality checks" sub="Your Studio items with something to fix (missing parts, risky claims, no Kiswahili, not professionally checked).">
+      <Panel title="Quality checks" sub="Your Studio items with something to fix (missing parts, risky claims, no Kiswahili).">
         {quality.length === 0 ? (
           <p className="flex items-center gap-2 text-sm text-forest">
             <CheckCircle2 size={16} /> All your items pass.

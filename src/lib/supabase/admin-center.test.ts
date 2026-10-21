@@ -52,6 +52,7 @@ beforeAll(async () => {
   await db.exec(readFileSync(join(dir, "0001_content_studio.sql"), "utf8"));
   await db.exec(readFileSync(join(dir, "0006_admin_control_center.sql"), "utf8"));
   await db.exec(readFileSync(join(dir, "0008_safety_fixes.sql"), "utf8")); // safe to run twice
+  await db.exec(readFileSync(join(dir, "0014_remove_review_gate.sql"), "utf8")); // 0006 puts the old publish rule back; 0014 says to run again
   await db.exec(`grant all on all tables in schema public to anon, authenticated; grant usage, select on all sequences in schema public to anon, authenticated;`);
   await db.exec(`grant select on storage.buckets to anon, authenticated;`);
   const people: [string, string][] = [[OWNER, "owner@x.co"], [EDITOR, "editor@x.co"], [WRITER, "writer@x.co"], [MOD, "mod@x.co"], [ANALYST, "analyst@x.co"], [JUMA, "juma@x.co"], [ALLY, "ally@x.co"]];
@@ -86,10 +87,12 @@ describe("content workflow", { timeout: 30_000 }, () => {
     expect(v[0].title).toBe("");
   });
 
-  it("AI-assisted content can't go live until a professional has checked it", async () => {
+  it("editors publish AI-assisted content directly; writers still can't publish (0014)", async () => {
     await as(EDITOR, "insert into public.content_items (id, kind, topic, title, ai_generated) values ('ai-draft', 'article', 'wellbeing', 'AI draft', true)");
-    await fails(EDITOR, "update public.content_items set status = 'published' where id = 'ai-draft'");
-    await as(EDITOR, "update public.content_items set status = 'published', review = 'reviewed' where id = 'ai-draft'");
+    await as(EDITOR, "update public.content_items set status = 'published' where id = 'ai-draft'");
+    expect(await as(null, "select id from public.content_items where id = 'ai-draft'")).toEqual([{ id: "ai-draft" }]);
+    await as(WRITER, "insert into public.content_items (id, kind, topic, title, ai_generated) values ('ai-w', 'article', 'wellbeing', 'Writer AI draft', true)");
+    await fails(WRITER, "update public.content_items set status = 'published' where id = 'ai-w'");
   });
 
   it("records content actions in the audit log", async () => {

@@ -1,6 +1,5 @@
 // DEVELOPMENT FIXTURES — sample content until the Content Studio and database exist.
 // Every item is marked fixture: true and review: "draft". The UI shows this to readers.
-// Health wording rules: no cure claims, no guaranteed results, always say when to see a doctor.
 
 import type { ContentItem, Topic } from "./types";
 import { INSTAGRAM_CONTENT } from "./instagram";

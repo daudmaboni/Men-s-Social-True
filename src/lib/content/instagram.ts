@@ -1,10 +1,6 @@
 // Content adapted from the Kayani Herbs Instagram page (account "Mimea Tiba").
 // The "do this" posts are cards in actions-instagram.ts instead.
-// Rules applied to every post before it goes in the app:
-// - Keep the useful education; remove product promotion, prices, phone numbers and testimonials
-// - Remove cure claims ("unatibu kabisa", "huponya") and anything not supported by evidence
-// - Add when to see a doctor
-// - Marked draft until reviewed by a qualified health professional
+// Each post keeps its useful content; product promotion, prices, phone numbers and testimonials are left out.
 
 import type { ContentItem } from "./types";
 

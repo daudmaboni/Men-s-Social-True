@@ -137,7 +137,7 @@ export default function CardMakerPage() {
     setError(null);
     setBusy(publish ? "publish" : "save");
     try {
-      // Publishing = the editor has read it in the preview and it's right (the database asks for "checked")
+      // Publishing: goes live straight away (Step 66b: no professional-check gate)
       await repo.save({ ...item, review: publish ? "reviewed" : "draft" }, publish ? "published" : "draft");
       setPublished(publish ? "published" : "draft");
       showToast(publish ? "Published · men see it at the top of Discover" : "Saved as a draft in Content");
@@ -379,7 +379,7 @@ export default function CardMakerPage() {
                 </button>
                 {canPublish ? (
                   <button className={btn.primary} disabled={busy !== null || blocks.length > 0} onClick={() => save(true)}>
-                    {busy === "publish" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />} I&apos;ve checked it · Publish
+                    {busy === "publish" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />} Publish
                   </button>
                 ) : (
                   <p className="text-xs text-ink-soft">Your role can save drafts. An editor or owner publishes them from Content.</p>

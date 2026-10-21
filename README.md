@@ -13,7 +13,7 @@ Tanzania first, in English and Kiswahili. Run by Kayani Herbs.
 | **Me** | `src/components/tabs/MeTab.tsx`, `src/lib/me` | Profile, badges, goals, settings, privacy (download / delete data) |
 | **Sign-in** | `src/app/(auth)/account` | Email (Google and phone optional), password checks, slow-down after wrong tries |
 | **Admin Control Center** | `/studio` (`src/app/studio`) | Content, homepage, users, community moderation, notifications, AI drafts, analytics, settings. Staff only, password + authenticator code |
-| **AI** | `src/app/api/ai/route.ts`, `src/lib/ai` | Server-side Claude API for staff drafts. Drafts only: health content can't be published until reviewed |
+| **AI** | `src/app/api/ai/route.ts`, `src/lib/ai` | Server-side Claude API for staff drafts. |
 
 Data lives on the phone for guests and syncs to Supabase when he has an account (`src/lib/account`).
 
@@ -60,6 +60,7 @@ Run the files in `supabase/migrations` **once each, in number order**, in Supaba
 | 0011 | Card maker: "do this" cards made in the Studio |
 | 0012 | Admin → Users full profile; men can share their records with support |
 | 0013 | Kito, the members' learning assistant: switch, limits and usage counts (never the questions) |
+| 0014 | Staff can publish AI-assisted content directly (removes the professional-check gate) |
 
 Old files can be re-run safely; they won't switch off two-step sign-in. Don't edit an old migration to change the live database: add a new numbered file.
 
@@ -72,6 +73,5 @@ npm run build
 GitHub runs the same three on every push (see the **Actions** tab). A red ✗ means something broke.
 
 ## Rules this project keeps
-- Health content is education, not diagnosis. No cure claims; AI writes drafts only; a qualified reviewer checks before publishing.
 - Men's private check-ins and notes are never shown to staff or used for ads.
 - Secrets stay in `.env.local` and Netlify, never in the code or chat.

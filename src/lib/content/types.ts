@@ -59,7 +59,7 @@ export interface ContentItem {
   publishAt?: string;
   /** Note between writer and editor during review. */
   reviewNote?: string;
-  /** Drafted with AI help: must be checked by a professional before it can be published. */
+  /** Drafted with AI help (for the Studio's records; it can be published straight away). */
   aiGenerated?: boolean;
   /** Uploaded cover photo (Content Studio). When set, it replaces the drawn cover. */
   coverImageUrl?: string;

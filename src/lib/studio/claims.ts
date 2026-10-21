@@ -33,7 +33,6 @@ const RULES: Rule[] = [
   { level: "block", rule: "guarantee", message: "Don't promise guaranteed results.", re: /\b(?:100\s?%|guarantee[ds]?|guaranteed|uhakika wa 100|bila shaka utapona|permanent(?:ly)? cure[sd]?|miracle|instant(?:ly)? cure[sd]?)/gi, okInWarning: true },
   { level: "block", rule: "cure-promise", message: "Don't say a product or food cures a condition.", re: /\b(?:cures?|will cure|inatibu|itatibu|unatibu|inaponya|itaponya) (?:erectile|ed\b|impotence|premature|infertility|ugumba|nguvu za kiume|kisukari|diabetes|ukosefu)/gi },
   // Words that need a careful second read
-  { level: "warn", rule: "cure-word", message: "Medical words — make sure this is education, not a treatment promise.", re: /\b(?:cures?|cured|heals?|treats?|treatment|tiba|kutibu|kuponya|dawa)\b/gi },
   { level: "warn", rule: "product", message: "Product names belong in the Shop, not in lessons.", re: /\b(?:kayapower|tumboflux|kayani herbs product)\b/gi },
   { level: "warn", rule: "fast-result", message: "Avoid promising fast results (days or minutes).", re: /\b(?:within|in) \d+ (?:days?|minutes?|hours?)\b|\bndani ya (?:siku|dakika|saa) \d+/gi },
 ];

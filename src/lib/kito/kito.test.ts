@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LIBRARY } from "../content/library";
 import { buildIndex, docsFromItems, docsFromLessons, search, tokens } from "./search";
-import { buildKitoMessage, KITO_SYSTEM, parseKito, safetyFlag } from "./prompt";
+import { buildKitoMessage, KITO_SYSTEM, libraryAnswer, parseKito, safetyFlag } from "./prompt";
 
 const index = buildIndex([
   ...docsFromItems(LIBRARY.filter((c) => !c.fixture)),
@@ -50,5 +50,17 @@ describe("Kito: rules", () => {
     expect(safetyFlag("my erection won't go down for 5 hours")).toBe("urgent");
     expect(safetyFlag("kuna damu kwenye mkojo")).toBe("urgent");
     expect(safetyFlag("how do I last longer")).toBeNull();
+  });
+});
+
+describe("Kito without the AI (Step 67b)", () => {
+  it("still answers 'jinsi ya kuchelewa kumwaga' with steps from a guide, in Kiswahili", () => {
+    for (const q of ["jinsi ya kuchelewa kumwaga", "jinsi ya kuchelewwa kumwaga", "ninawahi kumwaga"]) {
+      const hits = search(index, q);
+      expect(hits.length, q).toBeGreaterThan(0);
+      const a = libraryAnswer(hits, "sw");
+      expect(a).toMatch(/^Kaka, hiki ndicho kinachosaidia/);
+      expect(a.split("\n").length).toBeGreaterThan(3);
+    }
   });
 });

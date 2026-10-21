@@ -230,8 +230,6 @@ export default function Editor({
   const isNew = status === null;
   const claims = useMemo(() => checkClaims(item), [item]);
   const problems = useMemo(() => publishProblems(item), [item]);
-  // AI-assisted items need the professional check before they go live (the database refuses otherwise)
-  const aiUnchecked = Boolean(item.aiGenerated) && item.review !== "reviewed";
   const idTaken =
     isNew &&
     !(loaded !== "missing" && loaded?.copyOfBuiltIn) &&
@@ -829,7 +827,7 @@ export default function Editor({
               <span>
                 <b>Drafted with AI help</b>
                 <span className="block text-xs text-ink-soft">
-                  It can only be published once &ldquo;Checked by a qualified health professional&rdquo; is ticked below. The database enforces this.
+                  For your records only. Staff can publish it straight away.
                 </span>
               </span>
             </label>
@@ -963,23 +961,6 @@ export default function Editor({
                 onChange={(e) => set("source", e.target.value)}
               />
             </Field>
-            <label className="flex items-start gap-3 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1 accent-forest"
-                checked={item.review === "reviewed"}
-                onChange={(e) =>
-                  set("review", e.target.checked ? "reviewed" : "draft")
-                }
-              />
-              <span>
-                <b>Checked by a qualified health professional</b>
-                <span className="block text-xs text-ink-soft">
-                  Only tick this when a doctor or pharmacist has actually read
-                  it.
-                </span>
-              </span>
-            </label>
           </Section>
         </div>
 
@@ -1012,9 +993,7 @@ export default function Editor({
               </ul>
             )}
             <p className="pt-1 font-bold">Ready to publish?</p>
-            {aiUnchecked && problems.length === 0 ? (
-              <p className="text-xs text-amber-700 dark:text-amber-300">Drafted with AI help: tick &ldquo;Checked by a qualified health professional&rdquo; before publishing.</p>
-            ) : problems.length === 0 ? (
+            {problems.length === 0 ? (
               <p className="flex items-center gap-2 text-sm text-forest">
                 <CheckCircle2 size={16} /> Yes, everything needed is there.
               </p>
@@ -1082,8 +1061,7 @@ export default function Editor({
           {canPublish ? (
             <button
               onClick={() => save("published")}
-              disabled={!!busy || problems.length > 0 || aiUnchecked || (status === "published" && !dirty)}
-              title={aiUnchecked ? "AI-assisted: tick “Checked by a qualified health professional” first" : undefined}
+              disabled={!!busy || problems.length > 0 || (status === "published" && !dirty)}
               className={primaryBtn}
             >
               {busy === "published" && <Loader2 size={14} className="animate-spin" />}

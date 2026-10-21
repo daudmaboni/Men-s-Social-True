@@ -1,8 +1,6 @@
 // "Nipate Nini?" (What do I get?) — the five guides behind the Welcome page cards (Step 36).
 // From Daud's note: lifestyle changes, dietary changes, quitting masturbation,
 // herbs men use for ED, and Tanzanian plants.
-// Wording rules: say what each plant or habit may do and what's known — no cure promises —
-// and always say when to see a doctor. Drafts until a qualified health professional reviews them.
 
 import type { ContentItem } from "./types";
 

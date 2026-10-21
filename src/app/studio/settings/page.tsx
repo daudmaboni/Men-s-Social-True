@@ -286,7 +286,7 @@ function Features() {
   const switches = [
     { key: "community_enabled", label: "Community", on: get("community_enabled") !== false, about: "Off = men see “Community is paused”; nobody can post. Posts are kept." },
     { key: "notifications_enabled", label: "In-app notifications", on: get("notifications_enabled") !== false, about: "Off = inboxes show nothing new. Scheduled messages wait." },
-    { key: "ai_config", label: "AI assistant", on: Boolean(ai.enabled), about: "Lets editors and writers use AI drafting (needs the server key). AI drafts still need a professional's check." },
+    { key: "ai_config", label: "AI assistant", on: Boolean(ai.enabled), about: "Lets editors and writers use AI drafting (needs the server key)." },
     {
       key: "kito_enabled",
       label: "Kito (members' assistant)",

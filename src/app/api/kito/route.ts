@@ -17,7 +17,7 @@ import { mergeLibrary, rowToItem } from "@/lib/content/rows";
 import type { ContentItem } from "@/lib/content/types";
 import { flatLessons, visibleCourse, type Course } from "@/lib/course/types";
 import { buildIndex, docsFromItems, docsFromLessons, search, type KitoDoc } from "@/lib/kito/search";
-import { buildKitoMessage, CRISIS_REPLY, KITO_SYSTEM, NOT_IN_LIBRARY, parseKito, safetyFlag, URGENT_LINE, type KitoSource, type Lang, type Turn } from "@/lib/kito/prompt";
+import { buildKitoMessage, CRISIS_REPLY, KITO_SYSTEM, libraryAnswer, NOT_IN_LIBRARY, parseKito, safetyFlag, URGENT_LINE, type KitoSource, type Lang, type Turn } from "@/lib/kito/prompt";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -102,11 +102,12 @@ export async function POST(req: Request) {
   }
   if (!KEY) {
     await done("error", hits.length, question.length, 0);
-    // No AI connected: still useful — show the closest guides
+    // No AI connected: still a real answer — the steps from the best matching guide
+    console.error("Kito: ANTHROPIC_API_KEY is not set on the server, answering from the library only");
     return NextResponse.json({
-      answer: lang === "sw" ? "Hii ndiyo miongozo iliyo karibu zaidi na swali lako:" : "These are the closest guides to your question:",
+      answer: flag === "urgent" ? `${URGENT_LINE[lang]}\n\n${libraryAnswer(hits, lang)}` : libraryAnswer(hits, lang),
       sources: hits.slice(0, 3).map((h) => toSource(h.doc, lang)),
-      confident: false,
+      confident: true,
       flag,
     });
   }
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
       signal: AbortSignal.timeout(45_000),
     });
     const json = (await res.json().catch(() => ({}))) as { content?: { type: string; text?: string }[] };
-    if (!res.ok) throw new Error(`AI ${res.status}`);
+    if (!res.ok) throw new Error(`AI ${res.status}: ${(json as { error?: { message?: string } }).error?.message ?? "no details"}`);
     const text = (json.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
     const reply = parseKito(text, hits.length);
     const used = reply.used.map((n) => hits[n - 1].doc);
@@ -138,12 +139,15 @@ export async function POST(req: Request) {
       confident: reply.confident,
       flag,
     });
-  } catch {
+  } catch (e) {
+    // Shown in Netlify → Logs → Functions, so staff can see why the AI didn't answer (key, credit, workspace…)
+    console.error("Kito: the AI didn't answer —", (e as Error).message);
     await done("error", hits.length, message.length, 0);
+    // He still gets the steps from the best matching guide
     return NextResponse.json({
-      answer: lang === "sw" ? "Kito hakuweza kujibu sasa hivi. Hii ndiyo miongozo iliyo karibu na swali lako:" : "Kito couldn't answer right now. These guides are the closest to your question:",
+      answer: flag === "urgent" ? `${URGENT_LINE[lang]}\n\n${libraryAnswer(hits, lang)}` : libraryAnswer(hits, lang),
       sources: hits.slice(0, 3).map((h) => toSource(h.doc, lang)),
-      confident: false,
+      confident: true,
       flag,
     });
   }

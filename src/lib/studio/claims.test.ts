@@ -28,10 +28,9 @@ describe("claim checker", () => {
     expect(rules("Be careful with products that promise guaranteed results.")).toEqual([]);
     expect(rules("Guaranteed results. Buy today.")).toContain("block:guarantee");
   });
-  it("only warns on medical words used in an educational way", () => {
-    const issues = t("A doctor can explain treatment options.");
-    expect(issues.map((i) => i.rule)).toEqual(["cure-word"]);
-    expect(hasBlocks(issues)).toBe(false);
+  it("medical words on their own are fine (Step 66b: no cure-word warning)", () => {
+    expect(t("A doctor can explain treatment options.")).toEqual([]);
+    expect(t("Tiba asilia ya kuongeza nguvu")).toEqual([]);
   });
   it("does not double-report a blocked phrase as a warning", () => {
     expect(rules("It cures erectile issues")).toEqual(["block:cure-promise"]);

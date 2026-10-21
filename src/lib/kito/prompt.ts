@@ -103,3 +103,23 @@ export const NOT_IN_LIBRARY: Record<Lang, string> = {
   en: "I don't have a guide on that yet, so I'd rather not guess. Try asking it another way, or ask the men in Community.",
   sw: "Sina mwongozo kuhusu hilo bado, kwa hiyo sitaki kubahatisha. Jaribu kuuliza kwa njia nyingine, au waulize wanaume wenzako kwenye Jumuiya.",
 };
+
+/**
+ * Kito's answer straight from the library, with no AI (Step 67b): used when the AI isn't connected or
+ * doesn't answer, so he still gets the steps — the best matching guide, in his language, plus where to read more.
+ */
+export function libraryAnswer(hits: Hit[], lang: Lang): string {
+  const top = hits[0]?.doc;
+  if (!top) return NOT_IN_LIBRARY[lang];
+  const title = lang === "sw" && top.titleSw ? top.titleSw : top.title;
+  const lines = (lang === "sw" ? top.sw : top.en)
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .filter((l) => l !== title && !l.endsWith(title))
+    // section headings from the guide's full page ("Fanya hivi", "Mahitaji"…) aren't needed here
+    .filter((l) => !/^(fanya hivi|mahitaji|siri yake|do this|you need|the secret)$/i.test(l));
+  const body = [...new Set(lines)].slice(0, 8).join("\n");
+  const more = hits.length > 1 ? (lang === "sw" ? "\n\nSoma zaidi hapa chini." : "\n\nRead more below.") : "";
+  return `${lang === "sw" ? "Kaka, hiki ndicho kinachosaidia" : "Kaka, here's what helps"}: ${title}\n\n${body}${more}`;
+}
