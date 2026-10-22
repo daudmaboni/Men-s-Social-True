@@ -24,6 +24,8 @@ import {
 import Preview from "./Preview";
 import { YouTubeFrame } from "@/components/media/YouTubeFrame";
 import { cleanYouTubeUrl, isYouTubeShort, youtubeId } from "@/lib/content/youtube";
+import { MAX_VIDEO_BYTES } from "@/lib/content/repo";
+import { canShrink, shrinkVideo } from "@/lib/studio/shrinkVideo";
 import { useStudio } from "@/components/admin/AdminShell";
 import type { Version } from "@/lib/content/repo";
 import { Notice } from "./StudioGate";
@@ -156,6 +158,9 @@ export default function Editor({
   // Reels get a short form (video, caption, topic). "More options" opens the full editor.
   const [fullForm, setFullForm] = useState(false);
   const [ytBlocked, setYtBlocked] = useState<string | null>(null);
+  // Big videos are made smaller in the browser before upload (Step 75)
+  const [shrink, setShrink] = useState<{ pct: number; pass: number; mb: number } | null>(null);
+  const shrinkAbort = useRef<AbortController | null>(null);
   const audioInput = useRef<HTMLInputElement>(null);
   const [versions, setVersions] = useState<Version[] | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -435,13 +440,37 @@ export default function Editor({
     setError(null);
     setBusy("video");
     try {
-      set("videoUrl", await repo.uploadVideo(file, vid));
+      let toSend = file;
+      if (file.size > MAX_VIDEO_BYTES) {
+        const mb = Math.round(file.size / 1048576);
+        if (!canShrink())
+          throw new Error(`This video is ${mb} MB (the limit is 50 MB). Open the Studio in Chrome to make it smaller here, or shrink it in CapCut (Export → 720p).`);
+        const ac = new AbortController();
+        shrinkAbort.current = ac;
+        setShrink({ pct: 0, pass: 1, mb });
+        let last = -1;
+        toSend = await shrinkVideo(file, {
+          signal: ac.signal,
+          onProgress: (f, pass) => {
+            const pct = Math.floor(f * 100) + pass * 1000;
+            if (pct === last) return;
+            last = pct;
+            setShrink({ pct: f, pass, mb });
+          },
+        });
+        setShrink(null);
+        showToast(`Made smaller: ${mb} MB → ${Math.max(1, Math.round(toSend.size / 1048576))} MB · uploading`);
+      }
+      set("videoUrl", await repo.uploadVideo(toSend, vid));
       showToast("Video added · save to keep it");
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      setShrink(null);
+      shrinkAbort.current = null;
       setBusy(null);
       if (videoInput.current) videoInput.current.value = "";
+      if (quickVideo.current) quickVideo.current.value = "";
     }
   }
 
@@ -476,6 +505,22 @@ export default function Editor({
     }));
     if (item.kind === "reel" && link && !ID_RULE.test(item.id)) setIdTouched(true);
   }
+  const shrinkNote = shrink ? (
+    <div className="space-y-2 rounded-2xl bg-mint/30 p-3 text-sm ring-1 ring-forest/20" role="status">
+      <p className="font-semibold">
+        Making the video smaller… {Math.round(shrink.pct * 100)}%{shrink.pass > 1 ? " (second try, a bit smaller)" : ""}
+      </p>
+      <div className="h-2 overflow-hidden rounded-full bg-line">
+        <div className="h-full bg-forest transition-[width]" style={{ width: `${shrink.pct * 100}%` }} />
+      </div>
+      <p className="text-xs text-ink-soft">
+        It&apos;s {shrink.mb} MB, over the 50 MB limit, so it&apos;s being made 720p. This takes about as long as the video itself. Keep this page open and on screen.
+      </p>
+      <button type="button" className={btn.small} onClick={() => shrinkAbort.current?.abort()}>
+        <X size={13} /> Stop
+      </button>
+    </div>
+  ) : null;
   const ytNote = yt ? (
     ytBlocked === item.videoUrl ? (
       <p className="text-xs font-semibold text-red-700">
@@ -632,10 +677,10 @@ export default function Editor({
                     <Film size={28} />
                   )}
                   <span className="font-bold">
-                    {busy === "video" ? "Uploading…" : "Choose the video"}
+                    {busy === "video" ? (shrink ? "Making it smaller…" : "Uploading…") : "Choose the video"}
                   </span>
                   <span className="text-xs text-ink-soft">
-                    Upright, under 50 MB
+                    Upright. Big videos are made smaller for you.
                   </span>
                 </button>
               )}
@@ -656,6 +701,7 @@ export default function Editor({
                   onChange={(e) => pasteVideo(e.target.value)}
                 />
               </Field>
+              {shrinkNote}
               {ytNote}
 
               {/* 2. The caption */}
@@ -870,7 +916,9 @@ export default function Editor({
                           <Mic size={16} />
                         )}
                         {busy === "audio"
-                          ? "Uploading…"
+                          ? shrink
+                            ? "Making it smaller…"
+                            : "Uploading…"
                           : item.audioUrl
                             ? "Change audio"
                             : "Upload audio"}
@@ -971,7 +1019,9 @@ export default function Editor({
                           <Film size={16} />
                         )}
                         {busy === "video"
-                          ? "Uploading…"
+                          ? shrink
+                            ? "Making it smaller…"
+                            : "Uploading…"
                           : item.videoUrl
                             ? "Change video"
                             : "Upload video"}
@@ -994,8 +1044,8 @@ export default function Editor({
                       />
                       <span className="text-xs text-ink-soft">
                         {item.kind === "reel"
-                          ? "MP4 or MOV, upright, under 50 MB. Best under 90 seconds."
-                          : "MP4, WebM or MOV, under 50 MB. Short is best: 2 minutes or less."}
+                          ? "MP4 or MOV, upright. Over 50 MB is made smaller for you (Chrome). Best under 90 seconds."
+                          : "MP4, WebM or MOV. Over 50 MB is made smaller for you (Chrome). Short is best: 2 minutes or less."}
                       </span>
                     </div>
                     <Field
@@ -1010,6 +1060,7 @@ export default function Editor({
                         onChange={(e) => pasteVideo(e.target.value)}
                       />
                     </Field>
+                    {shrinkNote}
                     {ytNote}
                   </div>
                 )}
