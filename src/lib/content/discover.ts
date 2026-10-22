@@ -160,10 +160,14 @@ export function orderReels(reels: ContentItem[], seed: string, seen: Record<stri
   return [...pinned, ...rest.filter((r) => !seen[r.id]).sort(by), ...rest.filter((r) => seen[r.id]).sort(by)];
 }
 
-/** Where each reel goes in the feed: index of the card it comes after → the reel. Each reel shows once. */
+/** The first reel comes right after the first card (Step 73: there's no Reels row at the top any more). */
+export const FIRST_REEL_AT = 1;
+
+/** Where each reel goes in the feed: index of the card it comes before → the reel. Each reel shows once.
+ *  The first one comes after the first card, then one every N cards. */
 export function placeReels(cardCount: number, reels: ContentItem[], every: number): Map<number, ContentItem> {
   const at = new Map<number, ContentItem>();
   let r = 0;
-  for (let i = every; i <= cardCount && r < reels.length; i += every) at.set(i, reels[r++]);
+  for (let i = Math.min(FIRST_REEL_AT, cardCount); i <= cardCount && r < reels.length; i += every) at.set(i, reels[r++]);
   return at;
 }

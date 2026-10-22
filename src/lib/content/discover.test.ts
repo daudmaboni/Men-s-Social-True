@@ -63,11 +63,16 @@ describe("Reels vs reading (Step 71)", () => {
   it("switching adapting off keeps the Studio setting for everyone", () => {
     expect(reelEvery({ ...cfg, adaptive: false }, { reelViews: 60, reelFinished: 60, reelSkipped: 0, cardActions: 0 })).toBe(6);
   });
-  it("places each reel once, every N cards", () => {
+  it("places each reel once: the first after card 1, then every N cards", () => {
     const reels = [1, 2, 3].map((i) => ({ id: `r${i}` }) as ContentItem);
     const at = placeReels(20, reels, 6);
-    expect([...at.keys()]).toEqual([6, 12, 18]);
-    expect(placeReels(20, reels, 6).get(6)?.id).toBe("r1");
+    expect([...at.keys()]).toEqual([1, 7, 13]);
+    expect(at.get(1)?.id).toBe("r1");
+    expect([...placeReels(20, reels.slice(0, 1), 6).keys()]).toEqual([1]);
+  });
+  it("a feed with no cards still shows the first reel", () => {
+    const reels = [{ id: "r1" } as ContentItem];
+    expect([...placeReels(0, reels, 6).keys()]).toEqual([0]);
   });
   it("new reels before watched ones, in a different order per visit", () => {
     const reels = Array.from({ length: 12 }, (_, i) => ({ id: `r${i}`, publishedAt: `2026-10-${10 + i}` }) as ContentItem);

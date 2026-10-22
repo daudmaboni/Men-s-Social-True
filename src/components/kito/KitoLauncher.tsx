@@ -3,6 +3,9 @@
 // Kito's floating button (Step 67): bottom right on every page of the app, like the chat helpers on other
 // apps and websites. Tapping it opens Kito in a window: full screen on a phone, a panel in the corner on
 // a computer. It sits above the bottom bar, and moves up when the lesson mini player is showing.
+// Step 73: on a phone it no longer sits on top of the cards while he reads. It shows near the top of a
+// page and when he scrolls back up; while he scrolls down it slides away to the side. Anything can open
+// Kito with openKito() (e.g. the "Ask Kito" row on Discover).
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -11,11 +14,51 @@ import { useT } from "@/lib/i18n";
 import KitoChat from "./KitoChat";
 import KitoMark from "./KitoMark";
 
+const OPEN_EVENT = "kito:open";
+/** Opens Kito from anywhere in the app. */
+export function openKito() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
+/** Phones only: true while he is scrolling down through the page (Kito steps aside). */
+function useTucked(pathname: string) {
+  const [tucked, setTucked] = useState(false);
+  useEffect(() => {
+    setTucked(false);
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    let anchor = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 160) {
+        setTucked(false);
+        anchor = y;
+      } else if (y > anchor + 24) {
+        setTucked(true);
+        anchor = y;
+      } else if (y < anchor - 80) {
+        setTucked(false);
+        anchor = y;
+      } else if (y > anchor) {
+        anchor = Math.max(anchor, y - 24);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [pathname]);
+  return tucked;
+}
+
 export default function KitoLauncher() {
   const t = useT();
   const pathname = usePathname() ?? "";
   const mini = useMiniPlayerVisible();
   const [open, setOpen] = useState(false);
+  const tucked = useTucked(pathname);
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener(OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_EVENT, onOpen);
+  }, []);
 
   // Close with Escape, and when he goes to another page
   useEffect(() => {
@@ -37,13 +80,18 @@ export default function KitoLauncher() {
           onClick={() => setOpen(true)}
           aria-label={t("Ask Kito")}
           title={t("Ask Kito")}
-          className={`kito-fab fixed right-4 z-30 flex items-center gap-2 rounded-full bg-surface p-1 shadow-xl ring-2 ring-forest transition-[bottom,transform] duration-300 active:scale-95 lg:right-6 lg:pr-4 ${
+          aria-hidden={tucked || undefined}
+          tabIndex={tucked ? -1 : undefined}
+          className={`kito-fab fixed right-3 z-30 flex items-center gap-2 rounded-full bg-surface p-0.5 shadow-xl ring-2 ring-forest transition-[bottom,transform,opacity] duration-300 active:scale-95 lg:right-6 lg:p-1 lg:pr-4 ${
+            tucked ? "pointer-events-none translate-x-[calc(100%+1rem)] opacity-0" : ""
+          } ${
             mini
               ? "bottom-[calc(max(12px,env(safe-area-inset-bottom))+160px)] lg:bottom-[7.5rem]"
               : "bottom-[calc(max(12px,env(safe-area-inset-bottom))+88px)] lg:bottom-6"
           }`}
         >
-          <KitoMark size={58} className="kito-wave ring-0" />
+          <KitoMark size={46} className="kito-wave ring-0 lg:hidden" />
+          <KitoMark size={58} className="kito-wave hidden ring-0 lg:block" />
           <span className="hidden text-sm font-bold text-forest-deep lg:inline">{t("Ask Kito")}</span>
         </button>
       )}

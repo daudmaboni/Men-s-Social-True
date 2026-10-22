@@ -1,7 +1,7 @@
 "use client";
 
 // Studio → Discover (Step 71). Matches what men see now on Social → Discover:
-//   the Reels row at the top, reels inside the feed, and the "do this" cards.
+//   reels inside the feed (full width, playing as he scrolls; Step 73) and the "do this" cards.
 // Here staff upload reels, pin or hide cards and reels, and set the mix:
 //   - one reel after every N cards (3–12),
 //   - let each man's habits move it (watchers a bit more reels, readers fewer; never more than 1 in 3),
@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Clapperboard, Eye, EyeOff, Pin, PinOff, RefreshCw, Search, Shuffle, Upload, Wand2 } from "lucide-react";
+import { Eye, EyeOff, Pin, PinOff, RefreshCw, Search, Shuffle, Upload, Wand2 } from "lucide-react";
 import { useStudio } from "@/components/admin/AdminShell";
 import { Badge, Confirm, Empty, ErrorBox, Loading, PageHeader, Panel, btn, input, useLoad } from "@/components/admin/ui";
 import { useToast } from "@/components/motion/Toast";
@@ -102,7 +102,7 @@ export default function DiscoverStudioPage() {
     <div className="space-y-5">
       <PageHeader
         title="Discover"
-        sub="What men see on Social → Discover: the Reels row, reels between the cards, and the “do this” cards. Upload reels, pin or hide things, and set how often reels come."
+        sub="What men see on Social → Discover: full-width reels between the cards, and the “do this” cards. Upload reels, pin or hide things, and set how often reels come."
         actions={
           <div className="flex flex-wrap gap-2">
             {studio.can("content.edit") && (
@@ -248,7 +248,7 @@ function ReelsPanel({ reels, cfg, stats, canEdit, onToggle }: { reels: ContentIt
   return (
     <Panel
       title={`Reels (${reels.length})`}
-      sub="Upright videos (9:16), best under 90 seconds. They show in the Reels row at the top of Discover and between the cards, and play full screen. “Do this” cards that have a video show here too."
+      sub="Upright videos (9:16), best under 90 seconds. They show full width between the cards (the first one after the first card), play silently as he scrolls, and open full screen with sound. “Do this” cards that have a video show here too."
     >
       {reels.length === 0 ? (
         <Empty title="No reels yet" action={<Link href="/studio/edit?place=reels" className={btn.primary}><Upload size={15} /> Upload your first reel</Link>}>
@@ -350,14 +350,14 @@ function OrderPreview({ cards, reels, cfg, ready }: { cards: FeedCard[]; reels: 
   const feed = useMemo(() => {
     const ordered = orderCards(cards, seed, { interests: [], opened: {}, liked: {}, done: {} }, cfg);
     const r = orderReels(reels, seed, {}, cfg);
-    const spots = placeReels(ordered.length, r.length > 24 ? r.slice(12) : r, cfg.reelEvery);
+    const spots = placeReels(ordered.length, r, cfg.reelEvery);
     const out: { kind: "card" | "reel"; item: ContentItem }[] = [];
     ordered.slice(0, 18).forEach((c, i) => {
       const reel = spots.get(i);
       if (reel) out.push({ kind: "reel", item: reel });
       out.push({ kind: "card", item: c.item });
     });
-    return { row: r.slice(0, 6), list: out };
+    return { list: out };
   }, [cards, reels, cfg, seed]);
   if (!ready) return <Loading />;
   return (
@@ -370,11 +370,6 @@ function OrderPreview({ cards, reels, cfg, ready }: { cards: FeedCard[]; reels: 
         </button>
       }
     >
-      {feed.row.length > 0 && (
-        <p className="mb-2 text-xs text-ink-soft">
-          <Clapperboard size={12} className="inline" /> Reels row: {feed.row.map((r) => r.title).join(" · ")}
-        </p>
-      )}
       <ol className="space-y-1.5 text-sm">
         {feed.list.map((x, i) => (
           <li key={`${x.kind}-${x.item.id}-${i}`} className={`flex items-center gap-2 rounded-xl px-2.5 py-1.5 ${x.kind === "reel" ? "bg-forest-deep text-white" : "bg-bg"}`}>

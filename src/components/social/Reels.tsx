@@ -1,20 +1,24 @@
 "use client";
 
-// Reels on Discover (Step 70), like Instagram Reels:
-//  - ReelsStrip: a row of tall video tiles near the top of Discover.
-//  - ReelPost: a reel inside the feed, playing silently while it's on screen.
-//  - ReelsViewer: full screen, swipe up for the next one. Tap for sound. Like, save, share, "I did it".
+// Reels on Discover, like Instagram Reels:
+//  - ReelPost (Step 73): a full-width, tall reel inside the feed. It plays silently while it's the reel
+//    most on screen (only one at a time, see lib/content/feedPlayer.ts) and pauses when he scrolls past.
+//    Nothing is printed over the video, so the video's own text stays readable: the name, title, caption
+//    and buttons sit under it. Tapping the video opens the full-screen viewer with sound on.
+//  - ReelsViewer: full screen, swipe up for the next one. Like, save, share, "I did it".
 // Only the reel on screen (and the next one) loads, to save his data. Late at night, or after 15 reels,
 // a "that's enough for tonight" card comes up (see lib/content/reels.ts).
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ArrowRight, Bookmark, Check, Clapperboard, Heart, Moon, Play, Send, Volume2, VolumeX, X } from "lucide-react";
+import { ArrowRight, Bookmark, Check, Heart, Moon, Play, Send, Volume2, VolumeX, X } from "lucide-react";
 import { contentHref } from "./ContentCards";
 import { useToast } from "@/components/motion/Toast";
+import BrandMark from "@/components/brand/BrandMark";
 import { trackContent } from "@/lib/analytics/track";
 import { reelCaption, softEndIndex } from "@/lib/content/reels";
+import { feedPlayer, useFeedSound, usePlayingReel } from "@/lib/content/feedPlayer";
 import type { ContentItem } from "@/lib/content/types";
 import { socialStore, useSocial } from "@/lib/social/store";
 import { triedStore, useTried } from "@/lib/social/tried";
@@ -30,39 +34,6 @@ const saveData = () => {
   }
 };
 
-/* ───────── Row of tiles ───────── */
-export function ReelsStrip({ reels, onOpen }: { reels: ContentItem[]; onOpen: (i: number) => void }) {
-  const t = useT();
-  const sw = t.lang === "sw";
-  const seen = useSocial().history;
-  if (!reels.length) return null;
-  return (
-    <section aria-labelledby="reels-h" className="-mx-5 lg:mx-0">
-      <h2 id="reels-h" className="flex items-center gap-2 px-5 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
-        <Clapperboard size={20} className="text-forest" /> {t("Reels")}
-      </h2>
-      <div className="no-scrollbar mt-3 flex gap-2.5 overflow-x-auto px-5 pb-1 lg:px-0">
-        {reels.slice(0, 12).map((r, i) => (
-          <button
-            key={r.id}
-            onClick={() => onOpen(i)}
-            className="group relative aspect-[9/16] w-[7.25rem] shrink-0 overflow-hidden rounded-2xl bg-forest-deep text-left ring-1 ring-line transition-transform active:scale-[0.97]"
-            aria-label={sw && r.titleSw ? r.titleSw : r.title}
-          >
-            <Poster reel={r} />
-            <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-            {!seen[r.id] && <span className="absolute left-2 top-2 rounded-full bg-honey px-2 py-0.5 text-[0.625rem] font-bold text-on-honey">{t("New")}</span>}
-            <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur">
-              <Play size={13} fill="currentColor" />
-            </span>
-            <span className="absolute inset-x-2 bottom-2 line-clamp-3 text-[0.75rem] font-semibold leading-tight text-white">{sw && r.titleSw ? r.titleSw : r.title}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 /** The reel's picture: its cover photo, or the video's first frame. */
 function Poster({ reel }: { reel: ContentItem }) {
   if (reel.coverImageUrl)
@@ -75,68 +46,182 @@ function Poster({ reel }: { reel: ContentItem }) {
 export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => void }) {
   const t = useT();
   const sw = t.lang === "sw";
-  const box = useRef<HTMLButtonElement>(null);
+  const showToast = useToast();
+  const tried = useTried();
+  const social = useSocial();
+  const key = `${reel.id}:${useId()}`;
+  const box = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  const [on, setOn] = useState(false);
-  // Plays silently only while it's on screen (and not when the phone is saving data)
+  const [near, setNear] = useState(false); // any part on screen → load the video
+  const [progress, setProgress] = useState(0);
+  const [more, setMore] = useState(false);
+  const playing = usePlayingReel() === key;
+  const sound = useFeedSound();
+  const liked = Boolean(tried.liked[reel.id]);
+  const saved = Boolean(social.bookmarks[reel.id]);
+  const title = sw && reel.titleSw ? reel.titleSw : reel.title;
+  const caption = reelCaption(reel, sw);
+  const handle = reel.origin ? "@kayaniherbs" : "Kayani Herbs";
+  const lite = useMemo(() => saveData(), []);
+
+  // Tell the feed player how much of this reel is on screen
   useEffect(() => {
     const el = box.current;
-    if (!el || typeof IntersectionObserver === "undefined" || saveData()) return;
-    const io = new IntersectionObserver(([e]) => setOn(e.intersectionRatio > 0.6), { threshold: [0, 0.6, 1] });
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        setNear(e.isIntersecting);
+        if (!lite) feedPlayer.report(key, e.isIntersecting ? e.intersectionRatio : 0);
+      },
+      { threshold: [0, 0.25, 0.5, 0.6, 0.7, 0.8, 0.9, 1] },
+    );
     io.observe(el);
-    return () => io.disconnect();
-  }, []);
+    return () => {
+      io.disconnect();
+      feedPlayer.leave(key);
+    };
+  }, [key, lite]);
+
+  // Play only while this is the chosen reel; pause the moment it isn't
   useEffect(() => {
     const v = video.current;
     if (!v) return;
-    if (on) void v.play().catch(() => {});
-    else v.pause();
-  }, [on]);
+    if (playing) {
+      v.muted = !sound;
+      void v.play().catch(() => {
+        // Sound without a tap can be blocked: fall back to silent
+        if (!v.muted) {
+          v.muted = true;
+          feedPlayer.setSound(false);
+          void v.play().catch(() => {});
+        }
+      });
+    } else v.pause();
+  }, [playing, near, sound]);
+
+  const share = async () => {
+    const url = `${location.origin}${contentHref(reel.id)}`;
+    try {
+      if (navigator.share) return void (await navigator.share({ title, url }));
+      await navigator.clipboard.writeText(url);
+      showToast(t("Link copied"));
+    } catch {}
+  };
 
   return (
     <article className="overflow-hidden rounded-[20px] bg-surface ring-1 ring-line">
-      <header className="flex items-center gap-2.5 px-3 py-2">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest text-white">
-          <Clapperboard size={15} aria-hidden />
-        </span>
+      <header className="flex items-center gap-2.5 px-3 py-2.5">
+        <BrandMark size={32} className="shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.8125rem] font-bold leading-tight">{t("Reel")}</p>
-          <p className="truncate text-[0.6875rem] text-ink-soft">{reel.origin ? "@kayaniherbs" : "Kayani Herbs"}</p>
+          <p className="truncate text-[0.8125rem] font-bold leading-tight">{handle}</p>
+          <p className="truncate text-[0.6875rem] text-ink-soft">{t("Reel")}</p>
         </div>
       </header>
-      <button ref={box} onClick={onOpen} className="relative block aspect-[4/5] w-full overflow-hidden bg-black" aria-label={t("Watch")}>
-        {on ? (
-          <video ref={video} src={reel.videoUrl} muted loop playsInline preload="metadata" poster={reel.coverImageUrl} className="absolute inset-0 h-full w-full object-cover" />
-        ) : (
-          <Poster reel={reel} />
-        )}
-        <span className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
-        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-[0.6875rem] font-bold text-white backdrop-blur">
-          <VolumeX size={12} /> {t("Tap to watch")}
-        </span>
-        <span className="absolute inset-x-0 bottom-0 p-4 text-left text-white">
-          <span className="block font-display text-[1.25rem] font-bold leading-tight">{sw && reel.titleSw ? reel.titleSw : reel.title}</span>
-          {reelCaption(reel, sw) && (
-            <span className="mt-1 line-clamp-2 block text-[0.8125rem] text-white/85">{reelCaption(reel, sw)}</span>
+
+      {/* The video, nothing written over it. Tall like Instagram, but never taller than the screen. */}
+      <div ref={box} className="relative aspect-[9/16] max-h-[min(78svh,820px)] w-full overflow-hidden bg-black">
+        <button type="button" onClick={onOpen} className="absolute inset-0 block h-full w-full" aria-label={`${t("Watch")}: ${title}`}>
+          {near && !lite ? (
+            <video
+              ref={video}
+              src={reel.videoUrl}
+              poster={reel.coverImageUrl}
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              onTimeUpdate={(e) => {
+                const v = e.currentTarget;
+                setProgress(v.duration ? v.currentTime / v.duration : 0);
+              }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <Poster reel={reel} />
           )}
-        </span>
-      </button>
+          {lite && (
+            <span className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">
+              <Play size={24} fill="currentColor" />
+            </span>
+          )}
+        </button>
+        {!lite && (
+          <button
+            type="button"
+            onClick={() => feedPlayer.setSound(!sound)}
+            aria-label={t(sound ? "Sound off" : "Sound on")}
+            className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur active:scale-90"
+          >
+            {sound ? <Volume2 size={15} /> : <VolumeX size={15} />}
+          </button>
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
+          <div className="h-full bg-white/90" style={{ width: `${progress * 100}%` }} />
+        </div>
+      </div>
+
+      {/* Buttons under the video, like Instagram */}
+      <div className="flex items-center gap-1 px-1.5 pt-1.5">
+        <IconButton label={t(liked ? "Helped ✓" : "This helped")} onClick={() => triedStore.toggleLike(reel.id)}>
+          <Heart size={24} className={liked ? "text-red-500" : ""} fill={liked ? "currentColor" : "none"} />
+        </IconButton>
+        <IconButton label={t("Share")} onClick={share}>
+          <Send size={22} />
+        </IconButton>
+        <span className="flex-1" />
+        <IconButton
+          label={t(saved ? "Saved" : "Save")}
+          onClick={() => {
+            const now = socialStore.toggleBookmark(reel.id);
+            if (now) trackContent(reel.id, "save");
+            showToast(t(now ? "Saved for later" : "Removed from saved"));
+          }}
+        >
+          <Bookmark size={23} fill={saved ? "currentColor" : "none"} />
+        </IconButton>
+      </div>
+
+      <div className="px-3.5 pb-3.5">
+        <p className="mt-0.5 text-[0.875rem] leading-snug">
+          <span className="font-bold">{handle}</span> <span className="font-semibold">{title}</span>
+        </p>
+        {caption && (
+          <button type="button" onClick={() => setMore((m) => !m)} className={`mt-0.5 block w-full text-left text-[0.8125rem] leading-snug text-ink-soft ${more ? "" : "line-clamp-2"}`}>
+            {caption}
+          </button>
+        )}
+      </div>
     </article>
   );
 }
 
+function IconButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} title={label} className="flex h-10 w-10 items-center justify-center rounded-full text-ink transition-transform active:scale-90">
+      {children}
+    </button>
+  );
+}
+
 /* ───────── Full screen ───────── */
-export function ReelsViewer({ reels, start, onClose }: { reels: ContentItem[]; start: number; onClose: () => void }) {
+export function ReelsViewer({ reels, start, onClose, withSound = false }: { reels: ContentItem[]; start: number; onClose: () => void; withSound?: boolean }) {
   const t = useT();
   const strip = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(start);
+  // Opened by tapping a reel → sound on (the tap allows it). Otherwise his last choice.
   const [sound, setSound] = useState(() => {
+    if (withSound) return true;
     try {
       return sessionStorage.getItem(SOUND_KEY) === "1";
     } catch {
       return false;
     }
   });
+  // The feed's reels stop while the viewer is open
+  useEffect(() => {
+    feedPlayer.setViewerOpen(true);
+    return () => feedPlayer.setViewerOpen(false);
+  }, []);
   const [endDismissed, setEndDismissed] = useState(false);
   const endAt = useMemo(() => (endDismissed ? -1 : softEndIndex(start, reels.length, new Date())), [endDismissed, start, reels.length]);
 
@@ -229,6 +314,7 @@ export function ReelsViewer({ reels, start, onClose }: { reels: ContentItem[]; s
               near={Math.abs(i - active) <= 1}
               sound={sound}
               onToggleSound={toggleSound}
+              onSoundBlocked={() => setSound(false)}
               onLeave={() => {
                 closing.current = true;
                 onClose();
@@ -267,6 +353,7 @@ function ReelSlide({
   near,
   sound,
   onToggleSound,
+  onSoundBlocked,
   onLeave,
 }: {
   reel: ContentItem;
@@ -275,6 +362,7 @@ function ReelSlide({
   near: boolean;
   sound: boolean;
   onToggleSound: () => void;
+  onSoundBlocked: () => void;
   onLeave: () => void;
 }) {
   const t = useT();
@@ -298,7 +386,14 @@ function ReelSlide({
     if (!v) return;
     if (active) {
       v.currentTime = 0;
-      void v.play().catch(() => {});
+      void v.play().catch(() => {
+        // Some phones block sound until he taps: play silently instead, and the sound button shows off
+        if (!v.muted) {
+          v.muted = true;
+          onSoundBlocked();
+          void v.play().catch(() => {});
+        }
+      });
       socialStore.recordOpen(reel.id);
       trackContent(reel.id, "view");
       watched.current = { seconds: 0, max: 0, on: true };
@@ -309,6 +404,7 @@ function ReelSlide({
         watched.current.on = false;
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, reel.id]);
   // Closing the reels counts the one on screen too
   useEffect(

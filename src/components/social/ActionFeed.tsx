@@ -38,7 +38,9 @@ import { triedStore, useTried, type FeedFilter } from "@/lib/social/tried";
 import { trackContent } from "@/lib/analytics/track";
 import { inviteToAccount } from "@/components/account/AccountInvite";
 import { useT, type T } from "@/lib/i18n";
-import { ReelPost, ReelsStrip, ReelsViewer } from "./Reels";
+import { ReelPost, ReelsViewer } from "./Reels";
+import { openKito } from "@/components/kito/KitoLauncher";
+import KitoMark from "@/components/kito/KitoMark";
 import { isReel } from "@/lib/content/reels";
 import { orderCards, orderReels, placeReels, reelEvery, type Habits } from "@/lib/content/discover";
 import { habitsStore, useDiscoverConfig, visitSeed } from "@/lib/social/discoverPrefs";
@@ -109,7 +111,7 @@ export default function ActionFeed() {
   const t = useT();
   const [shown, setShown] = useState(PAGE);
   // Reels (Step 70): the order is fixed when the viewer opens, so it doesn't move while he watches
-  const [viewer, setViewer] = useState<{ list: ContentItem[]; start: number } | null>(null);
+  const [viewer, setViewer] = useState<{ list: ContentItem[]; start: number; sound: boolean } | null>(null);
   const top = useRef<HTMLDivElement>(null);
   const filter = tried.filter;
 
@@ -145,8 +147,7 @@ export default function ActionFeed() {
   // Reels inside the feed: how often depends on the Studio setting and (if allowed) on his habits
   const reelSpots = useMemo(() => {
     if (!visit || filter !== "all") return new Map<number, ContentItem>();
-    const offset = reels.length > 24 ? 12 : 0; // with many reels, the feed shows other ones than the row at the top
-    return placeReels(cards.length, reels.slice(offset), reelEvery(cfg, visit.habits));
+    return placeReels(cards.length, reels, reelEvery(cfg, visit.habits));
   }, [visit, filter, reels, cards.length, cfg]);
 
   // Load more cards as he nears the end
@@ -166,7 +167,8 @@ export default function ActionFeed() {
     top.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   };
 
-  const openReels = (start: number, list = reels) => setViewer({ list, start });
+  // Tapping a reel opens the full-screen viewer with sound on
+  const openReels = (start: number, list = reels) => setViewer({ list, start, sound: true });
   if (!tried.ready || !social.ready || !visit) return <ActionFeedSkeleton />;
 
   const left = (id: FeedFilter) => (id === "all" ? all : all.filter((c) => c.spec.challenges.includes(id))).some((c) => !tried.done[c.item.id]);
@@ -209,7 +211,16 @@ export default function ActionFeed() {
         </div>
       </section>
 
-      {filter === "all" && <ReelsStrip reels={reels} onOpen={(i) => openReels(i)} />}
+      {/* Kito lives here on a phone, so his floating button doesn't have to sit on the cards (Step 73) */}
+      <button
+        type="button"
+        onClick={openKito}
+        className="flex w-full items-center gap-2.5 rounded-full bg-surface py-1 pl-1 pr-4 text-left ring-1 ring-line transition-transform active:scale-[0.98] lg:hidden"
+      >
+        <KitoMark size={36} />
+        <span className="flex-1 truncate text-sm text-ink-soft">{t("Ask Kito…")}</span>
+        <Send size={16} className="text-forest" aria-hidden />
+      </button>
 
       {filter !== "all" && (
         <p className="flex items-center justify-between gap-2 text-xs text-ink-soft">
@@ -224,7 +235,7 @@ export default function ActionFeed() {
 
       <div className="-mx-3 space-y-3 lg:mx-0 lg:space-y-4">
         {cards.slice(0, shown).map((c, i) => {
-          // A reel every few cards, playing silently (each reel shows once)
+          // Reels between the cards: full width, the one on screen plays silently (each reel shows once)
           const r = reelSpots.get(i);
           return (
             <Fragment key={`${filter}-${c.item.id}`}>
@@ -240,7 +251,7 @@ export default function ActionFeed() {
       ) : (
         <EndOfFeed filter={filter} onPick={pick} t={t} />
       )}
-      {viewer && <ReelsViewer reels={viewer.list} start={viewer.start} onClose={() => setViewer(null)} />}
+      {viewer && <ReelsViewer reels={viewer.list} start={viewer.start} withSound={viewer.sound} onClose={() => setViewer(null)} />}
     </div>
   );
 }
