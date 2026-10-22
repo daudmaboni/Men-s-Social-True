@@ -11,6 +11,13 @@ export function isReel(c: ContentItem): boolean {
   return Boolean(c.videoUrl) && c.status !== "archived" && (c.kind === "reel" || Boolean(c.action));
 }
 
+/** The caption under a reel, without repeating the title (a quick reel's caption starts with its title). */
+export function reelCaption(reel: Pick<ContentItem, "title" | "titleSw" | "summary" | "summarySw">, sw: boolean): string {
+  const text = ((sw ? reel.summarySw || reel.summary : reel.summary) ?? "").trim();
+  const title = ((sw ? reel.titleSw || reel.title : reel.title) ?? "").trim();
+  return title && text.startsWith(title) ? text.slice(title.length).replace(/^[\s.,:;–-]+/, "") : text;
+}
+
 export function reelOrder(items: ContentItem[], seen: Record<string, string>): ContentItem[] {
   const reels = items.filter(isReel);
   const newest = (a: ContentItem, b: ContentItem) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "") || b.priority - a.priority;

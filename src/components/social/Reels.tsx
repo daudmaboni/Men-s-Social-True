@@ -14,7 +14,7 @@ import { ArrowRight, Bookmark, Check, Clapperboard, Heart, Moon, Play, Send, Vol
 import { contentHref } from "./ContentCards";
 import { useToast } from "@/components/motion/Toast";
 import { trackContent } from "@/lib/analytics/track";
-import { softEndIndex } from "@/lib/content/reels";
+import { reelCaption, softEndIndex } from "@/lib/content/reels";
 import type { ContentItem } from "@/lib/content/types";
 import { socialStore, useSocial } from "@/lib/social/store";
 import { triedStore, useTried } from "@/lib/social/tried";
@@ -116,8 +116,8 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
         </span>
         <span className="absolute inset-x-0 bottom-0 p-4 text-left text-white">
           <span className="block font-display text-[1.25rem] font-bold leading-tight">{sw && reel.titleSw ? reel.titleSw : reel.title}</span>
-          {(sw ? reel.summarySw || reel.summary : reel.summary) && (
-            <span className="mt-1 line-clamp-2 block text-[0.8125rem] text-white/85">{sw ? reel.summarySw || reel.summary : reel.summary}</span>
+          {reelCaption(reel, sw) && (
+            <span className="mt-1 line-clamp-2 block text-[0.8125rem] text-white/85">{reelCaption(reel, sw)}</span>
           )}
         </span>
       </button>
@@ -289,7 +289,7 @@ function ReelSlide({
   const done = Boolean(tried.done[reel.id]);
   const saved = Boolean(social.bookmarks[reel.id]);
   const title = sw && reel.titleSw ? reel.titleSw : reel.title;
-  const caption = sw ? reel.summarySw || reel.summary : reel.summary;
+  const caption = reelCaption(reel, sw);
 
   // How much of it he watched (for the reels/reading mix, Step 71): counted when he moves on
   const watched = useRef({ seconds: 0, max: 0, on: false });

@@ -33,9 +33,15 @@ export const fromLines = (ls?: string[]) => (ls ?? []).join("\n");
 /** Problems that stop an item being published. Empty list = ready. */
 export function publishProblems(item: ContentItem): string[] {
   const p: string[] = [];
-  if (!ID_RULE.test(item.id)) p.push("The web address (id) needs at least 3 letters or numbers.");
-  if (item.title.trim().length < 3) p.push("Add a title.");
-  if (item.summary.trim().length < 10) p.push("Add a short summary (one or two sentences).");
+  if (item.kind === "reel") {
+    // A reel is just a video and a caption
+    if (!item.videoUrl) p.push("Choose the video.");
+    if (item.title.trim().length < 3) p.push("Write the caption.");
+  } else {
+    if (!ID_RULE.test(item.id)) p.push("The web address (id) needs at least 3 letters or numbers.");
+    if (item.title.trim().length < 3) p.push("Add a title.");
+  }
+  if (item.kind !== "reel" && item.summary.trim().length < 10) p.push("Add a short summary (one or two sentences).");
   if (item.source.trim().length < 3) p.push("Say who wrote or checked it (Source).");
 
   const hasBody = (item.body ?? []).length > 0;
@@ -58,7 +64,6 @@ export function publishProblems(item: ContentItem): string[] {
     });
   }
   if (item.kind === "tool" && !item.tool) p.push("Choose which tool to show.");
-  if (item.kind === "reel" && !item.videoUrl) p.push("Upload the reel video (or paste a link to it).");
   if (item.kind === "audio" && !item.audioUrl) p.push("Upload the audio or paste a link to it.");
   if (item.kind === "infographic" && !item.coverImageUrl) p.push("Upload the infographic image (Cover → Upload photo).");
   if ((item.bodySw ?? []).length > 0 && !item.titleSw?.trim()) p.push("Add the Kiswahili title too.");

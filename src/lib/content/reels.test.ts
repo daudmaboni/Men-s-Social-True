@@ -25,3 +25,12 @@ describe("Reels (Step 70)", () => {
     expect(softEndIndex(0, 10, day)).toBe(-1); // he reaches the real end first
   });
 });
+
+import { reelCaption } from "./reels";
+describe("reelCaption", () => {
+  it("doesn't repeat the title", () => {
+    expect(reelCaption({ title: "Mix ya tangawizi", summary: "Mix ya tangawizi\nKunywa asubuhi" }, false)).toBe("Kunywa asubuhi");
+    expect(reelCaption({ title: "Mix ya tangawizi", summary: "Mix ya tangawizi" }, false)).toBe("");
+    expect(reelCaption({ title: "A", summary: "Other text", summarySw: "Maneno", titleSw: "B" }, true)).toBe("Maneno");
+  });
+});
