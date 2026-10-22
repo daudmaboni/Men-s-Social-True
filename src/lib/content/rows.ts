@@ -43,7 +43,7 @@ export interface ContentRow {
   updated_at?: string;
 }
 
-const KINDS: ContentKind[] = ["guide", "article", "video", "quiz", "tool", "expert", "audio", "infographic"];
+const KINDS: ContentKind[] = ["guide", "article", "video", "quiz", "tool", "expert", "audio", "infographic", "reel"];
 const TOPICS: TopicId[] = ["erection", "ejaculation", "libido", "fertility", "confidence", "intimacy", "wellbeing"];
 const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
 

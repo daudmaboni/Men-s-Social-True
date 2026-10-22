@@ -39,8 +39,7 @@ import type {
   ToolId,
 } from "@/lib/content/types";
 import { checkClaims } from "@/lib/studio/claims";
-import { placesOf, placeById, presetFor, type PlaceId } from "@/lib/studio/places";
-import { FEATURABLE } from "@/lib/content/select";
+import { placesOf, presetFor, type PlaceId } from "@/lib/studio/places";
 import type { TopicId } from "@/lib/content/types";
 import {
   blankItem,
@@ -54,6 +53,7 @@ import {
 } from "@/lib/studio/validate";
 
 const KINDS: ContentKind[] = [
+  "reel",
   "article",
   "guide",
   "expert",
@@ -556,6 +556,8 @@ export default function Editor({
                 ? "Question and answer"
                 : item.kind === "video"
                   ? "Video"
+                  : item.kind === "reel"
+                    ? "Reel (vertical video)"
                   : item.kind === "audio"
                     ? "Audio"
                     : item.kind === "infographic"
@@ -615,7 +617,14 @@ export default function Editor({
                 </Field>
               </div>
             )}
-            {item.kind === "video" && (
+            {item.kind === "reel" && (
+              <p className="rounded-2xl bg-mint/60 px-4 py-3 text-xs text-forest-deep">
+                A reel is a <b>vertical video</b> (filmed upright on a phone, 9:16), best under 90 seconds. It shows in the Reels row on
+                Discover and in the feed, and plays full screen. The title and summary are its caption. A cover photo is optional (the
+                first frame is used).
+              </p>
+            )}
+            {(item.kind === "video" || item.kind === "reel") && (
               <div className="space-y-3">
                 {item.videoUrl && (
                   <video
@@ -623,7 +632,7 @@ export default function Editor({
                     controls
                     playsInline
                     preload="metadata"
-                    className="aspect-video w-full rounded-2xl bg-black"
+                    className={item.kind === "reel" ? "mx-auto aspect-[9/16] max-h-[28rem] rounded-2xl bg-black" : "aspect-video w-full rounded-2xl bg-black"}
                   />
                 )}
                 <div className="flex flex-wrap items-center gap-3">
@@ -661,7 +670,7 @@ export default function Editor({
                     onChange={(e) => uploadVideo(e.target.files?.[0])}
                   />
                   <span className="text-xs text-ink-soft">
-                    MP4, WebM or MOV, under 50 MB. Short is best: 2 minutes or less.
+                    {item.kind === "reel" ? "MP4 or MOV, upright, under 50 MB. Best under 90 seconds." : "MP4, WebM or MOV, under 50 MB. Short is best: 2 minutes or less."}
                   </span>
                 </div>
                 <Field
@@ -747,28 +756,21 @@ export default function Editor({
                   className="flex items-center gap-1 rounded-full bg-mint/70 px-3 py-1.5 text-xs font-semibold text-forest-deep"
                 >
                   <MapPin size={12} />
-                  {p.id === "topics"
-                    ? `Topic: ${TOPICS.find((t) => t.id === item.topic)?.title}`
+                  {p.id === "library"
+                    ? `Library · ${TOPICS.find((t) => t.id === item.topic)?.title ?? "no topic"}`
                     : p.title}
                 </li>
               ))}
             </ul>
-            {FEATURABLE.includes(item.kind) && (
-              <label className="flex items-start gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  className="mt-1 accent-forest"
-                  checked={Boolean(item.featured)}
-                  onChange={(e) => set("featured", e.target.checked || undefined)}
-                />
-                <span>
-                  <b>Pin as the Featured card on Discover</b>
-                  <span className="block text-xs text-ink-soft">
-                    {placeById("featured").add}
-                  </span>
-                </span>
-              </label>
-            )}
+            <p className="text-xs text-ink-soft">
+              {item.kind === "reel"
+                ? "Reels show in the Reels row and between the cards on Discover. To put this one first for everyone, pin it in "
+                : "Discover now shows reels and “do this” cards. Guides, articles and videos reach men through search, Saved, Kito, topic pages and links. To pin or hide things on Discover, use "}
+              <Link href="/studio/discover" className="font-semibold text-forest underline">
+                Studio → Discover
+              </Link>
+              .
+            </p>
             <label className="flex items-start gap-3 text-sm">
               <input
                 type="checkbox"
@@ -915,7 +917,7 @@ export default function Editor({
               </Field>
               <Field
                 label="Priority (0–100)"
-                hint="Higher = more likely featured."
+                hint="Higher comes first in search, topic pages and the Man tab."
               >
                 <input
                   type="number"

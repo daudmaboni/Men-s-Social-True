@@ -53,6 +53,8 @@ beforeAll(async () => {
   await db.exec(readFileSync(join(dir, "0006_admin_control_center.sql"), "utf8"));
   await db.exec(readFileSync(join(dir, "0008_safety_fixes.sql"), "utf8")); // safe to run twice
   await db.exec(readFileSync(join(dir, "0014_remove_review_gate.sql"), "utf8")); // 0006 puts the old publish rule back; 0014 says to run again
+  await db.exec(readFileSync(join(dir, "0015_reels.sql"), "utf8")); // 0006 resets the list of content kinds; 0015 says to run again
+  await db.exec(readFileSync(join(dir, "0016_discover_settings.sql"), "utf8")); // 0006 resets the list of settings; 0016 says to run again
   await db.exec(`grant all on all tables in schema public to anon, authenticated; grant usage, select on all sequences in schema public to anon, authenticated;`);
   await db.exec(`grant select on storage.buckets to anon, authenticated;`);
   const people: [string, string][] = [[OWNER, "owner@x.co"], [EDITOR, "editor@x.co"], [WRITER, "writer@x.co"], [MOD, "mod@x.co"], [ANALYST, "analyst@x.co"], [JUMA, "juma@x.co"], [ALLY, "ally@x.co"]];
@@ -491,5 +493,30 @@ describe("Kito, the members' assistant (0013)", { timeout: 30_000 }, () => {
     expect(Number(s.questions)).toBeGreaterThanOrEqual(15);
     expect(Number(s.answered)).toBe(1);
     await fails(KITO, "select public.admin_kito_stats(30)");
+  });
+});
+
+describe("reels (0015)", { timeout: 30_000 }, () => {
+  it("editors publish a reel; men see it; an unknown kind is still refused", async () => {
+    await as(EDITOR, "insert into public.content_items (id, kind, topic, title, status, video_url) values ('reel-1', 'reel', 'ejaculation', 'Garlic and turmeric', 'published', 'https://x.co/r.mp4')");
+    expect(await as(null, "select kind from public.content_items where id = 'reel-1'")).toEqual([{ kind: "reel" }]);
+    await fails(EDITOR, "insert into public.content_items (id, kind, topic, title) values ('bad-kind', 'tiktok', 'wellbeing', 'Nope')");
+  });
+});
+
+describe("Studio → Discover settings (0016)", { timeout: 30_000 }, () => {
+  it("editors save the Discover settings; men read them; writers and analysts can't change them", async () => {
+    await as(EDITOR, `select public.settings_set('discover_config', '{"reelEvery": 4, "adaptive": true, "shuffle": true, "pinned": ["do-kegel"], "hidden": []}'::jsonb)`);
+    const [{ v }] = await as<{ v: { reelEvery: number } }>(JUMA, "select value as v from public.app_settings where key = 'discover_config'");
+    expect(v.reelEvery).toBe(4);
+    await fails(WRITER, `select public.settings_set('discover_config', '{"reelEvery": 4}'::jsonb)`);
+    await fails(ANALYST, `select public.settings_set('discover_config', '{"reelEvery": 4}'::jsonb)`);
+  });
+  it("refuses settings that would break Discover", async () => {
+    await fails(EDITOR, `select public.settings_set('discover_config', '{"reelEvery": 1}'::jsonb)`);
+    await fails(EDITOR, `select public.settings_set('discover_config', '{"pinned": "x"}'::jsonb)`);
+  });
+  it("Kito's switch still works after this update", async () => {
+    await as(OWNER, `select public.settings_set('kito_enabled', 'true'::jsonb)`);
   });
 });

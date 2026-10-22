@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Bell, CheckCircle2, Eye, FileText, Flag, PenLine, Smartphone, Sparkles } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, Clapperboard, FileText, Flag, PenLine, Smartphone, Sparkles, Wand2 } from "lucide-react";
 import { useStudio } from "@/components/admin/AdminShell";
 import DailyColumns from "@/components/admin/Chart";
 import type { Overview } from "@/lib/admin/types";
@@ -34,7 +34,6 @@ export default function OverviewPage() {
         d.community.urgent_reports > 0 && studio.can("community.moderate") && { tone: "bad", icon: AlertTriangle, text: `${d.community.urgent_reports} urgent community ${d.community.urgent_reports === 1 ? "report" : "reports"}`, href: "/studio/community?tab=reports" },
         d.community.open_reports - d.community.urgent_reports > 0 && studio.can("community.moderate") && { tone: "warn", icon: Flag, text: `${d.community.open_reports - d.community.urgent_reports} other open ${d.community.open_reports - d.community.urgent_reports === 1 ? "report" : "reports"}`, href: "/studio/community?tab=reports" },
         d.content.review > 0 && { tone: "warn", icon: FileText, text: `${d.content.review} ${d.content.review === 1 ? "item waits" : "items wait"} for review`, href: "/studio/content" },
-        d.homepage.has_draft && { tone: "warn", icon: Smartphone, text: "Homepage has unpublished changes", href: "/studio/homepage" },
         d.ai_errors_24h > 0 && { tone: "warn", icon: Sparkles, text: `${d.ai_errors_24h} AI ${d.ai_errors_24h === 1 ? "request" : "requests"} failed in 24 hours`, href: "/studio/ai" },
         d.content.scheduled > 0 && { tone: "info", icon: FileText, text: `${d.content.scheduled} ${d.content.scheduled === 1 ? "item is" : "items are"} scheduled to go live`, href: "/studio/content" },
         d.notifications.scheduled > 0 && { tone: "info", icon: Bell, text: `${d.notifications.scheduled} ${d.notifications.scheduled === 1 ? "notification is" : "notifications are"} scheduled`, href: "/studio/notifications" },
@@ -65,14 +64,19 @@ export default function OverviewPage() {
                 <PenLine size={15} /> New content
               </Link>
             )}
-            {studio.can("homepage.edit") && (
-              <Link href="/studio/homepage" className={btn.ghost}>
-                <Smartphone size={15} /> Edit homepage
+            {studio.can("content.edit") && (
+              <Link href="/studio/edit?place=reels" className={btn.ghost}>
+                <Clapperboard size={15} /> Upload a reel
+              </Link>
+            )}
+            {studio.can("content.edit") && (
+              <Link href="/studio/cards" className={btn.ghost}>
+                <Wand2 size={15} /> Make a card
               </Link>
             )}
             {studio.can("homepage.edit") && (
-              <Link href="/studio/homepage/preview" className={btn.ghost}>
-                <Eye size={15} /> Preview user page
+              <Link href="/studio/discover" className={btn.ghost}>
+                <Smartphone size={15} /> Discover
               </Link>
             )}
             {studio.can("notifications.send") && (

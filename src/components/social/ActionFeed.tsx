@@ -5,7 +5,7 @@
 // action cards. Each card is a carousel he swipes through: the hook, what he needs, the steps,
 // why it works. Then: "Useful", share, save, and "I did it".
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -38,6 +38,11 @@ import { triedStore, useTried, type FeedFilter } from "@/lib/social/tried";
 import { trackContent } from "@/lib/analytics/track";
 import { inviteToAccount } from "@/components/account/AccountInvite";
 import { useT, type T } from "@/lib/i18n";
+import { ReelPost, ReelsStrip, ReelsViewer } from "./Reels";
+import { isReel } from "@/lib/content/reels";
+import { orderCards, orderReels, placeReels, reelEvery, type Habits } from "@/lib/content/discover";
+import { habitsStore, useDiscoverConfig, visitSeed } from "@/lib/social/discoverPrefs";
+import { useAccount } from "@/lib/account/useAccount";
 
 const CHALLENGES: { id: FeedFilter; label: string; icon: typeof Timer }[] = [
   { id: "all", label: "For you", icon: Sparkles },
@@ -103,32 +108,46 @@ export default function ActionFeed() {
   const social = useSocial();
   const t = useT();
   const [shown, setShown] = useState(PAGE);
+  // Reels (Step 70): the order is fixed when the viewer opens, so it doesn't move while he watches
+  const [viewer, setViewer] = useState<{ list: ContentItem[]; start: number } | null>(null);
   const top = useRef<HTMLDivElement>(null);
   const filter = tried.filter;
 
-  // New cards from the Studio's Card maker come first (newest on top), then the built-in feed
-  const all = useMemo<Card[]>(() => {
-    const cards = items.flatMap((item) => {
-      const spec = actionOf(item);
-      return spec && item.status !== "archived" ? [{ item, spec }] : [];
-    });
-    const fresh = cards
-      .filter((c) => !c.item.builtIn && c.item.id.startsWith("card-"))
-      .sort((a, b) => (b.item.publishedAt ?? "").localeCompare(a.item.publishedAt ?? ""));
-    return [...fresh, ...cards.filter((c) => !fresh.includes(c))];
-  }, [items]);
+  const acc = useAccount();
+  const cfg = useDiscoverConfig();
+  const accountId = acc.status === "signedIn" ? acc.user.id : null;
 
-  // His challenge first; what he already did sinks to the bottom (still there to repeat).
-  // The order is fixed when he opens the feed or changes the challenge, so cards don't jump under his thumb.
-  const [doneAtStart, setDoneAtStart] = useState<Record<string, string>>({});
+  // Every "do this" card (built-in and from the Studio's Card maker)
+  const all = useMemo<Card[]>(
+    () =>
+      items.flatMap((item) => {
+        const spec = actionOf(item);
+        return spec && item.status !== "archived" ? [{ item, spec }] : [];
+      }),
+    [items],
+  );
+
+  // Step 71: a new order every visit, different for each man. What he did, opened and his habits are
+  // read once when the visit starts (or he changes the challenge), so nothing jumps while he scrolls.
+  const [visit, setVisit] = useState<{ seed: string; done: Record<string, string>; opened: Record<string, string>; habits: Habits } | null>(null);
   useEffect(() => {
-    if (tried.ready) setDoneAtStart(tried.done);
+    if (!tried.ready || !social.ready) return;
+    setVisit({ seed: visitSeed(accountId), done: { ...tried.done }, opened: { ...social.history }, habits: habitsStore.get() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tried.ready, filter]);
+  }, [tried.ready, social.ready, filter, accountId]);
   const cards = useMemo(() => {
+    if (!visit) return [];
     const picked = filter === "all" ? all : all.filter((c) => c.spec.challenges.includes(filter));
-    return [...picked.filter((c) => !doneAtStart[c.item.id]), ...picked.filter((c) => doneAtStart[c.item.id])];
-  }, [all, filter, doneAtStart]);
+    return orderCards(picked, `${visit.seed}:${filter}`, { interests: social.interests, opened: visit.opened, liked: tried.liked, done: visit.done }, cfg);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, filter, visit, cfg]);
+  const reels = useMemo(() => (visit ? orderReels(items.filter(isReel), visit.seed, visit.opened, cfg) : []), [items, visit, cfg]);
+  // Reels inside the feed: how often depends on the Studio setting and (if allowed) on his habits
+  const reelSpots = useMemo(() => {
+    if (!visit || filter !== "all") return new Map<number, ContentItem>();
+    const offset = reels.length > 24 ? 12 : 0; // with many reels, the feed shows other ones than the row at the top
+    return placeReels(cards.length, reels.slice(offset), reelEvery(cfg, visit.habits));
+  }, [visit, filter, reels, cards.length, cfg]);
 
   // Load more cards as he nears the end
   const sentinel = useRef<HTMLDivElement>(null);
@@ -147,7 +166,8 @@ export default function ActionFeed() {
     top.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   };
 
-  if (!tried.ready || !social.ready) return <ActionFeedSkeleton />;
+  const openReels = (start: number, list = reels) => setViewer({ list, start });
+  if (!tried.ready || !social.ready || !visit) return <ActionFeedSkeleton />;
 
   const left = (id: FeedFilter) => (id === "all" ? all : all.filter((c) => c.spec.challenges.includes(id))).some((c) => !tried.done[c.item.id]);
   const current = CHALLENGES.find((c) => c.id === filter) ?? CHALLENGES[0];
@@ -189,6 +209,8 @@ export default function ActionFeed() {
         </div>
       </section>
 
+      {filter === "all" && <ReelsStrip reels={reels} onOpen={(i) => openReels(i)} />}
+
       {filter !== "all" && (
         <p className="flex items-center justify-between gap-2 text-xs text-ink-soft">
           <span>
@@ -201,9 +223,16 @@ export default function ActionFeed() {
       )}
 
       <div className="-mx-3 space-y-3 lg:mx-0 lg:space-y-4">
-        {cards.slice(0, shown).map((c, i) => (
-          <ActionPost key={`${filter}-${c.item.id}`} card={c} first={i === 0} done={Boolean(tried.done[c.item.id])} liked={Boolean(tried.liked[c.item.id])} saved={Boolean(social.bookmarks[c.item.id])} />
-        ))}
+        {cards.slice(0, shown).map((c, i) => {
+          // A reel every few cards, playing silently (each reel shows once)
+          const r = reelSpots.get(i);
+          return (
+            <Fragment key={`${filter}-${c.item.id}`}>
+              {r && <ReelPost reel={r} onOpen={() => openReels(reels.indexOf(r))} />}
+              <ActionPost card={c} first={i === 0} done={Boolean(tried.done[c.item.id])} liked={Boolean(tried.liked[c.item.id])} saved={Boolean(social.bookmarks[c.item.id])} />
+            </Fragment>
+          );
+        })}
       </div>
 
       {more ? (
@@ -211,6 +240,7 @@ export default function ActionFeed() {
       ) : (
         <EndOfFeed filter={filter} onPick={pick} t={t} />
       )}
+      {viewer && <ReelsViewer reels={viewer.list} start={viewer.start} onClose={() => setViewer(null)} />}
     </div>
   );
 }
@@ -290,7 +320,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
         </span>
       </header>
 
-      <Carousel label={title} t={t}>
+      <Carousel label={title} t={t} onSwipe={habitsStore.cardUsed}>
         {slides}
       </Carousel>
 
@@ -300,6 +330,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
           pressed={liked}
           onClick={() => {
             const now = triedStore.toggleLike(item.id);
+            habitsStore.cardUsed();
             if (now) showToast(t("Glad it helped"));
           }}
         >
@@ -317,6 +348,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
           pressed={saved}
           onClick={() => {
             const now = socialStore.toggleBookmark(item.id);
+            habitsStore.cardUsed();
             if (now) trackContent(item.id, "save");
             showToast(t(now ? "Saved for later" : "Removed from saved"));
             if (now) inviteToAccount("first-save");
@@ -332,6 +364,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
           <button
             onClick={() => {
               const now = triedStore.toggleDone(item.id);
+              habitsStore.cardUsed();
               if (now) {
                 trackContent(item.id, "complete");
                 showToast(t("Nice one, bro. Keep going."));
@@ -380,16 +413,23 @@ function IconButton({ label, pressed, onClick, children }: { label: string; pres
 
 /* ───────────── Carousel ───────────── */
 
-function Carousel({ children, label, t }: { children: React.ReactNode[]; label: string; t: T }) {
+function Carousel({ children, label, t, onSwipe }: { children: React.ReactNode[]; label: string; t: T; onSwipe?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
+  const swiped = useRef(false);
   const count = children.length;
 
   const onScroll = useCallback(() => {
     const el = ref.current;
     if (!el) return;
-    setIndex(Math.round(el.scrollLeft / el.clientWidth));
-  }, []);
+    const i = Math.round(el.scrollLeft / el.clientWidth);
+    setIndex(i);
+    // The first time he swipes into the steps, it counts as using the card (Step 71: reading vs reels)
+    if (i > 0 && !swiped.current) {
+      swiped.current = true;
+      onSwipe?.();
+    }
+  }, [onSwipe]);
   const go = (i: number) => {
     const el = ref.current;
     if (el) el.scrollTo({ left: Math.max(0, Math.min(count - 1, i)) * el.clientWidth, behavior: "smooth" });

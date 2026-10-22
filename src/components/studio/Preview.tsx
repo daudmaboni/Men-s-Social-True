@@ -36,22 +36,34 @@ export default function Preview({ item }: { item: ContentItem }) {
 
       <div className="mx-auto w-full max-w-[340px] overflow-hidden rounded-[36px] border-[6px] border-ink bg-bg shadow-xl">
         <div className="max-h-[640px] space-y-4 overflow-y-auto p-4 [scrollbar-width:thin]">
-          {/* Card as it appears in a Discover row */}
-          <div className="overflow-hidden rounded-3xl bg-surface ring-1 ring-line">
-            <Cover item={item} className="aspect-[16/10] w-full" />
-            <div className="p-4">
-              <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-forest">
-                {KIND_LABEL[item.kind]} · {item.minutes} min
-              </p>
-              <p className="mt-1 font-bold leading-snug">{title}</p>
-              <p className="mt-1 line-clamp-2 text-xs text-ink-soft">
-                {item.summary || "Your summary appears here."}
-              </p>
-              <p className="mt-3 text-xs font-semibold text-forest">
-                {CTA_LABEL[item.kind]} →
-              </p>
+          {item.kind === "reel" ? (
+            /* A reel as it plays full screen on Discover */
+            <div className="relative -m-4 aspect-[9/16] overflow-hidden bg-forest-deep">
+              {item.videoUrl ? (
+                <video src={item.videoUrl} poster={item.coverImageUrl} muted loop playsInline autoPlay className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">Upload the video to see it here</div>
+              )}
+              <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+              <div className="absolute inset-x-4 bottom-5 pr-12 text-white">
+                <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-mint">Reel</p>
+                <p className="mt-1 font-bold leading-snug">{title}</p>
+                <p className="mt-1 line-clamp-3 text-xs text-white/85">{(sw && item.summarySw) || item.summary || "Your caption appears here."}</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* How it shows in search, Saved, topic pages and Kito's links */
+            <div className="flex gap-3 rounded-2xl bg-surface p-3 ring-1 ring-line">
+              <Cover item={item} className="h-16 w-16 shrink-0 rounded-xl" showPlay={false} />
+              <div className="min-w-0">
+                <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-forest">
+                  {KIND_LABEL[item.kind]} · {item.minutes} min
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-sm font-bold leading-snug">{title}</p>
+                <p className="mt-0.5 text-[0.625rem] text-ink-soft">In search, Saved, topic pages and Kito · {CTA_LABEL[item.kind]} →</p>
+              </div>
+            </div>
+          )}
 
           <p className="text-center text-[0.625rem] uppercase tracking-wider text-ink-soft">
             Opened page

@@ -930,4 +930,17 @@ export const SW: Record<string, string> = {
   "Saved. You can read it with no internet.": "Imehifadhiwa. Unaweza kuisoma bila intaneti.",
   "Starting…": "Inaanza…",
   "The saved copy was cleared. Download it again.": "Nakala iliyohifadhiwa imefutwa. Ipakue tena.",
+  // Step 70: reels
+  "Close reels": "Funga reels",
+  "Done ✓": "Nimefanya ✓",
+  "Keep watching": "Endelea kutazama",
+  "New reels come every week.": "Reels mpya zinakuja kila wiki.",
+  "Put the phone down and rest. Your next reels will be here tomorrow.": "Weka simu chini upumzike. Reels zako zinazofuata zitakuwa hapa kesho.",
+  "Reel": "Reel",
+  "Reels": "Reels",
+  "Sound off": "Zima sauti",
+  "Sound on": "Washa sauti",
+  "Tap to watch": "Gusa kutazama",
+  "That's enough for tonight": "Inatosha kwa usiku huu",
+  "You've watched them all": "Umezitazama zote",
 };

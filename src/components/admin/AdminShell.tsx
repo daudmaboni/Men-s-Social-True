@@ -19,7 +19,7 @@ import {
   Menu,
   MessagesSquare,
   Settings,
-  Smartphone,
+  Clapperboard,
   Sparkles,
   Wand2,
   Users,
@@ -44,10 +44,10 @@ export function useStudio(): Ctx {
 
 export const NAV: { href: string; label: string; Icon: typeof LayoutDashboard; perm: Perm | null; match?: RegExp }[] = [
   { href: "/studio", label: "Overview", Icon: LayoutDashboard, perm: null, match: /^\/studio\/?$/ },
+  { href: "/studio/discover", label: "Discover", Icon: Clapperboard, perm: "homepage.edit", match: /^\/studio\/(discover|homepage)/ },
   { href: "/studio/content", label: "Content", Icon: FileText, perm: "content.edit", match: /^\/studio\/(content|edit)/ },
   { href: "/studio/cards", label: "Card maker", Icon: Wand2, perm: "content.edit" },
   { href: "/studio/courses", label: "Courses", Icon: GraduationCap, perm: "content.edit" },
-  { href: "/studio/homepage", label: "Homepage", Icon: Smartphone, perm: "homepage.edit" },
   { href: "/studio/users", label: "Users", Icon: Users, perm: "users.view" },
   { href: "/studio/community", label: "Community", Icon: MessagesSquare, perm: "community.moderate" },
   { href: "/studio/notifications", label: "Notifications", Icon: Bell, perm: "notifications.send" },

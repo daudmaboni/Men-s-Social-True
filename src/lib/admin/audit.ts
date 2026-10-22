@@ -37,6 +37,8 @@ export const ACTION_LABEL: Record<string, string> = {
   "settings.community_enabled": "Switched Community on/off",
   "settings.notifications_enabled": "Switched notifications on/off",
   "settings.ai_config": "Changed AI settings",
+  "settings.kito_enabled": "Switched Kito on/off",
+  "settings.discover_config": "Changed the Discover settings (reels mix, pins)",
 };
 export const actionLabel = (a: string) => ACTION_LABEL[a] ?? a;
 export const actionArea = (a: string) => a.split(".")[0];

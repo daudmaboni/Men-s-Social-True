@@ -3,7 +3,7 @@
 
 export type TopicId = "erection" | "ejaculation" | "libido" | "fertility" | "confidence" | "intimacy" | "wellbeing";
 
-export type ContentKind = "guide" | "article" | "video" | "quiz" | "tool" | "expert" | "audio" | "infographic";
+export type ContentKind = "guide" | "article" | "video" | "quiz" | "tool" | "expert" | "audio" | "infographic" | "reel";
 
 export type ToolId = "pelvic-floor" | "doctor-check";
 

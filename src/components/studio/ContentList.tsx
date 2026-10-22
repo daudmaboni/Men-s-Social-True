@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, Copy, Plus, Search } from "lucide-react";
+import { CalendarDays, Clapperboard, ChevronLeft, ChevronRight, Copy, Plus, Search } from "lucide-react";
 import Cover from "@/components/social/Cover";
 import { useStudio } from "@/components/admin/AdminShell";
 import { Badge, Confirm, Empty, ErrorBox, Loading, PageHeader, Segmented, btn, input } from "@/components/admin/ui";
@@ -154,6 +154,9 @@ export default function ContentList() {
                 { id: "calendar", label: "Calendar" },
               ]}
             />
+            <Link href="/studio/edit?place=reels" className={btn.ghost}>
+              <Clapperboard size={16} /> Upload a reel
+            </Link>
             <Link href="/studio/edit" className={btn.primary}>
               <Plus size={16} /> New content
             </Link>
@@ -292,7 +295,7 @@ export default function ContentList() {
                           <p className="truncate text-xs text-ink-soft">
                             {KIND_LABEL[c.kind]} · {TOPICS.find((t) => t.id === c.topic)?.short}
                             {c.titleSw ? " · EN + SW" : ""}
-                            {c.featured ? " · Pinned" : ""}
+                            {c.kind === "reel" ? " · on Discover" : c.inManFeed ? " · Man tab" : ""}
                             {c.aiGenerated ? " · AI-assisted" : ""}
                             {ds === "scheduled" && c.publishAt
                               ? ` · goes live ${new Date(c.publishAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`

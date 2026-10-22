@@ -37,7 +37,7 @@ export function can(role: AdminRole | null | undefined, perm: Perm): boolean {
 
 export const ROLES: { id: AdminRole; label: string; about: string }[] = [
   { id: "owner", label: "Owner", about: "Everything, including admins, switches and deleting accounts." },
-  { id: "editor", label: "Editor", about: "Writes and publishes content, runs the homepage, sends notifications, uses AI." },
+  { id: "editor", label: "Editor", about: "Writes and publishes content, runs Discover (reels, cards, the mix), sends notifications, uses AI." },
   { id: "writer", label: "Writer", about: "Writes drafts and submits them for review. Can't publish." },
   { id: "moderator", label: "Moderator", about: "Looks after Community: reports, hiding posts, warnings and restrictions. Can also send in-app messages." },
   { id: "analyst", label: "Analyst", about: "Reads dashboards and the user list. Can't change anything." },

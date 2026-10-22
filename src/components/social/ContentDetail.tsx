@@ -106,7 +106,18 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
       </div>
 
       <div className="overflow-hidden rounded-[28px]">
-        {item.kind === "video" && item.videoUrl ? (
+        {item.kind === "reel" && item.videoUrl ? (
+          // A reel (Step 70): upright video, as tall as the screen allows
+          <video
+            src={item.videoUrl}
+            poster={item.coverImageUrl}
+            controls
+            playsInline
+            preload="metadata"
+            onEnded={() => trackContent(item.id, "complete")}
+            className="mx-auto aspect-[9/16] max-h-[78dvh] w-full bg-black object-contain"
+          />
+        ) : item.kind === "video" && item.videoUrl ? (
           <video
             src={item.videoUrl}
             poster={item.coverImageUrl}

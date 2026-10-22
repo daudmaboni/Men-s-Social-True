@@ -1,10 +1,13 @@
-// The cards and sections men see on Social → Discover (and the Man tab), and which content fills each one.
-// The Content Studio uses this to let staff add content straight into a place.
+// Where men see things now (Step 71), and which content fills each place.
+// Discover changed in Steps 60–70: it's the Reels row, reels between the cards, and the "do this" cards.
+// The old places (Featured insight, For you, Quick learning, question card, topic tiles) are gone from Discover.
+// The Content Studio uses this to let staff add content straight into a place, and the editor's
+// "Where it shows" list.
 
 import type { ContentItem, ContentKind, TopicId } from "../content/types";
-import { FEATURABLE } from "../content/select";
+import { isReel } from "../content/reels";
 
-export type PlaceId = "featured" | "for-you" | "videos" | "question" | "topics" | "man";
+export type PlaceId = "reels" | "cards" | "man" | "library";
 
 export interface Place {
   id: PlaceId;
@@ -23,49 +26,22 @@ export interface Place {
 
 export const PLACES: Place[] = [
   {
-    id: "featured",
-    title: "Featured insight",
-    where: "The big card at the top of Discover.",
-    add: "A guide, article, video or expert answer, pinned to the top. Several pins take turns, one per day.",
-    kinds: FEATURABLE,
-    preset: { kind: "guide", featured: true, priority: 80 },
-    shows: (c) => Boolean(c.featured) && FEATURABLE.includes(c.kind),
+    id: "reels",
+    title: "Reels on Discover",
+    where: "The Reels row at the top of Discover, between the cards, and full screen when he taps one.",
+    add: "An upright video (9:16), best under 90 seconds, MP4 under 50 MB. Title and caption in English and Kiswahili.",
+    kinds: ["reel"],
+    preset: { kind: "reel", minutes: 1 },
+    shows: isReel,
   },
   {
-    id: "for-you",
-    title: "For you",
-    where: "2–3 picks under Featured, matched to the topics he follows.",
-    add: "Guides, articles, quizzes and tools. Set the topic well — that's how they reach the right men.",
-    kinds: ["guide", "article", "quiz", "tool"],
-    preset: { kind: "article" },
-    shows: (c) => ["guide", "article", "quiz", "tool"].includes(c.kind),
-  },
-  {
-    id: "videos",
-    title: "Quick learning",
-    where: "Short videos (2 minutes or less) on Discover and under All videos.",
-    add: "Upload a short video (MP4, under 50 MB) with a cover photo and key points.",
-    kinds: ["video"],
-    preset: { kind: "video", minutes: 2 },
-    shows: (c) => c.kind === "video",
-  },
-  {
-    id: "question",
-    title: "A question men often ask",
-    where: "The green question card on Discover, changing daily.",
-    add: "An expert answer: the question a man asked, and a clear answer.",
-    kinds: ["expert"],
-    preset: { kind: "expert" },
-    shows: (c) => c.kind === "expert" && Boolean(c.question),
-  },
-  {
-    id: "topics",
-    title: "Explore all topics",
-    where: "The topic tiles at the bottom of Discover. Everything you publish appears in its topic.",
-    add: "Any kind of content. Choose the topic tile it belongs to.",
-    kinds: ["guide", "article", "video", "quiz", "tool", "expert"],
+    id: "cards",
+    title: "“Do this” cards on Discover",
+    where: "The cards men swipe through on Discover. Made in Card maker.",
+    add: "Use Card maker: a short title, the steps, and a photo.",
+    kinds: [],
     preset: {},
-    shows: () => true,
+    shows: (c) => Boolean(c.action),
   },
   {
     id: "man",
@@ -76,12 +52,21 @@ export const PLACES: Place[] = [
     preset: { kind: "article", inManFeed: true, minutes: 3 },
     shows: (c) => Boolean(c.inManFeed),
   },
+  {
+    id: "library",
+    title: "Library",
+    where: "Search, Saved, Kito's answers, topic pages and links from cards. Not on Discover itself.",
+    add: "Guides, articles, videos, audio, quizzes and expert answers. Set the topic well — that's how search and Kito find it.",
+    kinds: ["guide", "article", "video", "audio", "quiz", "tool", "expert", "infographic"],
+    preset: {},
+    shows: (c) => c.kind !== "reel" && !c.action,
+  },
 ];
 
 export const isPlaceId = (v: string | null): v is PlaceId => PLACES.some((p) => p.id === v);
 export const placeById = (id: PlaceId) => PLACES.find((p) => p.id === id)!;
 
-/** A new item for a place (and optionally a topic tile). */
+/** A new item for a place (and optionally a topic). */
 export function presetFor(base: ContentItem, place: PlaceId | null, topic: TopicId | null): ContentItem {
   const p = place ? placeById(place).preset : {};
   return { ...base, ...p, ...(topic ? { topic } : {}) };

@@ -61,6 +61,8 @@ Run the files in `supabase/migrations` **once each, in number order**, in Supaba
 | 0012 | Admin → Users full profile; men can share their records with support |
 | 0013 | Kito, the members' learning assistant: switch, limits and usage counts (never the questions) |
 | 0014 | Staff can publish AI-assisted content directly (removes the professional-check gate) |
+| 0015 | Reels: "reel" content kind (short vertical videos on Discover) |
+| 0016 | Studio → Discover settings: reels mix, shuffle, pinned and hidden cards |
 
 Old files can be re-run safely; they won't switch off two-step sign-in. Don't edit an old migration to change the live database: add a new numbered file.
 

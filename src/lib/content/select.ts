@@ -108,6 +108,7 @@ export const KIND_LABEL: Record<ContentKind, string> = {
   expert: "Expert answer",
   audio: "Audio",
   infographic: "Infographic",
+  reel: "Reel",
 };
 
 export const CTA_LABEL: Record<ContentKind, string> = {
@@ -119,6 +120,7 @@ export const CTA_LABEL: Record<ContentKind, string> = {
   expert: "Read answer",
   audio: "Listen",
   infographic: "View",
+  reel: "Watch",
 };
 
 /* ───────────── Discover home: show less, deliver more ───────────── */
