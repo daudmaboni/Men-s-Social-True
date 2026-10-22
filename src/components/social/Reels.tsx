@@ -19,6 +19,8 @@ import BrandMark from "@/components/brand/BrandMark";
 import { trackContent } from "@/lib/analytics/track";
 import { reelCaption, softEndIndex } from "@/lib/content/reels";
 import { feedPlayer, useFeedSound, usePlayingReel } from "@/lib/content/feedPlayer";
+import { youtubeId, youtubeThumb } from "@/lib/content/youtube";
+import { YouTubeFrame } from "@/components/media/YouTubeFrame";
 import type { ContentItem } from "@/lib/content/types";
 import { socialStore, useSocial } from "@/lib/social/store";
 import { triedStore, useTried } from "@/lib/social/tried";
@@ -36,9 +38,10 @@ const saveData = () => {
 
 /** The reel's picture: its cover photo, or the video's first frame. */
 function Poster({ reel }: { reel: ContentItem }) {
-  if (reel.coverImageUrl)
+  const yt = youtubeId(reel.videoUrl);
+  if (reel.coverImageUrl || yt)
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={reel.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />;
+    return <img src={reel.coverImageUrl || youtubeThumb(yt!)} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />;
   return <video src={`${reel.videoUrl}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 h-full w-full object-cover" aria-hidden />;
 }
 
@@ -63,6 +66,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
   const caption = reelCaption(reel, sw);
   const handle = reel.origin ? "@kayaniherbs" : "Kayani Herbs";
   const lite = useMemo(() => saveData(), []);
+  const yt = youtubeId(reel.videoUrl);
 
   // Tell the feed player how much of this reel is on screen
   useEffect(() => {
@@ -120,8 +124,11 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
 
       {/* The video, nothing written over it. Tall like Instagram, but never taller than the screen. */}
       <div ref={box} className="relative aspect-[9/16] max-h-[min(78svh,820px)] w-full overflow-hidden bg-black">
+        {yt && near && !lite && (
+          <YouTubeFrame id={yt} playing={playing} muted={!sound} loop title={title} className="absolute inset-0" onProgress={(c, d) => setProgress(c / d)} />
+        )}
         <button type="button" onClick={onOpen} className="absolute inset-0 block h-full w-full" aria-label={`${t("Watch")}: ${title}`}>
-          {near && !lite ? (
+          {yt && near && !lite ? null : near && !lite ? (
             <video
               ref={video}
               src={reel.videoUrl}
@@ -381,12 +388,19 @@ function ReelSlide({
 
   // How much of it he watched (for the reels/reading mix, Step 71): counted when he moves on
   const watched = useRef({ seconds: 0, max: 0, on: false });
+  const yt = youtubeId(reel.videoUrl);
   useEffect(() => {
     const v = video.current;
-    if (!v) return;
+    if (!v && !(yt && active)) {
+      if (!active && watched.current.on) {
+        habitsStore.reelWatched(watched.current.seconds, watched.current.max);
+        watched.current.on = false;
+      }
+      return;
+    }
     if (active) {
-      v.currentTime = 0;
-      void v.play().catch(() => {
+      if (v) v.currentTime = 0;
+      if (v) void v.play().catch(() => {
         // Some phones block sound until he taps: play silently instead, and the sound button shows off
         if (!v.muted) {
           v.muted = true;
@@ -398,7 +412,7 @@ function ReelSlide({
       trackContent(reel.id, "view");
       watched.current = { seconds: 0, max: 0, on: true };
     } else {
-      v.pause();
+      v?.pause();
       if (watched.current.on) {
         habitsStore.reelWatched(watched.current.seconds, watched.current.max);
         watched.current.on = false;
@@ -428,7 +442,32 @@ function ReelSlide({
 
   return (
     <section data-slide={`r${index}`} className="relative h-[100dvh] snap-start overflow-hidden bg-black">
-      {near ? (
+      {near && yt ? (
+        <>
+          <YouTubeFrame
+            id={yt}
+            playing={active}
+            muted={!sound}
+            loop
+            title={title}
+            className="absolute inset-0"
+            onProgress={(c, d) => {
+              const f = c / d;
+              setProgress(f);
+              if (!active) return;
+              const w = watched.current;
+              // It loops: jumping back to the start after the end counts as finished
+              if (w.seconds > d - 1.5 && c < 1) {
+                if (w.max < 1) trackContent(reel.id, "complete");
+                w.max = 1;
+              }
+              w.seconds = Math.max(w.seconds, c);
+              w.max = Math.max(w.max, f);
+            }}
+          />
+          <button type="button" onClick={onToggleSound} aria-label={t(sound ? "Sound off" : "Sound on")} className="absolute inset-0" />
+        </>
+      ) : near ? (
         <video
           ref={video}
           src={reel.videoUrl}
@@ -452,9 +491,9 @@ function ReelSlide({
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
-        reel.coverImageUrl && (
+        (reel.coverImageUrl || yt) && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={reel.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={reel.coverImageUrl || youtubeThumb(yt!)} alt="" className="absolute inset-0 h-full w-full object-cover" />
         )
       )}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/30" />

@@ -19,6 +19,7 @@ import { rpc, select } from "@/lib/admin/api";
 import { actionOf } from "@/lib/content/actions";
 import { DEFAULT_DISCOVER, normalizeDiscover, orderCards, orderReels, placeReels, REEL_EVERY_MAX, REEL_EVERY_MIN, reelEvery, type DiscoverConfig, type FeedCard } from "@/lib/content/discover";
 import { isReel } from "@/lib/content/reels";
+import { youtubeId, youtubeThumb } from "@/lib/content/youtube";
 import type { ChallengeId, ContentItem } from "@/lib/content/types";
 import { useLibrary } from "@/lib/content/useLibrary";
 
@@ -265,7 +266,12 @@ function ReelsPanel({ reels, cfg, stats, canEdit, onToggle }: { reels: ContentIt
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={r.coverImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
                   ) : (
+                    youtubeId(r.videoUrl) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={youtubeThumb(youtubeId(r.videoUrl)!)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
                     <video src={`${r.videoUrl}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 h-full w-full object-cover" />
+                  )
                   )}
                   <span className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent" />
                   {cfg.pinned.includes(r.id) && <span className="absolute left-2 top-2"><Badge tone="good">Pinned</Badge></span>}

@@ -22,6 +22,8 @@ import {
   X,
 } from "lucide-react";
 import Preview from "./Preview";
+import { YouTubeFrame } from "@/components/media/YouTubeFrame";
+import { cleanYouTubeUrl, isYouTubeShort, youtubeId } from "@/lib/content/youtube";
 import { useStudio } from "@/components/admin/AdminShell";
 import type { Version } from "@/lib/content/repo";
 import { Notice } from "./StudioGate";
@@ -153,6 +155,7 @@ export default function Editor({
   const quickVideo = useRef<HTMLInputElement>(null);
   // Reels get a short form (video, caption, topic). "More options" opens the full editor.
   const [fullForm, setFullForm] = useState(false);
+  const [ytBlocked, setYtBlocked] = useState<string | null>(null);
   const audioInput = useRef<HTMLInputElement>(null);
   const [versions, setVersions] = useState<Version[] | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -460,6 +463,30 @@ export default function Editor({
     );
 
   const quick = item.kind === "reel" && !fullForm;
+  const yt = youtubeId(item.videoUrl);
+  /** A pasted video link: YouTube links are tidied; a reel gets a web address so the caption can come later. */
+  function pasteVideo(raw: string) {
+    const v = raw.trim();
+    const link = youtubeId(v) ? cleanYouTubeUrl(v)! : v;
+    setYtBlocked(null);
+    setDraft((d) => ({
+      ...d,
+      videoUrl: link || undefined,
+      ...(d.kind === "reel" && link && !ID_RULE.test(d.id) ? { id: `reel-${Date.now().toString(36)}` } : {}),
+    }));
+    if (item.kind === "reel" && link && !ID_RULE.test(item.id)) setIdTouched(true);
+  }
+  const ytNote = yt ? (
+    ytBlocked === item.videoUrl ? (
+      <p className="text-xs font-semibold text-red-700">
+        YouTube says this video&apos;s owner doesn&apos;t allow it to play in other apps (or it&apos;s private or removed). Men will see &ldquo;This video can&apos;t play here&rdquo;. Use another video.
+      </p>
+    ) : (
+      <p className="text-xs text-ink-soft">
+        YouTube video · plays inside the app{isYouTubeShort(item.videoUrl) ? " (Short, upright)" : ""}. YouTube may show its logo, and ads if the channel has them.
+      </p>
+    )
+  ) : null;
   const caption = item.summary || item.title;
   /** One caption, written once: the first line is the title, the whole thing the caption, same in both languages. */
   function setCaption(text: string) {
@@ -559,13 +586,23 @@ export default function Editor({
               {/* 1. The video */}
               {item.videoUrl ? (
                 <div className="flex items-end gap-3">
-                  <video
-                    src={item.videoUrl}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    className="aspect-[9/16] w-36 shrink-0 rounded-2xl bg-black"
-                  />
+                  {yt ? (
+                    <YouTubeFrame
+                      id={yt}
+                      controls
+                      title={item.title || "Reel"}
+                      onBlocked={() => setYtBlocked(item.videoUrl ?? null)}
+                      className="aspect-[9/16] w-36 shrink-0 rounded-2xl"
+                    />
+                  ) : (
+                    <video
+                      src={item.videoUrl}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="aspect-[9/16] w-36 shrink-0 rounded-2xl bg-black"
+                    />
+                  )}
                   <div className="space-y-2">
                     <button
                       type="button"
@@ -609,6 +646,17 @@ export default function Editor({
                 className="hidden"
                 onChange={(e) => uploadVideo(e.target.files?.[0])}
               />
+              <Field label="Or paste a YouTube link" hint="A Short or any YouTube video. It plays inside the app, no upload needed.">
+                <input
+                  className={input}
+                  type="url"
+                  inputMode="url"
+                  placeholder="https://youtube.com/shorts/…"
+                  value={item.videoUrl && !item.videoUrl.includes("supabase.co") ? item.videoUrl : ""}
+                  onChange={(e) => pasteVideo(e.target.value)}
+                />
+              </Field>
+              {ytNote}
 
               {/* 2. The caption */}
               <Field
@@ -884,7 +932,20 @@ export default function Editor({
                 )}
                 {(item.kind === "video" || item.kind === "reel") && (
                   <div className="space-y-3">
-                    {item.videoUrl && (
+                    {item.videoUrl && yt && (
+                      <YouTubeFrame
+                        id={yt}
+                        controls
+                        title={item.title || "Video"}
+                        onBlocked={() => setYtBlocked(item.videoUrl ?? null)}
+                        className={
+                          item.kind === "reel" || isYouTubeShort(item.videoUrl)
+                            ? "mx-auto aspect-[9/16] max-h-[28rem] w-full max-w-[16rem] rounded-2xl"
+                            : "aspect-video w-full rounded-2xl"
+                        }
+                      />
+                    )}
+                    {item.videoUrl && !yt && (
                       <video
                         src={item.videoUrl}
                         controls
@@ -939,18 +1000,17 @@ export default function Editor({
                     </div>
                     <Field
                       label="Or paste a video link"
-                      hint="A direct https link to an .mp4 file. Instagram links go in the post's origin, not here."
+                      hint="A YouTube link (plays inside the app) or a direct https link to an .mp4 file. Instagram links go in the post's origin, not here."
                     >
                       <input
                         className={input}
                         type="url"
-                        placeholder="https://…/video.mp4"
+                        placeholder="https://youtube.com/watch?v=… or https://…/video.mp4"
                         value={item.videoUrl ?? ""}
-                        onChange={(e) =>
-                          set("videoUrl", e.target.value.trim() || undefined)
-                        }
+                        onChange={(e) => pasteVideo(e.target.value)}
                       />
                     </Field>
+                    {ytNote}
                   </div>
                 )}
                 {item.kind === "video" && (

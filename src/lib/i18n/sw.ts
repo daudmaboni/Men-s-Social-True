@@ -943,4 +943,6 @@ export const SW: Record<string, string> = {
   "Tap to watch": "Gusa kutazama",
   "That's enough for tonight": "Inatosha kwa usiku huu",
   "You've watched them all": "Umezitazama zote",
+  // Step 74: YouTube videos
+  "This video can't play here.": "Video hii haiwezi kucheza hapa.",
 };

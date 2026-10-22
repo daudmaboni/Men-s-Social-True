@@ -17,6 +17,9 @@ const supabaseWs = supabase.replace(/^https:/, "wss:");
 // Card photos are read from the live project's public storage even when running without .env.local
 const photos = "https://oovvbluaiytosfmwpfbj.supabase.co";
 const turnstile = "https://challenges.cloudflare.com"; // the optional "are you a person?" check
+// YouTube videos staff paste in the Studio play inside the app (Step 74): the player, and its pictures
+const youtube = "https://www.youtube-nocookie.com https://www.youtube.com";
+const ytImages = "https://i.ytimg.com";
 
 const csp = [
   "default-src 'self'",
@@ -25,11 +28,11 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   // Data can only go to our own server and our Supabase project
   `connect-src 'self' ${supabase} ${supabaseWs} ${turnstile} ${dev ? "ws: http://localhost:*" : ""}`,
-  `img-src 'self' data: blob: ${supabase} ${photos}`,
+  `img-src 'self' data: blob: ${supabase} ${photos} ${ytImages}`,
   // Audio and video: uploads, plus direct links staff paste into the Studio
   `media-src 'self' blob: ${supabase} https:`,
   "font-src 'self' data:",
-  `frame-src ${turnstile}`,
+  `frame-src ${turnstile} ${youtube}`,
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "object-src 'none'",

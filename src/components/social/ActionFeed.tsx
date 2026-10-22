@@ -36,6 +36,8 @@ import type { ActionResult, ActionSpec, ActionType, ContentItem } from "@/lib/co
 import { socialStore, useSocial } from "@/lib/social/store";
 import { triedStore, useTried, type FeedFilter } from "@/lib/social/tried";
 import { trackContent } from "@/lib/analytics/track";
+import { youtubeId } from "@/lib/content/youtube";
+import { YouTubeFrame } from "@/components/media/YouTubeFrame";
 import { inviteToAccount } from "@/components/account/AccountInvite";
 import { useT, type T } from "@/lib/i18n";
 import { ReelPost, ReelsViewer } from "./Reels";
@@ -507,6 +509,8 @@ function HookSlide({ item, spec, title, hook, first, t }: { item: ContentItem; s
 }
 
 function MediaSlide({ item, t }: { item: ContentItem; t: T }) {
+  const yt = youtubeId(item.videoUrl);
+  if (yt) return <YouTubeFrame id={yt} controls title={item.title} onEnded={() => trackContent(item.id, "complete")} className="h-full w-full" />;
   if (item.videoUrl) {
     return (
       <video

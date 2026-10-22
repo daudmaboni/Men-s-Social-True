@@ -7,6 +7,8 @@ import { TOPICS } from "@/lib/content/library";
 import { CTA_LABEL, KIND_LABEL } from "@/lib/content/select";
 import type { ContentItem } from "@/lib/content/types";
 import { reelCaption } from "@/lib/content/reels";
+import { youtubeId } from "@/lib/content/youtube";
+import { YouTubeFrame } from "@/components/media/YouTubeFrame";
 
 /** How the item will look on a man's phone: the Discover card, then the opened page. */
 export default function Preview({ item }: { item: ContentItem }) {
@@ -40,7 +42,9 @@ export default function Preview({ item }: { item: ContentItem }) {
           {item.kind === "reel" ? (
             /* A reel as it plays full screen on Discover */
             <div className="relative -m-4 aspect-[9/16] overflow-hidden bg-forest-deep">
-              {item.videoUrl ? (
+              {youtubeId(item.videoUrl) ? (
+                <YouTubeFrame id={youtubeId(item.videoUrl)!} playing muted loop title={title} className="absolute inset-0" />
+              ) : item.videoUrl ? (
                 <video
                   src={item.videoUrl}
                   poster={item.coverImageUrl}

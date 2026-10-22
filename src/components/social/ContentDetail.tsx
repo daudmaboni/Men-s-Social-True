@@ -18,6 +18,8 @@ import { socialStore } from "@/lib/social/store";
 import { useT } from "@/lib/i18n";
 import { metaOf, topicTitle } from "@/lib/content/display";
 import { trackContent } from "@/lib/analytics/track";
+import { isYouTubeShort, youtubeId } from "@/lib/content/youtube";
+import { YouTubeFrame } from "@/components/media/YouTubeFrame";
 import { useAccount } from "@/lib/account/useAccount";
 import GuestGuideCard from "@/components/account/GuestGuideCard";
 
@@ -87,6 +89,8 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
 
   const sw = lang === "sw" && Boolean(item.bodySw);
   const title = lang === "sw" && item.titleSw ? item.titleSw : item.title;
+  const yt = youtubeId(item.videoUrl);
+  const upright = item.kind === "reel" || isYouTubeShort(item.videoUrl);
   const body = sw ? item.bodySw : item.body;
   const read = Boolean(feed.lessons[item.id]);
   const related = library.items.filter((c) => c.topic === item.topic && c.id !== item.id)
@@ -106,7 +110,16 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
       </div>
 
       <div className="overflow-hidden rounded-[28px]">
-        {item.kind === "reel" && item.videoUrl ? (
+        {yt && (item.kind === "reel" || item.kind === "video" || item.action) ? (
+          // A YouTube video (Step 74): plays right here, with YouTube's own buttons
+          <YouTubeFrame
+            id={yt}
+            controls
+            title={title}
+            onEnded={() => trackContent(item.id, "complete")}
+            className={upright ? "mx-auto aspect-[9/16] max-h-[78dvh] w-full" : "aspect-video w-full"}
+          />
+        ) : item.kind === "reel" && item.videoUrl ? (
           // A reel (Step 70): upright video, as tall as the screen allows
           <video
             src={item.videoUrl}
