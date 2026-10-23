@@ -8,6 +8,7 @@
 // - Step 49: audio plays in the app-wide player (keeps playing on other pages, mini player), a 10-second
 //   countdown to the next lesson at the top right when it ends, and lessons that wait for him show what to do.
 
+import { haptic } from "@/lib/motion/haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -337,6 +338,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
       doneRef.current = true;
       feedStore.saveCourseSpot(lesson.id, media()?.currentTime ?? 0, heardRef.current);
       feedStore.finishCourseLesson(lesson.id, lesson.points);
+      haptic("success");
       showToast(hasNext ? t("+{n} points · Next lesson open", { n: lesson.points }) : t("+{n} points", { n: lesson.points }));
     },
     [course.passPercent, hasNext, lesson.id, lesson.points, media, showToast, t],
@@ -563,7 +565,8 @@ function Reading({ lesson, done, hasNext }: { lesson: FlatLesson; done: boolean;
         onClick={() => {
           if (done) return;
           feedStore.finishCourseLesson(lesson.id, lesson.points);
-          showToast(hasNext ? t("+{n} points · Next lesson open", { n: lesson.points }) : t("+{n} points", { n: lesson.points }));
+          haptic("success");
+      showToast(hasNext ? t("+{n} points · Next lesson open", { n: lesson.points }) : t("+{n} points", { n: lesson.points }));
         }}
         className={`flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold transition-transform active:scale-[0.98] ${done ? "bg-mint text-forest" : "bg-forest text-white"}`}
       >

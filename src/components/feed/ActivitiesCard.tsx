@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import SwipeActions from "@/components/motion/SwipeActions";
+import { flyPoints } from "@/lib/motion/flyPoints";
+import { haptic } from "@/lib/motion/haptics";
 import { Check, ChevronDown, Clock, Undo2 } from "lucide-react";
 import { useFoldOnLeave } from "@/components/motion/FoldCard";
 import { Why } from "./FeedCards";
@@ -13,18 +16,18 @@ import { useT } from "@/lib/i18n";
 export default function ActivitiesCard({ f }: { f: HomeFeed }) {
   const showToast = useToast();
   const t = useT();
-  const [burst, setBurst] = useState<{
-    id: string;
-    points: number;
-    key: number;
-  } | null>(null);
-
-  function done(a: Activity) {
+  // Step 77: the "+points" flies from what he tapped (or swiped) up to his points on the Today card
+  function done(a: Activity, from?: Element | null) {
     touch(a.id);
     feedStore.setChoice(a.id, "done");
-    setBurst({ id: a.id, points: a.points, key: Date.now() });
-    setTimeout(() => setBurst(null), 950);
+    haptic("done");
+    flyPoints(from ?? document.querySelector(`[data-activity="${a.id}"]`), a.points);
     showToast(f.isNew ? t("Nice! Your points are saved on this phone.") : t("+{n} points", { n: a.points }));
+  }
+  function later(a: Activity) {
+    touch(a.id);
+    feedStore.setChoice(a.id, "later");
+    showToast(t("Saved for later today"));
   }
 
   // Check-in, water and sleep have their own cards on this screen, so only show the rest here
@@ -94,8 +97,14 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
     const title = f.discreet ? a.discreetTitle : a.title;
     const closed = s === "done" || s === "skipped";
     return (
-      <li key={a.id} className="relative py-3">
-        <div className="flex items-start gap-3">
+      <li key={a.id} className="relative py-1.5" data-activity={a.id}>
+        {/* Swipe right for Done, left for Later (Step 77); the buttons still work */}
+        <SwipeActions
+          disabled={closed}
+          right={{ label: t("Done"), icon: <Check size={18} strokeWidth={3} />, className: "text-white", onCommit: () => done(a) }}
+          left={s !== "later" ? { label: t("Later"), icon: <Clock size={17} />, className: "text-forest", onCommit: () => later(a) } : undefined}
+        >
+        <div className="flex items-start gap-3 py-1.5">
           <span
             className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
               s === "done" ? "bg-forest text-white" : s === "later" ? "bg-mint text-forest" : "ring-1 ring-line"
@@ -117,18 +126,14 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
             {!closed && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <button
-                  onClick={() => done(a)}
+                  onClick={(e) => done(a, e.currentTarget)}
                   className="rounded-full bg-forest px-3.5 py-1.5 text-xs font-semibold text-white transition-transform active:scale-95"
                 >
                   {t("Done")}
                 </button>
                 {s !== "later" && (
                   <button
-                    onClick={() => {
-                      touch(a.id);
-                      feedStore.setChoice(a.id, "later");
-                      showToast(t("Saved for later today"));
-                    }}
+                    onClick={() => later(a)}
                     className="rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 ring-line"
                   >
                     {t("Later")}
@@ -157,15 +162,7 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
             {!closed && <Why text={a.why} />}
           </div>
         </div>
-
-        {burst?.id === a.id && (
-          <span
-            key={burst.key}
-            className="float-up absolute right-2 top-2 rounded-full bg-forest-deep px-2.5 py-1 text-xs font-bold text-white"
-          >
-            +{burst.points}
-          </span>
-        )}
+        </SwipeActions>
       </li>
     );
   }

@@ -7,6 +7,9 @@ import { useToast } from "@/components/motion/Toast";
 import { feedStore } from "@/lib/feed/store";
 import type { HomeFeed } from "./useHomeFeed";
 import { useT } from "@/lib/i18n";
+import { useEffect, useRef, useState } from "react";
+import { flyPoints } from "@/lib/motion/flyPoints";
+import { haptic } from "@/lib/motion/haptics";
 
 /** Small "Why am I seeing this?" link that opens a one-line reason. */
 export function Why({ text }: { text: string }) {
@@ -27,8 +30,22 @@ const NEW_USER_WHY =
 export function TodayCard({ f }: { f: HomeFeed }) {
   const pct = f.total ? Math.round((f.doneCount / f.total) * 100) : 0;
   const t = useT();
+  // A new level (Step 77): the card glows once and the phone gives the "level" buzz
+  const lastLevel = useRef<number | null>(null);
+  const [levelUp, setLevelUp] = useState(0);
+  useEffect(() => {
+    const now = f.level.level;
+    const before = lastLevel.current;
+    lastLevel.current = now;
+    if (before !== null && now > before) {
+      haptic("level");
+      setLevelUp(Date.now());
+      const tm = setTimeout(() => setLevelUp(0), 1600);
+      return () => clearTimeout(tm);
+    }
+  }, [f.level.level]);
   return (
-    <section className="kayani-arcs rounded-3xl bg-forest-deep p-5 text-white">
+    <section key={levelUp || undefined} className={`kayani-arcs rounded-3xl bg-forest-deep p-5 text-white ${levelUp ? "level-up" : ""}`}>
       <p className="text-sm text-mint-strong">{t(f.greeting)}</p>
       {f.isNew ? (
         <>
@@ -55,7 +72,7 @@ export function TodayCard({ f }: { f: HomeFeed }) {
           </div>
           <div className="mt-4 flex items-center justify-between text-xs">
             <span className="text-mint">
-              <span className="mr-1 rounded-full bg-honey px-2 py-0.5 text-sm font-bold text-on-honey">{f.points}</span> {t("points · Level {n}", { n: f.level.level })}
+              <span data-points-target className="mr-1 inline-block rounded-full bg-honey px-2 py-0.5 text-sm font-bold text-on-honey">{f.points}</span> {t("points · Level {n}", { n: f.level.level })}
             </span>
             {f.streak > 0 && (
               <span className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 font-semibold">
@@ -103,8 +120,10 @@ export function ReminderCard({ f }: { f: HomeFeed }) {
           </a>
         ) : (
           <button
-            onClick={() => {
+            onClick={(e) => {
               feedStore.setChoice(a.id, "done");
+              haptic("done");
+              flyPoints(e.currentTarget, a.points);
               showToast(t("+{n} points", { n: a.points }));
             }}
             className="shrink-0 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-white transition-transform active:scale-95"

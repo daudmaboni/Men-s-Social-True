@@ -945,4 +945,8 @@ export const SW: Record<string, string> = {
   "You've watched them all": "Umezitazama zote",
   // Step 74: YouTube videos
   "This video can't play here.": "Video hii haiwezi kucheza hapa.",
+  // Step 77
+  "Vibration": "Mtetemo",
+  "A short buzz when you finish something or earn points.": "Simu inatetemeka kidogo ukimaliza kitu au ukipata pointi.",
+  "Refreshing…": "Inaleta mapya…",
 };

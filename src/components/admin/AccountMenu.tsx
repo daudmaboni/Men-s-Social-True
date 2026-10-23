@@ -3,6 +3,7 @@
 // Bottom of the Studio sidebar: one clean row (avatar, name, role). Tapping it opens a small card with
 // Appearance (light / dark / auto), Colour, Font style, Text size, Account settings and Sign out — so the menu stays about navigation.
 
+import { growFromTrigger } from "@/lib/motion/origin";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, ChevronUp, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
@@ -79,6 +80,7 @@ export default function AccountMenu({
 
       {open && (
         <div
+          ref={growFromTrigger}
           role="menu"
           aria-label="Account"
           className={`menu-pop absolute z-50 max-h-[calc(100dvh-5rem)] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-surface p-3 shadow-2xl ring-1 ring-line ${

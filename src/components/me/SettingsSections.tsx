@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, CloudDownload, Download, Droplet, EyeOff, Globe, HeartHandshake, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
+import { ChevronRight, CloudDownload, Vibrate, Download, Droplet, EyeOff, Globe, HeartHandshake, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
 import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
@@ -21,6 +21,7 @@ import { useT } from "@/lib/i18n";
 import FoldRow from "@/components/motion/FoldRow";
 import { FontStylePicker, TextSizePicker } from "@/components/me/FontChoices";
 import { TEXT_SIZES, fontById, useFont, useTextSize } from "@/lib/fonts";
+import { canVibrate, setHapticsOn, useHapticsOn } from "@/lib/motion/haptics";
 
 /* ───────── Goals and topics ───────── */
 export function GoalsCard({ water, sleep, interests }: { water: number | null; sleep: number | null; interests: TopicId[] }) {
@@ -215,7 +216,30 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
           className="relative h-7 w-12 shrink-0 rounded-full bg-line transition-colors peer-checked:bg-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5"
         />
       </label>
+      <VibrationSwitch />
     </section>
+  );
+}
+
+/** Step 77: short buzzes on Done, points, lessons and levels. Only phones that can vibrate for web pages show it. */
+function VibrationSwitch() {
+  const t = useT();
+  const on = useHapticsOn();
+  const [can] = useState(() => canVibrate());
+  if (!can) return null;
+  return (
+    <label className="flex cursor-pointer items-center gap-3 border-t border-line p-5">
+      <Vibrate size={18} className="shrink-0 text-forest" />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">{t("Vibration")}</span>
+        <span className="block text-xs text-ink-soft">{t("A short buzz when you finish something or earn points.")}</span>
+      </span>
+      <input type="checkbox" role="switch" checked={on} onChange={(e) => setHapticsOn(e.target.checked)} className="peer sr-only" />
+      <span
+        aria-hidden
+        className="relative h-7 w-12 shrink-0 rounded-full bg-line transition-colors peer-checked:bg-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5"
+      />
+    </label>
   );
 }
 

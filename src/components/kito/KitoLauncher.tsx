@@ -6,8 +6,11 @@
 // Step 73: on a phone it no longer sits on top of the cards while he reads. It shows near the top of a
 // page and when he scrolls back up; while he scrolls down it slides away to the side. Anything can open
 // Kito with openKito() (e.g. the "Ask Kito" row on Discover).
+// Step 77: on a phone the window can be pulled down to close, like a bottom sheet (the chat scrolls first).
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { animateSpring, type SpringHandle } from "@/lib/motion/spring";
+import { pullCloses, useSheetDrag } from "@/lib/motion/useSheetDrag";
 import { usePathname } from "next/navigation";
 import { useMiniPlayerVisible } from "@/components/course/MiniPlayer";
 import { useT } from "@/lib/i18n";
@@ -69,6 +72,44 @@ export default function KitoLauncher() {
   }, [open]);
   useEffect(() => setOpen(false), [pathname]);
 
+  // Pull the window down to close it (phones)
+  const panel = useRef<HTMLDivElement>(null);
+  const scrim = useRef<HTMLButtonElement>(null);
+  const anim = useRef<SpringHandle | null>(null);
+  const pulled = useRef(0);
+  const [phone, setPhone] = useState(false);
+  useEffect(() => setPhone(window.matchMedia("(max-width: 1023px)").matches), [open]);
+  const place = useCallback((y: number) => {
+    pulled.current = y;
+    const el = panel.current;
+    if (el) el.style.transform = y ? `translate3d(0, ${y}px, 0)` : "";
+    if (scrim.current) scrim.current.style.opacity = String(Math.max(0, 1 - y / (el?.offsetHeight || 600)));
+  }, []);
+  useEffect(() => {
+    if (open) pulled.current = 0;
+    return () => anim.current?.stop();
+  }, [open]);
+  const onDrag = useCallback(
+    (y: number) => {
+      anim.current?.stop();
+      if (panel.current) panel.current.style.animation = "none"; // the opening slide must not fight the finger
+      place(y);
+    },
+    [place],
+  );
+  const onRelease = useCallback(
+    (y: number, v: number) => {
+      const h = panel.current?.offsetHeight || 600;
+      if (pullCloses(y, v, h)) {
+        anim.current = animateSpring(y, h + 20, place, { damping: 1, response: 0.3, velocity: Math.max(0, v), restDelta: 2, onDone: () => setOpen(false) });
+      } else {
+        anim.current = animateSpring(y, 0, place, { damping: 1, response: 0.3, velocity: v });
+      }
+    },
+    [place],
+  );
+  useSheetDrag(panel, { enabled: open && phone, onDrag, onRelease });
+
   // Not on Kito's own page, the Studio or the sign-in screens
   if (pathname.startsWith("/social/kito") || pathname.startsWith("/studio") || pathname.startsWith("/account")) return null;
 
@@ -99,8 +140,8 @@ export default function KitoLauncher() {
       {open && (
         <div className="fixed inset-0 z-50 lg:inset-auto lg:bottom-6 lg:right-6" role="dialog" aria-modal="true" aria-label="Kito">
           {/* Phone: dim the app behind; computer: just the panel */}
-          <button className="absolute inset-0 bg-black/40 lg:hidden" aria-label={t("Close")} onClick={() => setOpen(false)} />
-          <div className="kito-panel absolute inset-x-0 bottom-0 top-[max(1rem,env(safe-area-inset-top))] overflow-hidden rounded-t-[28px] bg-surface shadow-2xl ring-1 ring-line lg:static lg:h-[min(640px,calc(100dvh-3rem))] lg:w-[400px] lg:rounded-[28px]">
+          <button ref={scrim} className="absolute inset-0 bg-black/40 lg:hidden" aria-label={t("Close")} onClick={() => setOpen(false)} />
+          <div ref={panel} className="kito-panel absolute inset-x-0 bottom-0 top-[max(1rem,env(safe-area-inset-top))] overflow-hidden rounded-t-[28px] bg-surface shadow-2xl ring-1 ring-line lg:static lg:h-[min(640px,calc(100dvh-3rem))] lg:w-[400px] lg:rounded-[28px]">
             <KitoChat onClose={() => setOpen(false)} onNavigate={() => setOpen(false)} />
           </div>
         </div>

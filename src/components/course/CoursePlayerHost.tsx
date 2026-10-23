@@ -6,6 +6,7 @@
 //   waits for him (questions, exercises),
 // - when the countdown ends: the next lesson starts (audio) and the lesson page moves along with it.
 
+import { haptic } from "@/lib/motion/haptics";
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useToast } from "@/components/motion/Toast";
@@ -53,6 +54,7 @@ export default function CoursePlayerHost() {
     playerHooks.onFinish = (l) => {
       const { course, feed, t, showToast } = latest.current;
       const hasNext = course ? Boolean(nextAfter(course, feed.course, l.id)) : false;
+      haptic("success");
       showToast(hasNext ? t("+{n} points · Next lesson open", { n: l.points }) : t("+{n} points", { n: l.points }));
     };
     playerHooks.onEnded = (l) => {

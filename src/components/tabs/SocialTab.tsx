@@ -12,6 +12,16 @@ import LockedTab from "@/components/account/LockedTab";
 import { useAccount } from "@/lib/account/useAccount";
 import { useT } from "@/lib/i18n";
 import InboxButton from "@/components/notifications/InboxButton";
+import PullToRefresh from "@/components/motion/PullToRefresh";
+import { refreshLibrary } from "@/lib/content/useLibrary";
+import { newVisit } from "@/lib/social/discoverPrefs";
+import { refreshCommunity } from "@/lib/social/communityServer";
+
+/** Pull to refresh (Step 77): Discover fetches new content and starts a fresh order; Community reloads the posts. */
+const refreshDiscover = () => {
+  newVisit();
+  return refreshLibrary();
+};
 
 type Tab = "discover" | "community";
 
@@ -85,9 +95,13 @@ function SocialInner() {
         ) : searching ? (
           <SearchPanel tab={tab} onClose={() => setSearching(false)} />
         ) : tab === "discover" ? (
-          <Discover />
+          <PullToRefresh onRefresh={refreshDiscover}>
+            <Discover />
+          </PullToRefresh>
         ) : (
-          <Community />
+          <PullToRefresh onRefresh={refreshCommunity}>
+            <Community />
+          </PullToRefresh>
         )}
       </div>
     </div>

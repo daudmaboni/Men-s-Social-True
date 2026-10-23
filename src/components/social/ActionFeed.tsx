@@ -5,6 +5,7 @@
 // action cards. Each card is a carousel he swipes through: the hook, what he needs, the steps,
 // why it works. Then: "Useful", share, save, and "I did it".
 
+import { haptic } from "@/lib/motion/haptics";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -45,7 +46,7 @@ import { openKito } from "@/components/kito/KitoLauncher";
 import KitoMark from "@/components/kito/KitoMark";
 import { isReel } from "@/lib/content/reels";
 import { orderCards, orderReels, placeReels, reelEvery, type Habits } from "@/lib/content/discover";
-import { habitsStore, useDiscoverConfig, visitSeed } from "@/lib/social/discoverPrefs";
+import { DISCOVER_REFRESH, habitsStore, useDiscoverConfig, visitSeed } from "@/lib/social/discoverPrefs";
 import { useAccount } from "@/lib/account/useAccount";
 
 const CHALLENGES: { id: FeedFilter; label: string; icon: typeof Timer }[] = [
@@ -133,12 +134,22 @@ export default function ActionFeed() {
 
   // Step 71: a new order every visit, different for each man. What he did, opened and his habits are
   // read once when the visit starts (or he changes the challenge), so nothing jumps while he scrolls.
+  const [refreshes, setRefreshes] = useState(0);
   const [visit, setVisit] = useState<{ seed: string; done: Record<string, string>; opened: Record<string, string>; habits: Habits } | null>(null);
   useEffect(() => {
     if (!tried.ready || !social.ready) return;
     setVisit({ seed: visitSeed(accountId), done: { ...tried.done }, opened: { ...social.history }, habits: habitsStore.get() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tried.ready, social.ready, filter, accountId]);
+  }, [tried.ready, social.ready, filter, accountId, refreshes]);
+  // Pull to refresh (Step 77) starts a new visit: a fresh order, from the top
+  useEffect(() => {
+    const on = () => {
+      setShown(PAGE);
+      setRefreshes((n) => n + 1);
+    };
+    window.addEventListener(DISCOVER_REFRESH, on);
+    return () => window.removeEventListener(DISCOVER_REFRESH, on);
+  }, []);
   const cards = useMemo(() => {
     if (!visit) return [];
     const picked = filter === "all" ? all : all.filter((c) => c.spec.challenges.includes(filter));
@@ -169,8 +180,10 @@ export default function ActionFeed() {
     top.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   };
 
-  // Tapping a reel opens the full-screen viewer with sound on
-  const openReels = (start: number, list = reels) => setViewer({ list, start, sound: true });
+  // Tapping a reel opens the full-screen viewer with sound on. The tapped reel comes first and the ones
+  // before it go to the end (he has seen those in the feed), so pulling down on it closes the viewer (Step 77).
+  const openReels = (start: number, list = reels) =>
+    setViewer({ list: start > 0 ? [...list.slice(start), ...list.slice(0, start)] : list, start: 0, sound: true });
   if (!tried.ready || !social.ready || !visit) return <ActionFeedSkeleton />;
 
   const left = (id: FeedFilter) => (id === "all" ? all : all.filter((c) => c.spec.challenges.includes(id))).some((c) => !tried.done[c.item.id]);
@@ -379,6 +392,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
               const now = triedStore.toggleDone(item.id);
               habitsStore.cardUsed();
               if (now) {
+                haptic("done");
                 trackContent(item.id, "complete");
                 showToast(t("Nice one, bro. Keep going."));
               }

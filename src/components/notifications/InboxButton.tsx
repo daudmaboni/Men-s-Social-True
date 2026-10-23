@@ -54,7 +54,7 @@ export default function InboxButton() {
           </span>
         )}
       </button>
-      <Sheet open={open} onClose={() => setOpen(false)} title={t("Notifications")}>
+      <Sheet anchored open={open} onClose={() => setOpen(false)} title={t("Notifications")}>
         {inbox.items.length === 0 ? (
           <p className="text-sm text-ink-soft">{t("No notifications yet")}</p>
         ) : (

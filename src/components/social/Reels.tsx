@@ -6,10 +6,12 @@
 //    Nothing is printed over the video, so the video's own text stays readable: the name, title, caption
 //    and buttons sit under it. Tapping the video opens the full-screen viewer with sound on.
 //  - ReelsViewer: full screen, swipe up for the next one. Like, save, share, "I did it".
+//    Step 77: it grows out of the reel he tapped, and pulling down on the first reel shrinks it back
+//    into its card in the feed (✕ and the phone's Back button do the same). Springs keep his finger's speed.
 // Only the reel on screen (and the next one) loads, to save his data. Late at night, or after 15 reels,
 // a "that's enough for tonight" card comes up (see lib/content/reels.ts).
 
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ArrowRight, Bookmark, Check, Heart, Moon, Play, Send, Volume2, VolumeX, X } from "lucide-react";
@@ -26,6 +28,8 @@ import { socialStore, useSocial } from "@/lib/social/store";
 import { triedStore, useTried } from "@/lib/social/tried";
 import { useT } from "@/lib/i18n";
 import { habitsStore } from "@/lib/social/discoverPrefs";
+import { animateSpring, releaseVelocity, type SpringHandle } from "@/lib/motion/spring";
+import { haptic } from "@/lib/motion/haptics";
 
 const SOUND_KEY = "ms_reels_sound";
 const saveData = () => {
@@ -123,7 +127,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
       </header>
 
       {/* The video, nothing written over it. Tall like Instagram, but never taller than the screen. */}
-      <div ref={box} className="relative aspect-[9/16] max-h-[min(78svh,820px)] w-full overflow-hidden bg-black">
+      <div ref={box} data-reel-card={reel.id} className="relative aspect-[9/16] max-h-[min(78svh,820px)] w-full overflow-hidden bg-black">
         {yt && near && !lite && (
           <YouTubeFrame id={yt} playing={playing} muted={!sound} loop title={title} className="absolute inset-0" onProgress={(c, d) => setProgress(c / d)} />
         )}
@@ -211,9 +215,47 @@ function IconButton({ label, onClick, children }: { label: string; onClick: () =
 }
 
 /* ───────── Full screen ───────── */
+/** Where the viewer's picture sits: moved, shrunk, cut to the card's height, rounded, and how dark the page behind is. */
+type Pose = { tx: number; ty: number; s: number; inset: number; radius: number; dim: number };
+const FULL: Pose = { tx: 0, ty: 0, s: 1, inset: 0, radius: 0, dim: 1 };
+const mix = (a: Pose, b: Pose, p: number): Pose => ({
+  tx: a.tx + (b.tx - a.tx) * p,
+  ty: a.ty + (b.ty - a.ty) * p,
+  s: a.s + (b.s - a.s) * p,
+  inset: a.inset + (b.inset - a.inset) * p,
+  radius: a.radius + (b.radius - a.radius) * p,
+  dim: a.dim + (b.dim - a.dim) * p,
+});
+
+/** The pose that makes the full-screen viewer sit exactly on a reel's card in the feed. */
+function cardPose(rect: DOMRect): Pose {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const s = rect.width / W;
+  return {
+    tx: rect.left + rect.width / 2 - W / 2,
+    ty: rect.top + rect.height / 2 - H / 2,
+    s,
+    inset: Math.max(0, (H - rect.height / s) / 2),
+    radius: 20 / s,
+    dim: 0,
+  };
+}
+
+/** The reel's card in the feed, if it's on screen now (otherwise the viewer just slides down and away). */
+function cardRect(id: string | undefined): DOMRect | null {
+  if (!id) return null;
+  const el = document.querySelector<HTMLElement>(`[data-reel-card="${CSS.escape(id)}"]`);
+  const r = el?.getBoundingClientRect();
+  if (!r || r.width < 40 || r.bottom < 0 || r.top > window.innerHeight) return null;
+  return r;
+}
+
 export function ReelsViewer({ reels, start, onClose, withSound = false }: { reels: ContentItem[]; start: number; onClose: () => void; withSound?: boolean }) {
   const t = useT();
   const strip = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(start);
   // Opened by tapping a reel → sound on (the tap allows it). Otherwise his last choice.
   const [sound, setSound] = useState(() => {
@@ -232,16 +274,73 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
   const [endDismissed, setEndDismissed] = useState(false);
   const endAt = useMemo(() => (endDismissed ? -1 : softEndIndex(start, reels.length, new Date())), [endDismissed, start, reels.length]);
 
+  // ---- The viewer's picture: growing out of the card, following his finger, shrinking back (Step 77) ----
+  const pose = useRef<Pose>(FULL);
+  const anim = useRef<SpringHandle | null>(null);
+  const leaving = useRef(false);
+  const place = useCallback((p: Pose) => {
+    pose.current = p;
+    const f = frame.current;
+    const r = root.current;
+    if (!f || !r) return;
+    f.style.transform = p === FULL || (p.tx === 0 && p.ty === 0 && p.s === 1) ? "" : `translate3d(${p.tx}px, ${p.ty}px, 0) scale(${p.s})`;
+    f.style.clipPath = p.inset > 0.5 || p.radius > 0.5 ? `inset(${p.inset}px 0 round ${p.radius}px)` : "";
+    r.style.backgroundColor = `rgb(0 0 0 / ${Math.max(0, Math.min(1, p.dim))})`;
+  }, []);
+  /** Spring from where the picture is now to `to`; `speed` is in "whole moves per second". */
+  const glide = useCallback(
+    (to: Pose, speed = 0, done?: () => void, response = 0.36) => {
+      anim.current?.stop();
+      const from = pose.current;
+      anim.current = animateSpring(0, 1, (p) => place(mix(from, to, p)), {
+        damping: 1,
+        response,
+        velocity: speed,
+        onDone: () => {
+          anim.current = null;
+          place(to);
+          done?.();
+        },
+      });
+    },
+    [place],
+  );
+  // Opening: it grows out of the reel he tapped
+  useLayoutEffect(() => {
+    const rect = cardRect(reels[start]?.id);
+    if (!rect) return;
+    place(cardPose(rect));
+    glide(FULL, 0, undefined, 0.4);
+    return () => anim.current?.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  /** Shrink back into the card of the reel on screen (or slide down if that card isn't in view), then close. */
+  const shrinkAway = useCallback(
+    (then: () => void, speedPx = 0) => {
+      if (leaving.current) return;
+      leaving.current = true;
+      const rect = cardRect(reels[activeRef.current]?.id);
+      const H = window.innerHeight;
+      const to: Pose = rect ? cardPose(rect) : { ...pose.current, ty: H, dim: 0 };
+      const gap = Math.max(60, Math.abs(to.ty - pose.current.ty));
+      glide(to, Math.max(0, Math.min(8, speedPx / gap)), then, 0.34);
+    },
+    [glide, reels],
+  );
+  const activeRef = useRef(active);
+  activeRef.current = active;
+
   // The phone's Back button closes the reels instead of leaving the app
   const closing = useRef(false);
   useEffect(() => {
     history.pushState({ reels: true }, "");
     const onPop = () => {
       closing.current = true;
-      onClose();
+      if (leaving.current) return onClose(); // already shrinking: Back came from our own close
+      shrinkAway(onClose);
     };
     window.addEventListener("popstate", onPop);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
     document.addEventListener("keydown", onKey);
     document.documentElement.style.overflow = "hidden";
     return () => {
@@ -251,10 +350,81 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const close = useCallback(() => {
-    if (!closing.current) history.back();
-    else onClose();
-  }, [onClose]);
+  /** ✕, Escape, "Close reels": shrink back into the card, then leave. */
+  const close = useCallback(
+    (speedPx = 0) => {
+      shrinkAway(() => {
+        if (!closing.current) history.back();
+        else onClose();
+      }, speedPx);
+    },
+    [onClose, shrinkAway],
+  );
+
+  const closeRef = useRef(() => close());
+  closeRef.current = () => close();
+
+  // ---- Pulling down on the first reel closes the viewer ----
+  // Touch events (not pointer events), because the browser owns vertical swipes on the reel strip;
+  // at the very top a downward pull is ours, so we stop the browser there.
+  useEffect(() => {
+    const el = root.current;
+    const st = strip.current;
+    if (!el || !st) return;
+    let g: { y: number; x: number; on: boolean; done: boolean; samples: { t: number; x: number }[] } | null = null;
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1 || leaving.current) return (g = null);
+      anim.current?.stop();
+      const p = e.touches[0];
+      // Caught while springing back: carry on from where the picture is, not from the top
+      const caught = pose.current.ty > 0;
+      g = { y: p.clientY - (caught ? pose.current.ty : 0), x: p.clientX - (caught ? pose.current.tx * 2 : 0), on: caught, done: false, samples: [{ t: performance.now(), x: p.clientY }] };
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!g || g.done) return;
+      const p = e.touches[0];
+      const dy = p.clientY - g.y;
+      const dx = p.clientX - g.x;
+      if (!g.on) {
+        if (Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+        // Only a mostly-downward pull while the first reel is fully on screen
+        if (dy > 0 && dy > Math.abs(dx) * 1.2 && st.scrollTop <= 1) g.on = true;
+        else return void (g.done = true);
+      }
+      if (e.cancelable) e.preventDefault();
+      const H = window.innerHeight;
+      const down = Math.max(0, dy);
+      // The picture follows the finger 1:1 and shrinks a little as it goes, the feed shows through behind
+      place({ tx: dx * 0.5, ty: down, s: 1 - Math.min(down / H, 1) * 0.35, inset: 0, radius: Math.min(down / 4, 28), dim: 1 - Math.min(down / (H * 0.6), 1) * 0.85 });
+      const now = performance.now();
+      g.samples.push({ t: now, x: p.clientY });
+      while (g.samples.length > 2 && now - g.samples[0].t > 100) g.samples.shift();
+    };
+    const onEnd = () => {
+      if (!g?.on) return (g = null);
+      const v = releaseVelocity(g.samples); // px/s, positive = downward
+      const down = pose.current.ty;
+      g = null;
+      if (v > 450 || (down > window.innerHeight * 0.18 && v > -200)) {
+        haptic("tick");
+        close(Math.max(v, 0));
+      } else {
+        // Not far or fast enough: back up to full screen at his finger's speed
+        const gap = Math.max(60, down);
+        glide(FULL, Math.max(0, Math.min(8, -v / gap)), undefined, 0.32);
+      }
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd);
+    el.addEventListener("touchcancel", onEnd);
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, [close, glide, place]);
 
   // Start at the reel he tapped
   useEffect(() => {
@@ -291,7 +461,8 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
 
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="fixed inset-0 z-[60] bg-black text-white" role="dialog" aria-modal="true" aria-label={t("Reels")}>
+    <div ref={root} className="fixed inset-0 z-[60] bg-black text-white" role="dialog" aria-modal="true" aria-label={t("Reels")}>
+      <div ref={frame} className="absolute inset-0 origin-center overflow-hidden will-change-transform">
       <div ref={strip} className="no-scrollbar h-full snap-y snap-mandatory overflow-y-scroll overscroll-contain">
         {reels.map((r, i) => (
           <Fragment key={r.id}>
@@ -300,7 +471,7 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
                 <Moon size={40} className="text-mint" />
                 <p className="font-display text-2xl font-bold">{t("That's enough for tonight")}</p>
                 <p className="max-w-xs text-sm text-white/75">{t("Put the phone down and rest. Your next reels will be here tomorrow.")}</p>
-                <button onClick={close} className="mt-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-forest-deep">
+                <button onClick={() => close()} className="mt-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-forest-deep">
                   {t("Close reels")}
                 </button>
                 <button
@@ -333,20 +504,21 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
           <Check size={36} className="text-mint" />
           <p className="font-display text-xl font-bold">{t("You've watched them all")}</p>
           <p className="text-sm text-white/70">{t("New reels come every week.")}</p>
-          <button onClick={close} className="mt-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-forest-deep">
+          <button onClick={() => close()} className="mt-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-forest-deep">
             {t("Back to Discover")}
           </button>
         </section>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <button onClick={close} aria-label={t("Close")} className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur">
+        <button onClick={() => close()} aria-label={t("Close")} className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur">
           <X size={20} />
         </button>
         <p className="font-display text-lg font-bold drop-shadow">{t("Reels")}</p>
         <button onClick={toggleSound} aria-label={t(sound ? "Sound off" : "Sound on")} className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-black/40 backdrop-blur">
           {sound ? <Volume2 size={19} /> : <VolumeX size={19} />}
         </button>
+      </div>
       </div>
     </div>,
     document.body,
@@ -521,6 +693,7 @@ function ReelSlide({
           onClick={() => {
             const now = triedStore.toggleDone(reel.id);
             if (now) {
+              haptic("done");
               trackContent(reel.id, "complete");
               showToast(t("Nice one, bro. Keep going."));
             }

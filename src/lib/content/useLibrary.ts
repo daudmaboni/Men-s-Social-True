@@ -77,3 +77,8 @@ export function useLibrary(): State {
 
   return state;
 }
+
+/** Fetch the published content again now (pull to refresh, Step 77). */
+export function refreshLibrary(): Promise<void> {
+  return load(true);
+}

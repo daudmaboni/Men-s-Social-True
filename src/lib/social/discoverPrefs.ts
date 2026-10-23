@@ -48,6 +48,15 @@ export function visitSeed(accountId?: string | null): string {
   return `${accountId || device}:${v.id}`;
 }
 
+/** Start a new visit now: Discover gets a fresh order (pull to refresh, Step 77). */
+export const DISCOVER_REFRESH = "discover:refresh";
+export function newVisit() {
+  try {
+    session()?.removeItem(VISIT);
+  } catch {}
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(DISCOVER_REFRESH));
+}
+
 /* ───────── Habits (counts only) ───────── */
 let habits: Habits | null = null;
 const hListeners = new Set<() => void>();
