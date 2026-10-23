@@ -1,5 +1,6 @@
 "use client";
 
+// Phones: a 4px side margin, so cards run almost to the screen edge (Step 83).
 // The three main tabs side by side in one sliding strip, like a phone app.
 // - Swiping: the page follows the finger exactly; when he lets go, a spring (not the browser's slow snap)
 //   carries it on at his finger's speed to the next tab. A quick flick is enough; a slow short drag springs back.
@@ -402,7 +403,7 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
             className="tab-panel"
             aria-label={["Social", "Man", "Me"][i]}
           >
-            <div className="mx-auto max-w-md px-2.5 pb-32 pt-6 lg:max-w-6xl lg:px-10 lg:pb-14 lg:pt-8">
+            <div className="mx-auto max-w-md px-1 pb-32 pt-6 lg:max-w-6xl lg:px-10 lg:pb-14 lg:pt-8">
               <PanelBoundary>
                 {i > 0 && acc.status === "loading" ? (
                   <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
@@ -458,7 +459,7 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
           onPointerUp={endOverlayDrag}
           onPointerCancel={endOverlayDrag}
         >
-          <div className="mx-auto max-w-md px-2.5 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">{children}</div>
+          <div className="mx-auto max-w-md px-1 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">{children}</div>
         </div>
       )}
     </>

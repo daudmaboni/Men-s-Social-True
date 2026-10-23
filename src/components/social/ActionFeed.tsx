@@ -195,11 +195,11 @@ export default function ActionFeed() {
 
   return (
     <div className="mx-auto w-full max-w-[480px] space-y-4">
-      <section aria-labelledby="challenge-h" className="-mx-2.5 scroll-mt-4 lg:mx-0" ref={top}>
-        <h2 id="challenge-h" className="px-2.5 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
+      <section aria-labelledby="challenge-h" className="-mx-1 scroll-mt-4 lg:mx-0" ref={top}>
+        <h2 id="challenge-h" className="px-1 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
           {t("What are you dealing with?")}
         </h2>
-        <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-2.5 pb-1 lg:px-0">
+        <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-1 pb-1 lg:px-0">
           {CHALLENGES.map(({ id, label, icon: Icon }) => {
             const on = filter === id;
             const fresh = left(id);
