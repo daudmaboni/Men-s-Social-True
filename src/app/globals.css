@@ -81,6 +81,34 @@
   --line: #ece3e4;
 }
 
+/* Step 82: Me → Text size changes the TEXT only. It works by changing the page's base size (rem),
+   so spacing, widths and corners are given in pixels here (the same as before at Normal size):
+   the margins, the page width and the cards stay put when he picks Small or Extra large. */
+@theme {
+  --spacing: 4px;
+  --container-3xs: 256px;
+  --container-2xs: 288px;
+  --container-xs: 320px;
+  --container-sm: 384px;
+  --container-md: 448px;
+  --container-lg: 512px;
+  --container-xl: 576px;
+  --container-2xl: 672px;
+  --container-3xl: 768px;
+  --container-4xl: 896px;
+  --container-5xl: 1024px;
+  --container-6xl: 1152px;
+  --container-7xl: 1280px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-4xl: 32px;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);

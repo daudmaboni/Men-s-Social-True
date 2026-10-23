@@ -103,7 +103,7 @@ export function ActionFeedSkeleton() {
           <div key={i} className="h-[68px] w-[68px] shrink-0 animate-pulse rounded-full bg-line" />
         ))}
       </div>
-      <div className="-mx-3 aspect-[5/4] animate-pulse rounded-[20px] bg-forest-deep/15 lg:mx-0" />
+      <div className="aspect-[5/4] animate-pulse rounded-[20px] bg-forest-deep/15 lg:mx-0" />
     </div>
   );
 }
@@ -195,11 +195,11 @@ export default function ActionFeed() {
 
   return (
     <div className="mx-auto w-full max-w-[480px] space-y-4">
-      <section aria-labelledby="challenge-h" className="-mx-5 scroll-mt-4 lg:mx-0" ref={top}>
-        <h2 id="challenge-h" className="px-5 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
+      <section aria-labelledby="challenge-h" className="-mx-2.5 scroll-mt-4 lg:mx-0" ref={top}>
+        <h2 id="challenge-h" className="px-2.5 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
           {t("What are you dealing with?")}
         </h2>
-        <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-5 pb-1 lg:px-0">
+        <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-2.5 pb-1 lg:px-0">
           {CHALLENGES.map(({ id, label, icon: Icon }) => {
             const on = filter === id;
             const fresh = left(id);
@@ -255,7 +255,7 @@ export default function ActionFeed() {
         </p>
       )}
 
-      <div className="-mx-3 space-y-3 lg:mx-0 lg:space-y-4">
+      <div className="space-y-3 lg:mx-0 lg:space-y-4">
         {cards.slice(0, shown).map((c, i) => {
           // Reels between the cards: full width, the one on screen plays silently (each reel shows once)
           const r = reelSpots.get(i);
@@ -269,7 +269,7 @@ export default function ActionFeed() {
       </div>
 
       {more ? (
-        <div ref={sentinel} className="-mx-3 h-[40vh] animate-pulse rounded-[20px] lg:mx-0 bg-surface ring-1 ring-line" aria-hidden />
+        <div ref={sentinel} className="h-[40vh] animate-pulse rounded-[20px] lg:mx-0 bg-surface ring-1 ring-line" aria-hidden />
       ) : (
         <EndOfFeed filter={filter} onPick={pick} t={t} />
       )}

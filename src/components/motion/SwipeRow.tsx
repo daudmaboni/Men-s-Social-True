@@ -97,7 +97,7 @@ export default function SwipeRow({
       <div
         ref={scroller}
         onScroll={onScroll}
-        className="no-scrollbar -mx-5 -my-2 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto overscroll-x-contain px-5 py-2 lg:mx-0 lg:scroll-px-0 lg:px-0"
+        className="no-scrollbar -mx-2.5 -my-2 flex snap-x snap-mandatory scroll-px-2.5 gap-3 overflow-x-auto overscroll-x-contain px-2.5 py-2 lg:mx-0 lg:scroll-px-0 lg:px-0"
       >
         {slides.map((s, i) => (
           <div
