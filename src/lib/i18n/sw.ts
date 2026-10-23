@@ -949,4 +949,8 @@ export const SW: Record<string, string> = {
   "Vibration": "Mtetemo",
   "A short buzz when you finish something or earn points.": "Simu inatetemeka kidogo ukimaliza kitu au ukipata pointi.",
   "Refreshing…": "Inaleta mapya…",
+  // Step 78: pull to refresh on Man, Me and posts
+  "Everything is up to date": "Kila kitu kiko sawa, hakuna jipya",
+  "You're offline. Showing what's on this phone.": "Huna intaneti. Unaona kilichohifadhiwa kwenye simu hii.",
+  "Couldn't reach the server. Try again in a moment.": "Imeshindwa kufikia seva. Jaribu tena baada ya muda mfupi.",
 };

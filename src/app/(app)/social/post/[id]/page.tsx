@@ -13,9 +13,12 @@ import { checkReply, LIMITS, topicLabel } from "@/lib/social/community";
 import LockedTab from "@/components/account/LockedTab";
 import { useAccount } from "@/lib/account/useAccount";
 import { useT } from "@/lib/i18n";
+import SyncPull from "@/components/motion/SyncPull";
+import { loadReplies, refreshCommunity } from "@/lib/social/communityServer";
 
 /** Community posts need an account, like the Community tab itself. */
 export default function PostPage() {
+  const { id } = useParams<{ id: string }>();
   const acc = useAccount();
   const t = useT();
   if (acc.status === "loading") return <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />;
@@ -29,7 +32,12 @@ export default function PostPage() {
       </div>
     );
   }
-  return <PostView />;
+  // Pull down at the top: new replies and reactions, plus sync now (Step 78)
+  return (
+    <SyncPull also={() => Promise.all([refreshCommunity(), id ? loadReplies(id) : null])}>
+      <PostView />
+    </SyncPull>
+  );
 }
 
 function PostView() {

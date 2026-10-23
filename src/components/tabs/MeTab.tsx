@@ -3,6 +3,7 @@
 // "Me": who he is in the app, what he's earned, his goals, settings and privacy controls.
 // Everything here comes from his real activity on this phone.
 
+import SyncPull from "@/components/motion/SyncPull";
 import ProfileHero from "@/components/me/ProfileHero";
 import BadgesSection from "@/components/me/BadgesSection";
 import { GoalsCard, PrivacyCard, SettingsCard } from "@/components/me/SettingsSections";
@@ -46,8 +47,10 @@ export default function MeTab() {
     replies: social.replies.length,
   });
 
+  // Pull down at the top: sync now (Step 78)
   return (
-    // Phone: one column. Computer: profile and badges on the left (they stay in view), goals and settings on the right.
+    <SyncPull>
+    {/* Phone: one column. Computer: profile and badges on the left (they stay in view), goals and settings on the right. */}
     <div className="stagger flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-start lg:gap-6">
       <h1 className="sr-only">{t("Me")}</h1>
       <div className="contents lg:sticky lg:top-0 lg:col-span-5 lg:flex lg:flex-col lg:gap-5">
@@ -74,5 +77,6 @@ export default function MeTab() {
       </div>
       <p className="pb-2 lg:col-span-12 text-center text-[0.6875rem] text-ink-soft">{t("Kayani Men's Social · test version")}</p>
     </div>
+    </SyncPull>
   );
 }

@@ -167,6 +167,23 @@ export async function startSync(userId: string): Promise<void> {
   };
 }
 
+/**
+ * Pull to refresh on Man, Me and post pages (Step 78): bring this phone and his account in step now,
+ * instead of waiting for the next time he comes back to the app.
+ * "none" = not signed in / no server; otherwise how it went.
+ */
+export async function syncNow(): Promise<"none" | "saved" | "offline" | "error"> {
+  if (!current || !getSupabase()) return "none";
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return "offline";
+  if (timer) clearTimeout(timer);
+  timer = null;
+  pending.clear();
+  lastRefresh = Date.now();
+  await push(current.userId, KINDS);
+  const s = snapshot.status;
+  return s === "offline" ? "offline" : s === "error" ? "error" : "saved";
+}
+
 /** Save anything waiting right now (e.g. before signing out). */
 export async function flushSync() {
   if (!current) return;

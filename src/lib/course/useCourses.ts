@@ -84,3 +84,8 @@ export function useMainCourse(): { course: Course | null; ready: boolean } {
 
 /** Pick the language's version of a text. */
 export const pick = (sw: boolean, en?: string, swText?: string) => (sw && swText ? swText : en ?? swText ?? "");
+
+/** Fetch the published courses again now (pull to refresh, Step 78). */
+export function refreshCourses(): Promise<void> {
+  return refresh(true);
+}

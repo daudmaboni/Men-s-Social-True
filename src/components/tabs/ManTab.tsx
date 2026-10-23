@@ -14,6 +14,7 @@ import CourseCard from "@/components/course/CourseCard";
 import HydrationCard from "@/components/progress/HydrationCard";
 import SleepCard from "@/components/progress/SleepCard";
 import { useT } from "@/lib/i18n";
+import SyncPull from "@/components/motion/SyncPull";
 
 export default function ManTab() {
   const f = useHomeFeed();
@@ -33,7 +34,9 @@ export default function ManTab() {
 
   // Phone: one column, in this order. Computer (lg): today's actions on the left, the three trackers
   // on the right, trends across the bottom. The `order-*` classes keep the phone order the same.
+  // Pull down at the top: sync now (Step 78)
   return (
+    <SyncPull>
     <div className="stagger flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:gap-6">
       <div className="lg:col-span-12">
         <TopBar />
@@ -78,5 +81,6 @@ export default function ManTab() {
 
       <p className="order-10 px-2 pt-2 text-center text-[0.6875rem] text-ink-soft lg:col-span-12">{t("Saved privately to your account.")}</p>
     </div>
+    </SyncPull>
   );
 }
