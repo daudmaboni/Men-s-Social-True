@@ -63,6 +63,16 @@ const headersFor = (studio: boolean) => [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Netlify deploy fix: the Card maker's Whisper runs only in the Studio browser (onnxruntime-web).
+  // Without this, the server bundle drags in onnxruntime-node (~540 MB) and sharp, and Netlify rejects
+  // the server function as too large. Point them at "nothing" and keep them out of the server files.
+  webpack: (config) => {
+    config.resolve.alias = { ...config.resolve.alias, "onnxruntime-node$": false, "sharp$": false };
+    return config;
+  },
+  outputFileTracingExcludes: {
+    "*": ["node_modules/onnxruntime-node/**", "node_modules/@huggingface/transformers/**", "node_modules/@img/**", "node_modules/sharp/**"],
+  },
   // Lighter photos (Step 85): Netlify's image service only exists on Netlify, so it's on only for Netlify builds
   env: { NEXT_PUBLIC_IMAGE_CDN: process.env.NETLIFY === "true" ? "on" : process.env.NEXT_PUBLIC_IMAGE_CDN || "off" },
   async headers() {
