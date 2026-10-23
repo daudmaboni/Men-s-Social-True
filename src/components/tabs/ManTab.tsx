@@ -15,6 +15,8 @@ import HydrationCard from "@/components/progress/HydrationCard";
 import SleepCard from "@/components/progress/SleepCard";
 import { useT } from "@/lib/i18n";
 import SyncPull from "@/components/motion/SyncPull";
+import { PushInvite } from "@/components/me/PhoneNotifications";
+import WeekCard from "@/components/feed/WeekCard";
 
 export default function ManTab() {
   const f = useHomeFeed();
@@ -48,12 +50,19 @@ export default function ManTab() {
       </div>
 
       <div className="contents lg:col-span-7 lg:flex lg:flex-col lg:gap-5">
+        {/* Sundays and Mondays: his week in review (Step 79) */}
+        <div className="order-1 empty:hidden">
+          <WeekCard f={f} />
+        </div>
         <div className="order-1">
           <TodayCard f={f} />
         </div>
         <div className="order-2">{f.allClosed ? <EndCard /> : <ReminderCard f={f} />}</div>
         <div className="order-6">
           <ActivitiesCard f={f} />
+        </div>
+        <div className="order-6 empty:hidden">
+          <PushInvite />
         </div>
         <div className="order-7">
           <LessonCard f={f} />

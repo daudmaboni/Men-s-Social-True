@@ -23,9 +23,9 @@ function call(fn: string, args: Record<string, unknown>) {
 }
 
 /** He opened, finished or saved a piece of content. Views count once per app session. */
-export function trackContent(id: string, event: "view" | "complete" | "save") {
+export function trackContent(id: string, event: "view" | "complete" | "save" | "helped_yes" | "helped_some" | "helped_no") {
   const key = `${event}:${id}`;
-  if (event !== "save" && seen.has(key)) return;
+  if (event !== "save" && !event.startsWith("helped") && seen.has(key)) return;
   seen.add(key);
   call("track_content", { p_id: id, p_event: event });
 }

@@ -7,6 +7,7 @@ import { Bell } from "lucide-react";
 import { useToast } from "@/components/motion/Toast";
 import { useT } from "@/lib/i18n";
 import { DEFAULT_PREFS, loadPrefs, savePrefs, type Prefs } from "@/lib/notifications/inbox";
+import PhoneNotifications from "./PhoneNotifications";
 
 const ROWS: { key: keyof Prefs; label: string }[] = [
   { key: "announcements", label: "News from the Men's Social team" },
@@ -48,6 +49,8 @@ export default function NotificationPrefs() {
           <p className="text-xs text-ink-soft">{t("Messages from the team arrive in the bell. Warnings about your account always arrive.")}</p>
         </div>
       </div>
+      {/* Step 79: on his phone too (daily reminder, lock-screen text) */}
+      <PhoneNotifications />
       <ul className="mt-3 divide-y divide-line">
         {ROWS.map((r) => (
           <li key={r.key}>

@@ -6,6 +6,7 @@
 // why it works. Then: "Useful", share, save, and "I did it".
 
 import { haptic } from "@/lib/motion/haptics";
+import { flyPoints } from "@/lib/motion/flyPoints";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -35,7 +36,10 @@ import { useLibrary } from "@/lib/content/useLibrary";
 import { actionOf } from "@/lib/content/actions";
 import type { ActionResult, ActionSpec, ActionType, ContentItem } from "@/lib/content/types";
 import { socialStore, useSocial } from "@/lib/social/store";
-import { triedStore, useTried, type FeedFilter } from "@/lib/social/tried";
+import { TRIED_POINTS, triedStore, useTried, type FeedFilter } from "@/lib/social/tried";
+import { helpedYes } from "@/lib/social/helped";
+import { useFeed } from "@/lib/feed/store";
+import HelpedCheck from "./HelpedCheck";
 import { trackContent } from "@/lib/analytics/track";
 import { youtubeId } from "@/lib/content/youtube";
 import { YouTubeFrame } from "@/components/media/YouTubeFrame";
@@ -109,6 +113,7 @@ export function ActionFeedSkeleton() {
 
 export default function ActionFeed() {
   const { items } = useLibrary();
+  const feed = useFeed();
   const tried = useTried();
   const social = useSocial();
   const t = useT();
@@ -153,7 +158,7 @@ export default function ActionFeed() {
   const cards = useMemo(() => {
     if (!visit) return [];
     const picked = filter === "all" ? all : all.filter((c) => c.spec.challenges.includes(filter));
-    return orderCards(picked, `${visit.seed}:${filter}`, { interests: social.interests, opened: visit.opened, liked: tried.liked, done: visit.done }, cfg);
+    return orderCards(picked, `${visit.seed}:${filter}`, { interests: social.interests, opened: visit.opened, liked: { ...helpedYes(feed.tried), ...tried.liked }, done: visit.done }, cfg);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [all, filter, visit, cfg]);
   const reels = useMemo(() => (visit ? orderReels(items.filter(isReel), visit.seed, visit.opened, cfg) : []), [items, visit, cfg]);
@@ -236,6 +241,9 @@ export default function ActionFeed() {
         <span className="flex-1 truncate text-sm text-ink-soft">{t("Ask Kito…")}</span>
         <Send size={16} className="text-forest" aria-hidden />
       </button>
+
+      {/* A few days after he did a card: did it help? (Step 79) */}
+      <HelpedCheck items={items} />
 
       {filter !== "all" && (
         <p className="flex items-center justify-between gap-2 text-xs text-ink-soft">
@@ -388,11 +396,12 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
         <p className="line-clamp-2 text-[0.875rem] font-bold leading-snug">{title}</p>
         <div className="mt-2 flex gap-2">
           <button
-            onClick={() => {
-              const now = triedStore.toggleDone(item.id);
+            onClick={(e) => {
+              const now = triedStore.toggleDone(item.id, done);
               habitsStore.cardUsed();
               if (now) {
                 haptic("done");
+                flyPoints(e.currentTarget, TRIED_POINTS); // Step 79: doing a card earns points
                 trackContent(item.id, "complete");
                 showToast(t("Nice one, bro. Keep going."));
               }
@@ -407,7 +416,9 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
                 <Check size={16} /> {t("Done. Do it again anytime")}
               </>
             ) : (
-              t("I did it")
+              <>
+                {t("I did it")} <span className="rounded-full bg-honey px-1.5 py-px text-[0.6875rem] font-bold text-on-honey">+{TRIED_POINTS}</span>
+              </>
             )}
           </button>
           {spec.tool === "pelvic-floor" && (

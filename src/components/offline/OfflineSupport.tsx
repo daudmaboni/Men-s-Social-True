@@ -13,6 +13,7 @@ import { syncStatus } from "@/lib/account/sync";
 import { downloads } from "@/lib/offline/downloads";
 import { useOnline } from "@/lib/offline/online";
 import { useT } from "@/lib/i18n";
+import { keepPushRegistered } from "@/lib/notifications/push";
 
 function registerWorker() {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
@@ -55,6 +56,11 @@ export default function OfflineSupport() {
     wasOffline.current = false;
     setBack(acc.status === "signedIn" ? "saving" : "saved");
   }, [online, acc.status]);
+
+  // Phone notifications (Step 79): on each open, make sure this phone is still registered to him
+  useEffect(() => {
+    if (acc.status === "signedIn") void keepPushRegistered();
+  }, [acc.status]);
 
   // After coming back: "saving" until his account has everything, then "saved" for a moment
   useEffect(() => {

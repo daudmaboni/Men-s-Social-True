@@ -69,6 +69,8 @@ export function useHomeFeed() {
     isNew: points === 0,
     reminder,
     pointDays,
+    /** Points earned on any day (for the week in review, Step 79). */
+    pointsOn: (key: string) => dayPoints(ACTIVITIES, LESSONS, feed, records, goals, key),
     lesson: pickForDay(LESSONS, today),
     lessonRead: (id: string) => Boolean(feed.lessons[id]),
     tip: pickForDay(TIPS, today),

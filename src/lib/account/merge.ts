@@ -89,7 +89,24 @@ export function mergeFeed(local: FeedDB, remote: Partial<FeedDB> | null, now: Da
       course[id] = { pos: newer.pos, heard: Math.max(have.heard, c.heard), at: newer.at, ...(done ? { done } : {}) };
     }
   }
-  return { days, lessons, settings, deleted, course };
+  // Discover cards he did (Step 79): the first "I did it" counts, a later take-back removes it,
+  // and the newest "Did it help?" answer wins
+  const tried: NonNullable<FeedDB["tried"]> = {};
+  for (const src of [local.tried ?? {}, remote?.tried ?? {}]) {
+    for (const [id, x] of Object.entries(src)) {
+      if (!x || typeof x !== "object" || typeof x.at !== "string") continue;
+      if (isDeleted(deleted, `tried:${id}`, x.at)) continue;
+      const have = tried[id];
+      if (!have) {
+        tried[id] = x;
+        continue;
+      }
+      const first = x.at < have.at ? x : have;
+      const helped = !have.helped ? x.helped : !x.helped ? have.helped : x.helped.at > have.helped.at ? x.helped : have.helped;
+      tried[id] = { localDate: first.localDate, at: first.at, points: first.points, ...(helped ? { helped } : {}) };
+    }
+  }
+  return { days, lessons, settings, deleted, course, tried };
 }
 
 const HISTORY_LIMIT = 150;

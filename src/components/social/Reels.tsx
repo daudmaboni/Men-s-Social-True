@@ -691,7 +691,7 @@ function ReelSlide({
         <RailButton
           label={t(done ? "Done ✓" : "I did it")}
           onClick={() => {
-            const now = triedStore.toggleDone(reel.id);
+            const now = triedStore.toggleDone(reel.id, done);
             if (now) {
               haptic("done");
               trackContent(reel.id, "complete");

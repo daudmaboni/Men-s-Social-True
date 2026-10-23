@@ -32,7 +32,7 @@ const CHALLENGE_LABEL: Record<ChallengeId, string> = {
   reset: "Quit porn",
   desire: "Desire and round two",
 };
-type Stats = Record<string, { views: number; completes: number; saves: number }>;
+type Stats = Record<string, { views: number; completes: number; saves: number; yes: number; some: number; no: number }>;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 export default function DiscoverStudioPage() {
@@ -55,13 +55,21 @@ export default function DiscoverStudioPage() {
   const stats = useLoad<Stats | null>(async () => {
     if (!studio.can("analytics.view")) return null;
     const from = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
-    const rows = await select<{ content_id: string; views: number; completes: number; saves: number }>("content_stats_daily", "content_id,views,completes,saves", (q) => q.gte("day", from));
+    // "*" so it still works before migration 0017 adds the "Did it help?" counts
+    const rows = await select<{ content_id: string; views: number; completes: number; saves: number; helped_yes?: number; helped_some?: number; helped_no?: number }>(
+      "content_stats_daily",
+      "*",
+      (q) => q.gte("day", from),
+    );
     const s: Stats = {};
     for (const r of rows) {
-      const t = (s[r.content_id] ??= { views: 0, completes: 0, saves: 0 });
+      const t = (s[r.content_id] ??= { views: 0, completes: 0, saves: 0, yes: 0, some: 0, no: 0 });
       t.views += r.views;
       t.completes += r.completes;
       t.saves += r.saves;
+      t.yes += r.helped_yes ?? 0;
+      t.some += r.helped_some ?? 0;
+      t.no += r.helped_no ?? 0;
     }
     return s;
   }, [studio]);
@@ -337,6 +345,7 @@ function CardsPanel({ cards, cfg, stats, canEdit, onToggle }: { cards: FeedCard[
                   {c.spec.challenges.map((x) => CHALLENGE_LABEL[x]).join(" · ")} · {c.item.builtIn ? "built-in" : "Studio"}
                   {c.item.videoUrl ? " · has video (also a reel)" : ""}
                   {s ? ` · ${s.views} views, ${s.completes} did it` : ""}
+                  {s && s.yes + s.some + s.no > 0 ? ` · helped: ${s.yes} yes, ${s.some} a little, ${s.no} no` : ""}
                 </p>
               </div>
               <PinHide id={c.item.id} cfg={cfg} canEdit={canEdit} onToggle={onToggle} />

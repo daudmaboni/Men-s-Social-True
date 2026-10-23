@@ -189,10 +189,21 @@ export default function NotificationsPage() {
               </div>
             </div>
           </div>
-          <NotConnected title="Phone push notifications: not connected">
-            Messages arrive in the in-app inbox when he opens the app. Pop-up alerts on his lock screen need a push service: VAPID keys, a service
-            worker and a small server sender (e.g. a Supabase Edge Function). Ask your developer to connect it; nothing here pretends it&apos;s sent as a push.
-          </NotConnected>
+          {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? (
+            // Step 79: the push sender (netlify/functions/push-sender.mts) runs every 15 minutes
+            <p className="flex items-start gap-2 rounded-xl bg-mint/40 p-3 text-[0.6875rem] text-ink">
+              <Smartphone size={13} className="mt-0.5 shrink-0" />
+              <span>
+                Also sent to phones that turned on notifications, within 15 minutes of the send time, never between 22:00 and 07:00 their time (it waits).
+                The lock screen shows &quot;Men&apos;s Social · You have a new message.&quot; unless he chose to show the text. Warnings only go to the inbox.
+              </span>
+            </p>
+          ) : (
+            <NotConnected title="Phone push notifications: not connected">
+              Messages arrive in the in-app inbox when he opens the app. Phone pop-ups need the VAPID keys and the Supabase service key in Netlify
+              (see Step 79). Nothing here pretends it&apos;s sent as a push.
+            </NotConnected>
+          )}
           <p className="flex items-start gap-2 text-[0.6875rem] text-ink-soft">
             <Smartphone size={13} className="mt-0.5 shrink-0" /> Men turn types off on Me → Notifications. Warnings to a single man always arrive.
           </p>

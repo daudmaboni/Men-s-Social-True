@@ -55,6 +55,7 @@ beforeAll(async () => {
   await db.exec(readFileSync(join(dir, "0014_remove_review_gate.sql"), "utf8")); // 0006 puts the old publish rule back; 0014 says to run again
   await db.exec(readFileSync(join(dir, "0015_reels.sql"), "utf8")); // 0006 resets the list of content kinds; 0015 says to run again
   await db.exec(readFileSync(join(dir, "0016_discover_settings.sql"), "utf8")); // 0006 resets the list of settings; 0016 says to run again
+  await db.exec(readFileSync(join(dir, "0017_push_and_helped.sql"), "utf8")); // 0006 puts back the old track_content; 0017 says to run again
   await db.exec(`grant all on all tables in schema public to anon, authenticated; grant usage, select on all sequences in schema public to anon, authenticated;`);
   await db.exec(`grant select on storage.buckets to anon, authenticated;`);
   const people: [string, string][] = [[OWNER, "owner@x.co"], [EDITOR, "editor@x.co"], [WRITER, "writer@x.co"], [MOD, "mod@x.co"], [ANALYST, "analyst@x.co"], [JUMA, "juma@x.co"], [ALLY, "ally@x.co"]];
@@ -518,5 +519,80 @@ describe("Studio → Discover settings (0016)", { timeout: 30_000 }, () => {
   });
   it("Kito's switch still works after this update", async () => {
     await as(OWNER, `select public.settings_set('kito_enabled', 'true'::jsonb)`);
+  });
+});
+
+describe("phone notifications and Did it help? (0017)", { timeout: 30_000 }, () => {
+  const EP = "https://fcm.googleapis.com/fcm/send/juma-phone-1";
+  const KEY1 = "BOrK".padEnd(87, "x");
+  const KEY2 = "auth-secret-123456";
+  // A time zone where it's around midday now, so the test doesn't depend on when it runs
+  const utcHour = new Date().getUTCHours();
+  let off = 12 - utcHour;
+  if (off > 14) off -= 24;
+  if (off < -12) off += 24;
+  const TZ = off === 0 ? "Etc/GMT" : `Etc/GMT${off > 0 ? "-" : "+"}${Math.abs(off)}`;
+  const due = async () =>
+    (await db.query<{ user_id: string; kind: string; ref: string; body: string; subscription_id: string; link: string }>("select * from public.push_due(now())")).rows;
+
+  it("a man registers his own phone; nobody else can see it; visitors can't register", async () => {
+    await as(JUMA, "select public.push_subscribe($1, $2, $3)", [EP, KEY1, KEY2]);
+    expect(await as(JUMA, "select endpoint from public.push_subscriptions")).toEqual([{ endpoint: EP }]);
+    expect(await as(ALLY, "select endpoint from public.push_subscriptions")).toEqual([]);
+    expect(await as(OWNER, "select endpoint from public.push_subscriptions")).toEqual([]);
+    await fails(null, "select public.push_subscribe($1, $2, $3)", ["https://x.example/2", KEY1, KEY2]);
+    await fails(JUMA, "insert into public.push_subscriptions (user_id, endpoint, p256dh, auth) values ($1, 'https://x.example/3', $2, $3)", [ALLY, KEY1, KEY2]);
+  });
+
+  it("only the server can see what's due or mark it sent", async () => {
+    await fails(JUMA, "select * from public.push_due(now())");
+    await fails(OWNER, "select * from public.push_due(now())");
+    await fails(JUMA, "select public.push_mark('[]'::jsonb, '[]'::jsonb)");
+    expect(await as(JUMA, "select * from public.push_log")).toEqual([]);
+  });
+
+  it("pushes live Studio messages discreetly, once, and the daily reminder only if he hasn't opened the app", async () => {
+    // Reminder time: half an hour ago, his time
+    await as(JUMA, `insert into public.notification_prefs (user_id, daily_reminder, remind_at, tz)
+                    values ($1, true, ((now() at time zone $2) - interval '30 minutes')::time, $2)
+                    on conflict (user_id) do update set daily_reminder = true, remind_at = excluded.remind_at, tz = excluded.tz`, [JUMA, TZ]);
+    await db.query("delete from public.user_activity_days where user_id = $1", [JUMA]);
+    const rows = (await due()).filter((r) => r.user_id === JUMA);
+    const campaigns = rows.filter((r) => r.kind === "campaign");
+    expect(campaigns.length).toBeGreaterThan(0); // the messages sent in the notifications tests above
+    expect(campaigns.every((r) => r.body === "You have a new message.")).toBe(true); // no text on his lock screen
+    expect(rows.some((r) => r.kind === "reminder")).toBe(true);
+    // Sent: never again
+    const sent = JSON.stringify(rows.map((r) => ({ subscription_id: r.subscription_id, user_id: r.user_id, kind: r.kind, ref: r.ref })));
+    await db.query("select public.push_mark($1::jsonb, '[]'::jsonb)", [sent]);
+    expect((await due()).filter((r) => r.user_id === JUMA)).toEqual([]);
+  });
+
+  it("no reminder on a day he already used the app; message text only if he allowed it", async () => {
+    await db.query("delete from public.push_log where user_id = $1", [JUMA]);
+    await db.query("insert into public.user_activity_days (user_id, day) values ($1, (now() at time zone $2)::date) on conflict do nothing", [JUMA, TZ]);
+    await as(JUMA, "update public.notification_prefs set lock_text = true where user_id = $1", [JUMA]);
+    const rows = (await due()).filter((r) => r.user_id === JUMA);
+    expect(rows.some((r) => r.kind === "reminder")).toBe(false);
+    expect(rows.some((r) => r.kind === "campaign" && r.body !== "You have a new message.")).toBe(true);
+  });
+
+  it("a phone the push service says is gone is removed; a phone that moves to another account follows it", async () => {
+    const BRO = "00000000-0000-0000-0000-00000000000c"; // his brother signs in on the same phone
+    await db.query("insert into auth.users (id, email) values ($1, 'bro@x.co') on conflict do nothing", [BRO]);
+    await as(BRO, "select public.push_subscribe($1, $2, $3)", [EP, KEY1, KEY2]);
+    expect(await as(BRO, "select endpoint from public.push_subscriptions")).toEqual([{ endpoint: EP }]);
+    expect(await as(JUMA, "select endpoint from public.push_subscriptions")).toEqual([]);
+    const [{ id }] = (await db.query<{ id: string }>("select id from public.push_subscriptions where endpoint = $1", [EP])).rows;
+    await db.query("select public.push_mark('[]'::jsonb, $1::jsonb)", [JSON.stringify([{ subscription_id: id, gone: true }])]);
+    expect((await db.query("select 1 from public.push_subscriptions where endpoint = $1", [EP])).rows).toHaveLength(0);
+  });
+
+  it("counts Did it help? answers without saying who", async () => {
+    await as(JUMA, "select public.track_content('do-kegel', 'helped_yes')");
+    await as(EDITOR, "select public.track_content('do-kegel', 'helped_no')");
+    await as(EDITOR, "select public.track_content('do-kegel', 'helped_bogus')");
+    const [r] = await as<{ y: number; n: number }>(ANALYST, "select sum(helped_yes)::int as y, sum(helped_no)::int as n from public.content_stats_daily where content_id = 'do-kegel'");
+    expect(r).toEqual({ y: 1, n: 1 });
   });
 });

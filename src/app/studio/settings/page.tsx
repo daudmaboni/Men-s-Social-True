@@ -384,10 +384,12 @@ function Health() {
     { label: "Owners", state: health.owners > 0 ? "ok" : "warn", text: `${health.owners} owner(s), ${health.admins} admin(s) in total` },
     { label: "Audit log", state: "ok", text: `${health.audit_rows} actions recorded` },
     { label: "AI service", state: ai.error ? "warn" : ai.configured ? (ai.enabled ? "ok" : "off") : "off", text: ai.error ? ai.error : ai.configured ? (ai.enabled ? `Connected (${ai.model})` : "Key set, switched off") : "Not connected (no server key)" },
-    { label: "Phone push notifications", state: "off", text: "Not connected — in-app inbox works; lock-screen push needs a push service" },
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      ? { label: "Phone push notifications", state: "ok", text: "Set up: men can turn them on (Me → Notifications). The sender runs every 15 minutes on Netlify — check its log if nothing arrives" }
+      : { label: "Phone push notifications", state: "off", text: "Not connected — in-app inbox works; set the VAPID keys and service key in Netlify (Step 79)" },
     { label: "Phone (SMS) sign-in", state: process.env.NEXT_PUBLIC_AUTH_PHONE === "on" ? "ok" : "off", text: process.env.NEXT_PUBLIC_AUTH_PHONE === "on" ? "Switched on" : "Not connected — waiting for an SMS provider" },
     { label: "Google sign-in", state: process.env.NEXT_PUBLIC_AUTH_GOOGLE === "on" ? "ok" : "off", text: process.env.NEXT_PUBLIC_AUTH_GOOGLE === "on" ? "Switched on" : "Off" },
-    { label: "Background jobs", state: "ok", text: "None needed: scheduled content and messages are checked each time the app asks, so nothing can silently fail" },
+    { label: "Background jobs", state: "ok", text: "Scheduled content and inbox messages are checked each time the app asks. One job: the phone push sender (every 15 minutes, Netlify → Functions → push-sender)" },
     { label: "Backups", state: "off", text: "Can't be checked from here — see Supabase → Database → Backups (the free plan has no automatic backups)" },
   ];
   const Icon = ({ s }: { s: Row["state"] }) => (s === "ok" ? <CheckCircle2 size={16} className="text-forest" /> : s === "warn" ? <CircleAlert size={16} className="text-amber-600" /> : <CircleDashed size={16} className="text-ink-soft" />);

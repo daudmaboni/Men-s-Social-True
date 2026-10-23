@@ -191,7 +191,7 @@ export default function OverviewPage() {
                     <dd className="text-lg font-semibold tabular-nums">{d.notifications.opened}</dd>
                   </div>
                 </dl>
-                <p className="mt-2 text-[0.6875rem] text-ink-soft">One message can reach many men. Reached = it appeared in his inbox when he opened the app. Phone push isn&apos;t connected yet.</p>
+                <p className="mt-2 text-[0.6875rem] text-ink-soft">One message can reach many men. Reached = it appeared in his inbox when he opened the app.{process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ? " Phones with notifications on also get it as a push." : " Phone push isn't connected yet."}</p>
               </Panel>
 
               {studio.can("audit.view") && (

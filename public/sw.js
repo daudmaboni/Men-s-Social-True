@@ -86,3 +86,47 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(photo(request));
   }
 });
+
+// ───────── Phone notifications (Step 79) ─────────
+// The server sends only a discreet title, a short line and where to open (lib/push/sender.ts).
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : "" };
+  }
+  const title = data.title || "Men's Social";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "",
+      icon: "/brand/icon-192.png",
+      badge: "/brand/badge-96.png",
+      tag: data.tag || "ms",
+      renotify: false,
+      data: { link: typeof data.link === "string" && data.link.startsWith("/") ? data.link : "/man" },
+    }),
+  );
+});
+
+// Tapping it opens the app on that page (an open window is reused)
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const link = (event.notification.data && event.notification.data.link) || "/man";
+  const target = new URL(link, self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+      const win = wins.find((w) => new URL(w.url).origin === self.location.origin);
+      if (win) {
+        win.focus();
+        return win.navigate ? win.navigate(target).catch(() => win.postMessage({ type: "open", link })) : win.postMessage({ type: "open", link });
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
+});
+
+// The phone changed its push address (it happens after updates): tell the app to register the new one next time it opens
+self.addEventListener("pushsubscriptionchange", () => {
+  // Nothing to do here without a signed-in session; the app re-registers on open (lib/notifications/push.ts).
+});

@@ -20,6 +20,18 @@ export interface FeedDB {
   deleted?: Tombstones;
   /** Course lessons (Step 48): course["wz-1-0"] = where he stopped, how much he heard, when he finished. */
   course?: Record<string, CourseProgress>;
+  /** Discover "do this" cards he did (Step 79): tried["do-kegel"] = when, the points, and "Did it help?". */
+  tried?: Record<string, TriedEntry>;
+}
+
+export type HelpedAnswer = "yes" | "some" | "no" | "skip";
+export interface TriedEntry {
+  /** The day (his time) he tapped "I did it", and when. The first time counts. */
+  localDate: string;
+  at: string;
+  points: number;
+  /** His answer to "Did it help?" a few days later (the newest answer wins). Earns no points. */
+  helped?: { answer: HelpedAnswer; at: string };
 }
 
 export interface CourseProgress {
@@ -35,7 +47,7 @@ export interface CourseProgress {
 export type FeedState = FeedDB & { ready: boolean };
 
 const KEY = "ms_feed_v1";
-const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false }, deleted: {}, course: {} };
+const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false }, deleted: {}, course: {}, tried: {} };
 const SERVER_STATE: FeedState = { ...EMPTY, ready: false };
 let cache: FeedState | null = null;
 const listeners = new Set<() => void>();
@@ -58,6 +70,7 @@ function load(): FeedState {
         },
         deleted: p.deleted && typeof p.deleted === "object" ? p.deleted : {},
         course: p.course && typeof p.course === "object" ? p.course : {},
+        tried: p.tried && typeof p.tried === "object" ? p.tried : {},
       };
     }
   } catch {
@@ -152,6 +165,48 @@ export const feedStore = {
         [lessonId]: { pos: have?.pos ?? 0, heard: have?.heard ?? 0, at: now.toISOString(), done: { localDate: dateKey(now), at: now.toISOString(), points } },
       },
     });
+  },
+
+  /** "I did it" on a Discover card (Step 79): points the first time. */
+  markTried(id: string, points: number, at: Date = new Date()) {
+    const db = load();
+    if (db.tried?.[id]) return;
+    save({
+      ...db,
+      tried: { ...db.tried, [id]: { localDate: dateKey(at), at: at.toISOString(), points } },
+      deleted: unmarkDeleted(db.deleted, `tried:${id}`),
+    });
+  },
+
+  /** He tapped "I did it" again to take it back: the points go too. */
+  unmarkTried(id: string) {
+    const db = load();
+    if (!db.tried?.[id]) return;
+    const tried = { ...db.tried };
+    delete tried[id];
+    save({ ...db, tried, deleted: markDeleted(db.deleted, `tried:${id}`) });
+  },
+
+  /** His answer to "Did it help?". */
+  answerHelped(id: string, answer: HelpedAnswer) {
+    const db = load();
+    const have = db.tried?.[id];
+    if (!have) return;
+    save({ ...db, tried: { ...db.tried, [id]: { ...have, helped: { answer, at: new Date().toISOString() } } } });
+  },
+
+  /** Cards marked done on this phone before Step 79 (they were saved on the phone only): move them into his record. */
+  importTried(done: Record<string, string>, points: number) {
+    const db = load();
+    const tried = { ...db.tried };
+    let changed = false;
+    for (const [id, when] of Object.entries(done)) {
+      const at = new Date(when);
+      if (tried[id] || Number.isNaN(at.getTime())) continue;
+      tried[id] = { localDate: dateKey(at), at: at.toISOString(), points };
+      changed = true;
+    }
+    if (changed) save({ ...db, tried });
   },
 
   setDiscreet(discreet: boolean) {

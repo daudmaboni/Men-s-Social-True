@@ -1,10 +1,18 @@
 "use client";
 
 // What he did with the "do this" cards on Discover: tried it, found it useful, and the challenge
-// he last picked at the top. Saved on this phone only (a light convenience, like a remembered filter).
+// he last picked at the top.
+// Step 79: "I did it" now lives in his record (feed store → his account, on all his phones) and earns
+// TRIED_POINTS the first time. "Useful" and the chosen challenge stay on this phone (light conveniences).
+// Cards marked done here before Step 79 are moved into his record once.
 
 import { useSyncExternalStore } from "react";
 import type { ChallengeId } from "../content/types";
+import { feedStore, useFeed } from "../feed/store";
+
+/** Points for doing a Discover card, the first time (Step 79). */
+export const TRIED_POINTS = 10;
+const MOVED = "ms_tried_moved_v1";
 
 export type FeedFilter = ChallengeId | "all";
 
@@ -37,7 +45,25 @@ function load(): TriedDB {
     // storage blocked: keep working in memory
   }
   cache = db;
+  moveOldDone(db);
   return cache;
+}
+
+/** Once per phone: hand "I did it" marks saved here before Step 79 to his record. */
+function moveOldDone(db: TriedDB) {
+  if (typeof window === "undefined" || !Object.keys(db.done).length) return;
+  try {
+    if (localStorage.getItem(MOVED) === "1") return;
+    localStorage.setItem(MOVED, "1");
+  } catch {
+    return;
+  }
+  const old = db.done;
+  // After this render pass (the feed store may be saving right now)
+  setTimeout(() => {
+    feedStore.importTried(old, TRIED_POINTS);
+    save({ ...load(), done: {} });
+  }, 0);
 }
 
 function save(next: TriedDB) {
@@ -56,11 +82,14 @@ const toggle = (map: Record<string, string>, id: string) => {
 };
 
 export const triedStore = {
-  /** Returns true when it's now marked done. */
-  toggleDone(id: string) {
-    const db = load();
-    save({ ...db, done: toggle(db.done, id) });
-    return Boolean(load().done[id]);
+  /** "I did it" (or taking it back). Returns true when it's now marked done. Saved to his record (Step 79). */
+  toggleDone(id: string, isDone: boolean) {
+    if (isDone) {
+      feedStore.unmarkTried(id);
+      return false;
+    }
+    feedStore.markTried(id, TRIED_POINTS);
+    return true;
   },
   toggleLike(id: string) {
     const db = load();
@@ -80,5 +109,9 @@ const subscribe = (l: () => void) => {
 export function useTried(): TriedDB & { ready: boolean } {
   const db = useSyncExternalStore(subscribe, load, () => EMPTY);
   const ready = useSyncExternalStore(subscribe, () => true, () => false);
-  return { ...db, ready };
+  const feed = useFeed();
+  // "I did it" comes from his record (id → when), so it's the same on all his phones
+  const done: Record<string, string> = {};
+  for (const [id, x] of Object.entries(feed.tried ?? {})) done[id] = x.at;
+  return { ...db, done, ready: ready && feed.ready };
 }
