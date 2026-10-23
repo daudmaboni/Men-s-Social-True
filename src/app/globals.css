@@ -694,3 +694,28 @@ button:disabled { cursor: not-allowed; }
 .kito-wave { animation: kito-nod 6s ease-in-out 1.2s infinite; transform-origin: 50% 80%; }
 @keyframes kito-nod { 0%, 86%, 100% { transform: none; } 90% { transform: rotate(-8deg); } 94% { transform: rotate(6deg); } }
 @media (prefers-reduced-motion: reduce) { .kito-fab, .kito-panel, .kito-wave { animation: none; } }
+
+/* ===== Step 76: press feedback ===== */
+/* Everything he can tap answers the moment his finger lands (not when he lifts it): it sinks a touch,
+   then comes back with a short spring-like release. Uses the separate `scale` property, so it never
+   fights an element's own position (translate) or its own active:scale-… style, which still wins. */
+@layer base {
+  :where(button, a[href], [role="button"], summary, label[for]) {
+    transition-property: scale;
+    transition-duration: 0.22s;
+    transition-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+  :where(button, [role="button"], summary):active:not(:disabled):not([aria-disabled="true"]) {
+    scale: 0.96;
+    transition-duration: 0.06s;
+    transition-timing-function: ease-out;
+  }
+  /* Whole cards and links move less, so a big card doesn't jump */
+  :where(a[href], label[for]):active {
+    scale: 0.985;
+    transition-duration: 0.06s;
+    transition-timing-function: ease-out;
+  }
+  /* The tab bar has its own lift, and some controls opt out */
+  :where(nav[aria-label="Main"] *, [data-no-press], [data-no-press] *):active { scale: none; }
+}

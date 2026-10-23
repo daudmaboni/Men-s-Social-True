@@ -1,8 +1,9 @@
 "use client";
 
 // The three main tabs side by side in one sliding strip, like a phone app.
-// - Swiping: the page follows the finger exactly; when he lets go, the app (not the browser's slow snap)
-//   glides it to the next tab in ~0.28 s. A quick flick is enough; a slow short drag springs back.
+// - Swiping: the page follows the finger exactly; when he lets go, a spring (not the browser's slow snap)
+//   carries it on at his finger's speed to the next tab. A quick flick is enough; a slow short drag springs back.
+//   A finger touching the page mid-glide catches it where it is (Step 76).
 // - Tapping Social / Man / Me uses the very same glide, so both feel identical (src/lib/tabGlide.ts).
 // - All three tabs stay open in the background: no reloads, and each keeps its scroll position.
 // - The address (/social, /man, /me) follows the tab you land on.
@@ -17,7 +18,12 @@ import ManTab from "@/components/tabs/ManTab";
 import MeTab from "@/components/tabs/MeTab";
 import { isTabRoot, stripPosition, TAB_PATHS, tabFor, tabMemory } from "@/lib/tabs";
 import LockedTab from "@/components/account/LockedTab";
-import { cancelGlide, glideTo, holdSnap, isGliding, landingTab } from "@/lib/tabGlide";
+import { cancelGlide, glideTo, holdSnap, isGliding, landingTab, releaseSnap, TAB_SPRING } from "@/lib/tabGlide";
+import { animateSpring, rubberband, type SpringHandle } from "@/lib/motion/spring";
+
+/** Fastest hand-off speed we pass to a spring (px/s), so a wild flick can't fling the page. */
+const MAX_V = 6000;
+const clampV = (v: number) => Math.max(-MAX_V, Math.min(MAX_V, v));
 import { useAccount } from "@/lib/account/useAccount";
 import { translate } from "@/lib/i18n/translate";
 import { currentLang } from "@/lib/me/lang";
@@ -162,10 +168,14 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
     const first = d.samples[0];
     const last = d.samples[d.samples.length - 1];
     const velocity = first && last && last.t > first.t ? (last.left - first.left) / (last.t - first.t) : 0;
-    const to = landingTab({ startTab: d.startTab, dragPx: el.scrollLeft - d.left, width: el.clientWidth, velocity, count: TAB_PATHS.length });
+    // He held still before letting go: no speed to carry on
+    const still = !last || performance.now() - last.t > 80;
+    const v = still ? 0 : velocity;
+    const to = landingTab({ startTab: d.startTab, dragPx: el.scrollLeft - d.left, width: el.clientWidth, velocity: v, count: TAB_PATHS.length });
     dragging.current = false;
-    fingerUntil.current = performance.now() + 300;
-    glideTo(el, to * el.clientWidth, settle);
+    fingerUntil.current = performance.now() + 400;
+    // The glide starts at the speed his finger was moving, so there's no seam between drag and glide
+    glideTo(el, to * el.clientWidth, settle, clampV(v * 1000));
   };
 
   // ---- Swiping on a page opened on top (a lesson, an article, the course…) ----
@@ -174,11 +184,33 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
   const overlay = useRef<HTMLDivElement>(null);
   const odrag = useRef<{ id: number; x: number; y: number; axis: "x" | "y" | null; dx: number; samples: { t: number; dx: number }[] } | null>(null);
   const leaving = useRef(false);
+  const ospring = useRef<SpringHandle | null>(null);
+
+  /** Move the page on top and the strip behind it together: the page `x` px sideways, the tab beside it following. */
+  const placeOverlay = useCallback(
+    (x: number) => {
+      const el = strip.current;
+      const ov = overlay.current;
+      if (!el || !ov) return;
+      const w = el.clientWidth;
+      ov.style.transform = `translateX(${x}px)`;
+      el.scrollLeft = Math.min(Math.max(tab * w - x, 0), el.scrollWidth - w);
+      setBubble(el.scrollLeft / w, true);
+    },
+    [tab],
+  );
 
   const onOverlayDown = (e: React.PointerEvent) => {
     if (e.pointerType === "mouse" || !e.isPrimary || tab < 0 || leaving.current) return;
     if ((e.target as Element).closest?.(".overflow-x-auto, input, textarea, select, video, [data-own-swipe], [role=dialog]")) return;
-    odrag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, axis: null, dx: 0, samples: [] };
+    // Springing back after a short swipe? His finger catches the page right where it is.
+    const moving = ospring.current?.running();
+    const at = moving ? ospring.current!.now().value : 0;
+    if (moving) {
+      ospring.current!.stop();
+      ospring.current = null;
+    }
+    odrag.current = { id: e.pointerId, x: e.clientX - at, y: e.clientY, axis: moving ? "x" : null, dx: at, samples: [] };
   };
 
   const onOverlayMove = (e: React.PointerEvent) => {
@@ -199,13 +231,12 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
       holdSnap(el);
       snapshot(); // the page's picture stays on its tab while the next one slides in
     }
-    // No tab on that side (Social has nothing to its left, Me nothing to its right): a little resistance
+    // No tab on that side (Social has nothing to its left, Me nothing to its right):
+    // it still moves, but less and less the further he pulls
     const w = el.clientWidth;
-    if ((dx > 0 && tab === 0) || (dx < 0 && tab === TAB_PATHS.length - 1)) dx = dx / 4;
+    if ((dx > 0 && tab === 0) || (dx < 0 && tab === TAB_PATHS.length - 1)) dx = rubberband(dx, w);
     d.dx = dx;
-    ov.style.transform = `translateX(${dx}px)`;
-    el.scrollLeft = Math.min(Math.max(tab * w - dx, 0), el.scrollWidth - w);
-    setBubble(el.scrollLeft / w, true);
+    placeOverlay(dx);
     const now = performance.now();
     d.samples.push({ t: now, dx });
     while (d.samples.length > 2 && now - d.samples[0].t > 100) d.samples.shift();
@@ -221,26 +252,31 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
     const w = el.clientWidth;
     const first = d.samples[0];
     const last = d.samples[d.samples.length - 1];
-    const velocity = first && last && last.t > first.t ? -(last.dx - first.dx) / (last.t - first.t) : 0;
-    const to = landingTab({ startTab: tab, dragPx: -d.dx, width: w, velocity, count: TAB_PATHS.length });
-    const ease = "transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)";
-    ov.style.transition = ease;
-    if (to === tab) {
-      // Not far enough: the page springs back over its tab
-      ov.style.transform = "translateX(0)";
-      glideTo(el, tab * w, () => {
-        setBubble(tab);
-        dropGhost(tab);
-      });
-      return;
-    }
-    // The page leaves on the side he swiped to, the next tab glides in, then the address follows
-    leaving.current = true;
-    ov.style.transform = `translateX(${to > tab ? -w : w}px)`;
-    glideTo(el, to * w);
-    setTimeout(() => {
-      router.push(TAB_PATHS[to], { scroll: false });
-    }, 280);
+    const still = !last || performance.now() - last.t > 80;
+    // Finger speed in px per ms (page moving right = positive)
+    const vx = still || !first || last.t <= first.t ? 0 : (last.dx - first.dx) / (last.t - first.t);
+    const to = landingTab({ startTab: tab, dragPx: -d.dx, width: w, velocity: -vx, count: TAB_PATHS.length });
+    ov.style.transition = "none";
+    cancelGlide();
+    const target = to === tab ? 0 : to > tab ? -w : w;
+    if (to !== tab) leaving.current = true;
+    // One spring moves the page and the tab beside it together, starting at his finger's speed
+    ospring.current = animateSpring(d.dx, target, placeOverlay, {
+      ...TAB_SPRING,
+      velocity: clampV(vx * 1000),
+      onDone: () => {
+        ospring.current = null;
+        releaseSnap();
+        if (to === tab) {
+          // Not far enough: the page is back over its tab
+          setBubble(tab);
+          dropGhost(tab);
+          return;
+        }
+        // The page has left on the side he swiped to and the next tab is in place: the address follows
+        router.push(TAB_PATHS[to], { scroll: false });
+      },
+    });
   };
 
   // ---- The left page's picture (Step 55) ----
