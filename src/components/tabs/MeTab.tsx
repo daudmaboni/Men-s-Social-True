@@ -3,6 +3,7 @@
 // "Me": who he is in the app, what he's earned, his goals, settings and privacy controls.
 // Everything here comes from his real activity on this phone.
 
+import TellUs from "@/components/me/TellUs";
 import SyncPull from "@/components/motion/SyncPull";
 import ProfileHero from "@/components/me/ProfileHero";
 import BadgesSection from "@/components/me/BadgesSection";
@@ -73,6 +74,7 @@ export default function MeTab() {
       />
       <SettingsCard lang={lang} discreet={feed.settings.discreet} />
       {acc.status === "signedIn" && <NotificationPrefs />}
+      {acc.status === "signedIn" && <TellUs />}
       <PrivacyCard acc={acc} />
       </div>
       <p className="pb-2 lg:col-span-12 text-center text-[0.6875rem] text-ink-soft">{t("Kayani Men's Social · test version")}</p>

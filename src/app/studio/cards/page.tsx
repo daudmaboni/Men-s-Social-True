@@ -4,10 +4,11 @@
 // AI turns it into one "do this" card in the Discover format: photo, hook, what you need, steps, the secret.
 // Staff check it in a real phone preview, fix any words, then publish. Men see it at the top of Discover.
 
+import { listen, stills } from "@/lib/studio/listen";
 import { CIRCLE_LABEL } from "@/lib/content/circles";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, FileUp, Link2, Loader2, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import { CheckCircle2, FileUp, Link2, Loader2, Mic, Plus, Sparkles, Trash2, Type } from "lucide-react";
 import { useStudio } from "@/components/admin/AdminShell";
 import { Badge, ErrorBox, PageHeader, Panel, Segmented, btn, input } from "@/components/admin/ui";
 import { useToast } from "@/components/motion/Toast";
@@ -68,6 +69,32 @@ export default function CardMakerPage() {
   const [file, setFile] = useState<File | null>(null);
   const [notes, setNotes] = useState("");
   const [useAsPhoto, setUseAsPhoto] = useState(true);
+  // Step 85: listening to voice notes and reels, in this browser
+  const [hearLang, setHearLang] = useState<"sw" | "en" | null>("sw");
+  const [hearing, setHearing] = useState<string | null>(null);
+
+  async function hear() {
+    if (!file) return;
+    setError(null);
+    setHearing("Getting ready…");
+    try {
+      const text = await listen(file, hearLang, (p) =>
+        setHearing(
+          p.stage === "download"
+            ? `Downloading the listening model (first time only, about 260 MB): ${p.percent}%`
+            : p.stage === "listening"
+              ? `Listening to ${Math.max(1, Math.round(p.seconds / 60))} min of sound… (a 5-minute voice note takes about 1–3 minutes on a laptop)`
+              : "Done",
+        ),
+      );
+      setNotes((n) => `${n.trim() ? `${n.trim()}\n\n` : ""}What it says:\n${text}`);
+      showToast("Transcript added to the notes. Check it, then make the card.");
+    } catch (e) {
+      setError(`Couldn't listen to it: ${(e as Error).message}. You can still write what it says in the notes.`);
+    } finally {
+      setHearing(null);
+    }
+  }
   const [busy, setBusy] = useState<"make" | "save" | "publish" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [card, setCard] = useState<StudioCard | null>(null);
@@ -91,10 +118,12 @@ export default function CardMakerPage() {
         if (!file || !fk) throw new Error("Choose a PDF, photo, audio, video or text file.");
         if (fk === "textfile") body = { kind: "text", text: await file.text(), notes };
         else if (fk === "audio" || fk === "video") {
-          if (notes.trim().length < 20) throw new Error(`The AI can't listen to ${fk} yet. Write what it says (or paste a transcript) in the notes box.`);
+          // Video: a few stills so the AI can read words on screen (Step 85)
+          const frames = fk === "video" ? await stills(file).catch(() => [] as string[]) : [];
+          if (notes.trim().length < 20 && frames.length === 0) throw new Error("Tap “Listen to it” first, or write what it says in the notes box.");
           const link = fk === "audio" ? await repo.uploadAudio(file, id) : await repo.uploadVideo(file, id);
           media = fk === "audio" ? { audioUrl: link } : { videoUrl: link };
-          body = { kind: fk, name: file.name, notes };
+          body = { kind: fk, name: file.name, notes, frames };
         } else {
           if (file.size > MAX_SEND) throw new Error("Keep PDFs and photos under 4 MB.");
           body = { kind: fk, base64: await toBase64(file), mediaType: file.type, name: file.name, notes };
@@ -210,19 +239,39 @@ export default function CardMakerPage() {
                     </label>
                   )}
                   {(fk === "audio" || fk === "video") && (
-                    <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-                      The AI can&apos;t listen to {fk} yet. The file will play on the card; write what it says (or paste a transcript) in the notes below so the AI can write the steps.
-                    </p>
+                    <div className="mt-2 space-y-2 rounded-xl bg-mint/40 px-3 py-2.5 text-xs">
+                      <p>
+                        The file will play on the card. Tap <b>Listen to it</b> and this browser writes down what it says (free; the recording stays on
+                        this computer).{fk === "video" ? " The AI also looks at a few stills from the video to read words on screen." : ""} Check the text in
+                        the notes before making the card.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Segmented
+                          label="Language spoken"
+                          value={hearLang ?? "auto"}
+                          onChange={(v) => setHearLang(v === "auto" ? null : (v as "sw" | "en"))}
+                          options={[
+                            { id: "sw", label: "Kiswahili" },
+                            { id: "en", label: "English" },
+                            { id: "auto", label: "Mixed" },
+                          ]}
+                        />
+                        <button type="button" className={btn.primary} disabled={hearing !== null || busy !== null} onClick={hear}>
+                          {hearing ? <Loader2 size={16} className="animate-spin" /> : <Mic size={16} />} Listen to it
+                        </button>
+                      </div>
+                      {hearing && <p className="text-ink-soft" aria-live="polite">{hearing}</p>}
+                    </div>
                   )}
                 </div>
               )}
               <label className="block text-sm">
-                <span className="mb-1 block font-semibold">Notes for the AI {fk === "audio" || fk === "video" ? "(needed)" : "(optional)"}</span>
+                <span className="mb-1 block font-semibold">Notes for the AI {fk === "audio" ? "(the transcript goes here)" : "(optional)"}</span>
                 <textarea
                   className={`${input} min-h-[80px]`}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder={fk === "audio" || fk === "video" ? "What does the audio/video teach? Write the steps or paste the transcript." : "E.g. make it about lasting longer · use only the second recipe · for married men"}
+                  placeholder={fk === "audio" || fk === "video" ? "Tap “Listen to it” above, or write what it teaches here." : "E.g. make it about lasting longer · use only the second recipe · for married men"}
                 />
               </label>
               <button className={btn.primary} disabled={busy !== null || (mode === "text" && text.trim().length < 20) || (mode === "link" && !url.trim()) || (mode === "file" && !fk)} onClick={make}>

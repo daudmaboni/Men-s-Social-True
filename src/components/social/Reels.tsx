@@ -11,6 +11,8 @@
 // Only the reel on screen (and the next one) loads, to save his data. Late at night, or after 15 reels,
 // a "that's enough for tonight" card comes up (see lib/content/reels.ts).
 
+import { sized } from "@/lib/media/image";
+import Photo from "@/components/media/Photo";
 import ReelCaption from "./ReelCaption";
 import { cleanTitle } from "@/lib/content/caption";
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -46,8 +48,7 @@ const saveData = () => {
 function Poster({ reel }: { reel: ContentItem }) {
   const yt = youtubeId(reel.videoUrl);
   if (reel.coverImageUrl || yt)
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={reel.coverImageUrl || youtubeThumb(yt!)} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />;
+    return <Photo src={reel.coverImageUrl || youtubeThumb(yt!)} className="absolute inset-0 h-full w-full object-cover" />;
   return <video src={`${reel.videoUrl}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 h-full w-full object-cover" aria-hidden />;
 }
 
@@ -137,7 +138,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
             <video
               ref={video}
               src={reel.videoUrl}
-              poster={reel.coverImageUrl}
+              poster={reel.coverImageUrl ? sized(reel.coverImageUrl, 720) : undefined}
               muted
               loop
               playsInline
@@ -640,7 +641,7 @@ function ReelSlide({
         <video
           ref={video}
           src={reel.videoUrl}
-          poster={reel.coverImageUrl}
+          poster={reel.coverImageUrl ? sized(reel.coverImageUrl, 720) : undefined}
           muted={!sound}
           loop
           playsInline
@@ -661,8 +662,7 @@ function ReelSlide({
         />
       ) : (
         (reel.coverImageUrl || yt) && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={reel.coverImageUrl || youtubeThumb(yt!)} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <Photo src={reel.coverImageUrl || youtubeThumb(yt!)} eager className="absolute inset-0 h-full w-full object-cover" />
         )
       )}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/30" />

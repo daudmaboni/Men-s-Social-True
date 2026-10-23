@@ -3,6 +3,7 @@
 // Admin → Analytics: what men find valuable. Counts only — the app never records who viewed what.
 // Unmeasured things are labelled as such, never shown as 0.
 
+import Retention from "@/components/admin/Retention";
 import { useMemo, useState } from "react";
 import { useStudio } from "@/components/admin/AdminShell";
 import DailyColumns, { RankBars } from "@/components/admin/Chart";
@@ -91,6 +92,8 @@ export default function AnalyticsPage() {
         sub="Counted without linking views or searches to any man. Groups under 5 men are hidden."
         actions={<Segmented label="Time range" value={days} onChange={setDays} options={[{ id: "7", label: "7 days" }, { id: "30", label: "30 days" }, { id: "90", label: "90 days" }]} />}
       />
+      {/* Step 85: the pilot's real test, first */}
+      <Retention />
       {o.error && <ErrorBox error={o.error} onRetry={o.reload} />}
       {!d && o.loading && <Loading />}
       {d && (

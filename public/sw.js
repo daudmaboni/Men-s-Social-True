@@ -8,7 +8,10 @@
 const ASSETS = "ms-assets-v1";
 const PAGES = "ms-pages-v1";
 const OFFLINE = "ms-offline-v1";
-const KEEP = [ASSETS, PAGES, OFFLINE];
+// Step 85: the phone-sized photos from Netlify's image service, kept so he never downloads one twice
+const PHOTOS = "ms-photos-v1";
+const MAX_PHOTOS = 250;
+const KEEP = [ASSETS, PAGES, OFFLINE, PHOTOS];
 const SHELL = ["/offline.html", "/manifest.webmanifest", "/brand/icon-192.png"];
 
 self.addEventListener("install", (event) => {
@@ -47,6 +50,20 @@ async function page(request) {
   }
 }
 
+/** A small photo: from the phone if he has it, otherwise download once and keep (oldest dropped past 250). */
+async function smallPhoto(request) {
+  const cache = await caches.open(PHOTOS);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const res = await fetch(request);
+  if (res.ok) {
+    await cache.put(request, res.clone());
+    const keys = await cache.keys();
+    if (keys.length > MAX_PHOTOS) await Promise.all(keys.slice(0, keys.length - MAX_PHOTOS).map((k) => cache.delete(k)));
+  }
+  return res;
+}
+
 async function photo(request) {
   try {
     const res = await fetch(request);
@@ -67,6 +84,10 @@ self.addEventListener("fetch", (event) => {
   if (url.origin === self.location.origin) {
     const p = url.pathname;
     if (p.startsWith("/api/") || p.startsWith("/studio") || p.startsWith("/auth") || p.startsWith("/__offline/")) return;
+    if (p.startsWith("/.netlify/images")) {
+      event.respondWith(smallPhoto(request));
+      return;
+    }
     if (p.startsWith("/_next/static/") || p.startsWith("/fonts/") || p.startsWith("/brand/")) {
       event.respondWith(cacheFirst(request));
       return;

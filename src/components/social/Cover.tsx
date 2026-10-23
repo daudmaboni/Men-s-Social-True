@@ -1,4 +1,5 @@
 import { Play } from "lucide-react";
+import Photo from "@/components/media/Photo";
 import type { ContentItem } from "@/lib/content/types";
 
 // Editorial cover art drawn in brand colours. Placeholder until real photography
@@ -29,8 +30,8 @@ export default function Cover({
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ background: t.bg }} aria-hidden="true">
       {item.coverImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- images come from Supabase storage, any size
-        <img src={item.coverImageUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        // A phone-sized copy, loaded as he scrolls near it (Step 85)
+        <Photo src={item.coverImageUrl} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
       <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
         {item.cover.motif === "rings" && (

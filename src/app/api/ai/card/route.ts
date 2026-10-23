@@ -37,6 +37,8 @@ type Body = {
   mediaType?: string;
   name?: string;
   notes?: string;
+  /** Video: up to 6 still pictures (JPEG, base64), taken in the Studio (Step 85). */
+  frames?: string[];
 };
 
 export async function POST(req: Request) {
@@ -91,10 +93,14 @@ export async function POST(req: Request) {
       break;
     }
     case "audio":
-    case "video":
-      if (notes.trim().length < 20) return fail(400, `The AI can't listen to ${body.kind === "audio" ? "audio" : "video"} yet. Write what it says (or paste a transcript) in the notes box.`);
-      src = { kind: "media", mediaKind: body.kind, name, notes };
+    case "video": {
+      const frames = body.kind === "video" && Array.isArray(body.frames) ? body.frames.filter((f) => typeof f === "string" && f.length > 100 && f.length < 900_000).slice(0, 6) : [];
+      if (notes.trim().length < 20 && frames.length === 0) {
+        return fail(400, body.kind === "audio" ? "Tap “Listen to it” first (or write what it says in the notes box)." : "Tap “Listen to it” first, or write what the video says in the notes box.");
+      }
+      src = { kind: "media", mediaKind: body.kind, name, notes, frames };
       break;
+    }
     default:
       return fail(400, "Choose what you're sending: text, file or link.");
   }
@@ -102,7 +108,7 @@ export async function POST(req: Request) {
   const { data: cfgRow } = await sb.from("app_settings").select("value").eq("key", "ai_config").maybeSingle();
   const cfg: AiConfig = { ...DEFAULT_AI, ...((cfgRow?.value as Partial<AiConfig>) ?? {}) };
   if (!cfg.enabled) return fail(403, "AI is switched off. An owner can switch it on in Settings → Features.");
-  const inChars = (body.text?.length ?? 0) + (body.base64?.length ?? 0) + notes.length;
+  const inChars = (body.text?.length ?? 0) + (body.base64?.length ?? 0) + notes.length + (body.frames ?? []).reduce((s, f) => s + (typeof f === "string" ? f.length : 0), 0);
   const log = (ok: boolean, error: string | null, outChars: number) =>
     sb.from("ai_usage").insert({ action: `card:${body.kind}`, ok, error: error?.slice(0, 300) ?? null, input_chars: inChars, output_chars: outChars });
   if (!KEY) {

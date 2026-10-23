@@ -86,3 +86,18 @@ describe("Card maker: saving", () => {
     expect(cleanAction({ steps: [{ text: "Do it" }], challenges: ["last"], type: "bad" })?.type).toBe("technique");
   });
 });
+
+describe("card from a reel with stills (Step 85)", () => {
+  it("sends the stills as pictures before the words", () => {
+    const blocks = buildCardMessage({ kind: "media", mediaKind: "video", name: "reel.mp4", notes: "What it says:\nKunywa maji asubuhi", frames: ["AAAA", "BBBB"] });
+    expect(blocks.filter((b) => b.type === "image")).toHaveLength(2);
+    expect(blocks[0].type).toBe("image");
+    const text = blocks.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("\n");
+    expect(text).toMatch(/2 pictures above are stills/);
+    expect(text).toMatch(/Kunywa maji asubuhi/);
+  });
+  it("never sends more than 6 stills", () => {
+    const blocks = buildCardMessage({ kind: "media", mediaKind: "video", name: "r.mp4", notes: "", frames: Array(10).fill("AAAA") });
+    expect(blocks.filter((b) => b.type === "image")).toHaveLength(6);
+  });
+});

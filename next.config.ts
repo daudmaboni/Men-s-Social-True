@@ -21,13 +21,17 @@ const turnstile = "https://challenges.cloudflare.com"; // the optional "are you 
 const youtube = "https://www.youtube-nocookie.com https://www.youtube.com";
 const ytImages = "https://i.ytimg.com";
 
-const csp = [
+// Step 85: the Studio's Card maker listens to voice notes in the browser (Whisper). Only Studio pages may load
+// the speech engine (cdn.jsdelivr.net, pinned version) and the model files (Hugging Face), and run WebAssembly.
+const listening = "https://cdn.jsdelivr.net https://huggingface.co https://*.huggingface.co https://*.hf.co";
+
+const cspFor = (studio: boolean) => [
   "default-src 'self'",
   // Next.js needs inline scripts for page start-up (and eval while developing); no other sites allowed
-  `script-src 'self' 'unsafe-inline' ${dev ? "'unsafe-eval'" : ""} ${turnstile}`,
+  `script-src 'self' 'unsafe-inline' ${dev ? "'unsafe-eval'" : ""} ${turnstile} ${studio ? "'wasm-unsafe-eval' https://cdn.jsdelivr.net" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   // Data can only go to our own server and our Supabase project
-  `connect-src 'self' ${supabase} ${supabaseWs} ${turnstile} ${dev ? "ws: http://localhost:*" : ""}`,
+  `connect-src 'self' ${supabase} ${supabaseWs} ${turnstile} ${dev ? "ws: http://localhost:*" : ""} ${studio ? listening : ""}`,
   `img-src 'self' data: blob: ${supabase} ${photos} ${ytImages}`,
   // Audio and video: uploads, plus direct links staff paste into the Studio
   `media-src 'self' blob: ${supabase} https:`,
@@ -45,8 +49,8 @@ const csp = [
   .join("; ")
   .replace(/\s+/g, " ");
 
-const securityHeaders = [
-  { key: "Content-Security-Policy", value: csp },
+const headersFor = (studio: boolean) => [
+  { key: "Content-Security-Policy", value: cspFor(studio) },
   // Nobody can show the app inside their own site (stops "click here" tricks over a hidden login)
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -59,8 +63,15 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Lighter photos (Step 85): Netlify's image service only exists on Netlify, so it's on only for Netlify builds
+  env: { NEXT_PUBLIC_IMAGE_CDN: process.env.NETLIFY === "true" ? "on" : process.env.NEXT_PUBLIC_IMAGE_CDN || "off" },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    // The Studio gets the extra room for listening (Step 85); every other page keeps the strict rules
+    return [
+      { source: "/((?!studio).*)", headers: headersFor(false) },
+      { source: "/studio", headers: headersFor(true) },
+      { source: "/studio/:path*", headers: headersFor(true) },
+    ];
   },
   // Old addresses from before the 3-tab layout still work
   async redirects() {

@@ -5,6 +5,7 @@
 // action cards. Each card is a carousel he swipes through: the hook, what he needs, the steps,
 // why it works. Then: "Useful", share, save, and "I did it".
 
+import { sized } from "@/lib/media/image";
 import { CIRCLES, circlesOf } from "@/lib/content/circles";
 import { haptic } from "@/lib/motion/haptics";
 import { flyPoints } from "@/lib/motion/flyPoints";
@@ -539,7 +540,7 @@ function MediaSlide({ item, t }: { item: ContentItem; t: T }) {
     return (
       <video
         src={item.videoUrl}
-        poster={item.coverImageUrl}
+        poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined}
         controls
         playsInline
         preload="metadata"

@@ -596,3 +596,49 @@ describe("phone notifications and Did it help? (0017)", { timeout: 30_000 }, () 
     expect(r).toEqual({ y: 1, n: 1 });
   });
 });
+
+describe("Tell us feedback and retention (0018)", { timeout: 30_000 }, () => {
+  it("a man sends feedback; he can't read anyone's; staff who see users read it and mark it done", async () => {
+    const [{ id }] = await as<{ id: string }>(JUMA, "select public.feedback_send('The reels load slowly on my phone', 4, 'me', 'sw', 'android') as id");
+    expect(await as(JUMA, "select * from public.app_feedback")).toEqual([]);
+    await fails(JUMA, "select * from public.feedback_list('all', 50)");
+    await fails(WRITER, "select * from public.feedback_list('all', 50)");
+    const list = await as<{ message: string; rating: number; who: string; status: string }>(ANALYST, "select * from public.feedback_list('open', 50)");
+    expect(list[0]).toMatchObject({ message: "The reels load slowly on my phone", rating: 4, who: "juma@x.co", status: "new" });
+    await fails(ANALYST, "select public.feedback_mark($1, 'nonsense')", [id]);
+    await as(EDITOR, "select public.feedback_mark($1, 'done')", [id]);
+    expect(await as(EDITOR, "select * from public.feedback_list('open', 50) where id = $1", [id])).toEqual([]);
+  });
+
+  it("visitors can't send; men can't write the table directly; at most 5 a day; empty messages refused", async () => {
+    const BABA = "00000000-0000-0000-0000-0000000000f1";
+    await db.query("insert into auth.users (id, email) values ($1, 'baba@x.co') on conflict do nothing", [BABA]);
+    await fails(null, "select public.feedback_send('hello there', null, null, null, null)");
+    await expect(as(BABA, "insert into public.app_feedback (user_id, message) values ($1, 'sneaky')", [BABA])).rejects.toThrow(/permission|security/);
+    await fails(BABA, "select public.feedback_send('   ', null, null, null, null)");
+    for (let i = 0; i < 5; i++) await as(BABA, "select public.feedback_send($1, null, null, null, null)", [`note ${i}`]);
+    await fails(BABA, "select public.feedback_send('one more', null, null, null, null)");
+  });
+
+  it("retention: who came back the next day and in week 2, and what they did first — counts only, staff left out", async () => {
+    const NEW1 = "00000000-0000-0000-0000-0000000000d1";
+    const NEW2 = "00000000-0000-0000-0000-0000000000d2";
+    await db.query("insert into auth.users (id, email, created_at) values ($1, 'n1@x.co', now() - interval '20 days'), ($2, 'n2@x.co', now() - interval '20 days') on conflict do nothing", [NEW1, NEW2]);
+    // NEW1 came back the next day and in week 2, and first did a Discover card; NEW2 never came back or did anything
+    await db.query(`insert into public.user_activity_days (user_id, day) values
+      ($1, ((now() - interval '20 days') at time zone 'Africa/Dar_es_Salaam')::date + 1),
+      ($1, ((now() - interval '20 days') at time zone 'Africa/Dar_es_Salaam')::date + 9) on conflict do nothing`, [NEW1]);
+    await db.query(`insert into public.user_data (user_id, kind, data) values ($1, 'feed',
+      jsonb_build_object('tried', jsonb_build_object('do-kegel', jsonb_build_object('at', (now() - interval '19 days')::text)),
+                         'days', jsonb_build_object('2020-01-01', jsonb_build_object('walk', jsonb_build_object('status', 'done', 'at', (now() - interval '18 days')::text)))))
+      on conflict (user_id, kind) do update set data = excluded.data`, [NEW1]);
+    await fails(JUMA, "select public.admin_retention(8)");
+    const [{ r }] = await as<{ r: { cohorts: { signed_up: number; day1: number; day1_eligible: number; week2: number; week2_eligible: number }[]; first: Record<string, number> } }>(ANALYST, "select public.admin_retention(4) as r");
+    const total = r.cohorts.reduce((s, c) => ({ signed_up: s.signed_up + c.signed_up, day1: s.day1 + c.day1, week2: s.week2 + c.week2 }), { signed_up: 0, day1: 0, week2: 0 });
+    expect(total.day1).toBeGreaterThanOrEqual(1);
+    expect(total.week2).toBeGreaterThanOrEqual(1);
+    expect(r.first.card).toBe(1);
+    expect(r.first.nothing).toBeGreaterThanOrEqual(1);
+    expect(JSON.stringify(r)).not.toContain("n1@x.co"); // never who
+  });
+});

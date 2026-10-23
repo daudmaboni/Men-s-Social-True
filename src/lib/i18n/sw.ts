@@ -1001,4 +1001,15 @@ export const SW: Record<string, string> = {
   // Step 81: reel captions
   "more": "zaidi",
   "less": "punguza",
+  // Step 85: Tell us
+  "Tell us": "Tuambie",
+  "What should we fix or add? The Men's Social team reads every message.": "Tuboreshe nini au tuongeze nini? Timu ya Men's Social inasoma kila ujumbe.",
+  "Asante! We got it.": "Asante! Tumeupokea.",
+  "Send another": "Tuma mwingine",
+  "How do you like the app?": "Unaipendaje app?",
+  "E.g. the reels are slow on my phone, or: add a guide about…": "Mfano: reels zinachelewa kwenye simu yangu, au: ongezeni somo kuhusu…",
+  "Sending…": "Inatuma…",
+  "Send to the team": "Tuma kwa timu",
+  "Thank you! You've sent 5 today. Send more tomorrow.": "Asante! Umetuma 5 leo. Tuma zaidi kesho.",
+  "Couldn't send just now. Try again in a moment.": "Imeshindikana kutuma sasa. Jaribu tena baada ya muda.",
 };

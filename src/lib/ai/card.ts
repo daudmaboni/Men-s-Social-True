@@ -33,7 +33,7 @@ export type CardSource =
   | { kind: "pdf"; base64: string; name: string }
   | { kind: "image"; base64: string; mediaType: "image/jpeg" | "image/png" | "image/webp"; name: string }
   | { kind: "link"; url: string; text: string }
-  | { kind: "media"; mediaKind: "audio" | "video"; name: string; notes: string };
+  | { kind: "media"; mediaKind: "audio" | "video"; name: string; notes: string; frames?: string[] };
 
 type Block = { type: "text"; text: string } | { type: "document"; source: { type: "base64"; media_type: "application/pdf"; data: string } } | { type: "image"; source: { type: "base64"; media_type: string; data: string } };
 
@@ -50,9 +50,16 @@ export function buildCardMessage(src: CardSource, notes = ""): Block[] {
   } else if (src.kind === "link") {
     blocks.push({ type: "text", text: `Material from ${src.url}:\n\n${src.text.slice(0, 15000)}${extra}` });
   } else if (src.kind === "media") {
+    // Step 85: still pictures from a video (to read words on screen) and what was said (transcribed in the Studio)
+    const frames = (src.frames ?? []).slice(0, 6);
+    for (const f of frames) blocks.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: f } });
+    const seen = frames.length ? `The ${frames.length} pictures above are stills from the video, in order: read any words written on screen and use what they show.\n` : "";
+    const said = src.notes.trim()
+      ? `What it says (a transcript made in the Studio and checked by the editor, plus any notes):\n\n${src.notes.slice(0, 15000)}`
+      : "There's no transcript; use the stills.";
     blocks.push({
       type: "text",
-      text: `The editor uploaded a ${src.mediaKind} ("${src.name}"). It will play on the card. You can't hear or watch it; write the card from what the editor says it contains:\n\n${src.notes.slice(0, 15000)}`,
+      text: `The editor uploaded a ${src.mediaKind} ("${src.name}"). It will play on the card.\n${seen}${said}`,
     });
   } else {
     blocks.push({ type: "text", text: `Material:\n\n${src.text.slice(0, 15000)}${extra}` });

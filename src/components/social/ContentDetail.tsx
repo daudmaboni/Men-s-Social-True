@@ -1,5 +1,7 @@
 "use client";
 
+import { sized } from "@/lib/media/image";
+import Photo from "@/components/media/Photo";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, ExternalLink, MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
@@ -123,7 +125,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
           // A reel (Step 70): upright video, as tall as the screen allows
           <video
             src={item.videoUrl}
-            poster={item.coverImageUrl}
+            poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined}
             controls
             playsInline
             preload="metadata"
@@ -133,7 +135,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
         ) : item.kind === "video" && item.videoUrl ? (
           <video
             src={item.videoUrl}
-            poster={item.coverImageUrl}
+            poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined}
             controls
             playsInline
             preload="metadata"
@@ -141,8 +143,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
             className="aspect-video w-full bg-black"
           />
         ) : item.kind === "infographic" && item.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.coverImageUrl} alt={title} className="w-full bg-surface" />
+          <Photo src={item.coverImageUrl} alt={title} eager className="w-full bg-surface" />
         ) : item.kind === "audio" ? (
           <div className="space-y-3 bg-forest-deep p-4">
             <Cover item={item} className="aspect-[2/1] w-full rounded-2xl" showPlay={false} />
@@ -153,7 +154,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
             )}
           </div>
         ) : item.action && item.videoUrl ? (
-          <video src={item.videoUrl} poster={item.coverImageUrl} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
+          <video src={item.videoUrl} poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
         ) : item.action && item.audioUrl ? (
           <div className="space-y-3 bg-forest-deep p-4">
             <Cover item={item} className="aspect-[2/1] w-full rounded-2xl" showPlay={false} />

@@ -24,6 +24,7 @@ import {
   Wand2,
   Users,
   X,
+  MessageSquareHeart,
 } from "lucide-react";
 import { GateScreen, type StudioAdmin } from "@/components/studio/StudioGate";
 import { useAdmin } from "@/lib/studio/useAdmin";
@@ -49,6 +50,7 @@ export const NAV: { href: string; label: string; Icon: typeof LayoutDashboard; p
   { href: "/studio/cards", label: "Card maker", Icon: Wand2, perm: "content.edit" },
   { href: "/studio/courses", label: "Courses", Icon: GraduationCap, perm: "content.edit" },
   { href: "/studio/users", label: "Users", Icon: Users, perm: "users.view" },
+  { href: "/studio/feedback", label: "Feedback", Icon: MessageSquareHeart, perm: "users.view" },
   { href: "/studio/community", label: "Community", Icon: MessagesSquare, perm: "community.moderate" },
   { href: "/studio/notifications", label: "Notifications", Icon: Bell, perm: "notifications.send" },
   { href: "/studio/ai", label: "AI", Icon: Sparkles, perm: "ai.use" },

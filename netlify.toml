@@ -1,0 +1,6 @@
+# Netlify settings kept in the code (Step 85). Build command and publish folder stay as set in the Netlify dashboard.
+
+# Lighter photos: Netlify's free image service may resize photos from our Supabase storage
+# (card and reel photos), so phones get small WebP/AVIF copies instead of the full-size files.
+[images]
+  remote_images = ["https://oovvbluaiytosfmwpfbj\\.supabase\\.co/storage/v1/object/public/.*"]
