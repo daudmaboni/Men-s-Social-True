@@ -19,6 +19,8 @@ import ManTab from "@/components/tabs/ManTab";
 import MeTab from "@/components/tabs/MeTab";
 import { isTabRoot, stripPosition, TAB_PATHS, tabFor, tabMemory } from "@/lib/tabs";
 import LockedTab from "@/components/account/LockedTab";
+import LockScreen from "@/components/privacy/LockScreen";
+import { usePrivacyLock } from "@/lib/privacy/lock";
 import { cancelGlide, glideTo, holdSnap, isGliding, landingTab, releaseSnap, TAB_SPRING } from "@/lib/tabGlide";
 import { animateSpring, rubberband, type SpringHandle } from "@/lib/motion/spring";
 
@@ -50,6 +52,8 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
   // Man and Me hold his private records: guests see a locked preview instead
   const acc = useAccount();
   const locked = acc.status === "guest";
+  // Step 90: his private PIN lock on Man and Me
+  const pin = usePrivacyLock();
 
   // Put the strip on the right tab: instantly on first load, smoothly when a tab is tapped
   useLayoutEffect(() => {
@@ -409,6 +413,8 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
                   <div className="h-64 animate-pulse rounded-3xl bg-surface ring-1 ring-line" />
                 ) : i > 0 && locked ? (
                   <LockedTab tab={i === 1 ? "man" : "me"} />
+                ) : i > 0 && pin.locked ? (
+                  <LockScreen />
                 ) : (
                   <Panel />
                 )}
@@ -416,7 +422,7 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
             </div>
           </section>
       )),
-    [acc.status, locked],
+    [acc.status, locked, pin.locked],
   );
 
   return (
@@ -459,7 +465,10 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
           onPointerUp={endOverlayDrag}
           onPointerCancel={endOverlayDrag}
         >
-          <div className="mx-auto max-w-md px-3.5 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">{children}</div>
+          <div className="mx-auto max-w-md px-3.5 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">
+            {/* Step 90: pages of the Man and Me tabs stay behind the private lock too */}
+            {pin.locked && tabFor(pathname) > 0 && !pathname.startsWith("/account") ? <LockScreen /> : children}
+          </div>
         </div>
       )}
     </>

@@ -190,3 +190,12 @@ export function excerpt(d: KitoDoc, lang: "en" | "sw", max = 1400): string {
   const text = main.length >= 120 || !other ? main : `${main}\n${other}`;
   return text.length > max ? `${text.slice(0, max).replace(/\s+\S*$/, "")} …` : text;
 }
+
+/** Step 90: he asked from a card ("Ask Kito" on it): that card comes first, then the other matches. */
+export function pinAbout(index: Index, aboutId: string | null | undefined, hits: Hit[], k = 6): Hit[] {
+  if (!aboutId) return hits;
+  const doc = index.docs.find((d) => d.id === aboutId);
+  if (!doc) return hits;
+  const top = Math.max(10, hits[0]?.score ?? 0);
+  return [{ doc, score: top + 1 }, ...hits.filter((h) => h.doc.id !== aboutId)].slice(0, k);
+}

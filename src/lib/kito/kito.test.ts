@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LIBRARY } from "../content/library";
-import { buildIndex, docsFromItems, docsFromLessons, search, tokens } from "./search";
+import { buildIndex, docsFromItems, docsFromLessons, pinAbout, search, tokens } from "./search";
 import { buildKitoMessage, KITO_SYSTEM, libraryAnswer, parseKito, safetyFlag } from "./prompt";
 
 const index = buildIndex([
@@ -62,5 +62,17 @@ describe("Kito without the AI (Step 67b)", () => {
       expect(a).toMatch(/^Kaka, hiki ndicho kinachosaidia/);
       expect(a.split("\n").length).toBeGreaterThan(3);
     }
+  });
+});
+
+describe("Ask Kito about a card (Step 90)", () => {
+  it("puts the card he asked from first, even when the question doesn't name it", () => {
+    const idx = buildIndex(docsFromItems(LIBRARY.filter((c) => !c.fixture)));
+    const hits = search(idx, "can I do this if I have high blood pressure", 6);
+    const pinned = pinAbout(idx, "do-kegel", hits);
+    expect(pinned[0].doc.id).toBe("do-kegel");
+    expect(pinned.filter((h) => h.doc.id === "do-kegel")).toHaveLength(1);
+    expect(pinned.length).toBeLessThanOrEqual(6);
+    expect(pinAbout(idx, "no-such-card", hits)).toBe(hits);
   });
 });

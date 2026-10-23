@@ -18,9 +18,11 @@ import KitoChat from "./KitoChat";
 import KitoMark from "./KitoMark";
 
 const OPEN_EVENT = "kito:open";
-/** Opens Kito from anywhere in the app. */
-export function openKito() {
-  window.dispatchEvent(new Event(OPEN_EVENT));
+/** What he's asking about when Kito opens from a card (Step 90). */
+export type KitoAbout = { id: string; title: string };
+/** Opens Kito from anywhere in the app; from a card, Kito already knows which one. */
+export function openKito(about?: KitoAbout) {
+  window.dispatchEvent(new CustomEvent<KitoAbout | null>(OPEN_EVENT, { detail: about ?? null }));
 }
 
 /**
@@ -89,9 +91,14 @@ export default function KitoLauncher() {
   const pathname = usePathname() ?? "";
   const mini = useMiniPlayerVisible();
   const [open, setOpen] = useState(false);
+  const [about, setAbout] = useState<KitoAbout | null>(null);
   const tucked = useTucked(pathname);
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const onOpen = (e: Event) => {
+      const d = (e as CustomEvent<KitoAbout | null>).detail;
+      if (d) setAbout(d);
+      setOpen(true);
+    };
     window.addEventListener(OPEN_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_EVENT, onOpen);
   }, []);
@@ -175,7 +182,7 @@ export default function KitoLauncher() {
           {/* Phone: dim the app behind; computer: just the panel */}
           <button ref={scrim} className="absolute inset-0 bg-black/40 lg:hidden" aria-label={t("Close")} onClick={() => setOpen(false)} />
           <div ref={panel} className="kito-panel absolute inset-x-0 bottom-0 top-[max(1rem,env(safe-area-inset-top))] overflow-hidden rounded-t-[28px] bg-surface shadow-2xl ring-1 ring-line lg:static lg:h-[min(640px,calc(100dvh-3rem))] lg:w-[400px] lg:rounded-[28px]">
-            <KitoChat onClose={() => setOpen(false)} onNavigate={() => setOpen(false)} />
+            <KitoChat onClose={() => setOpen(false)} onNavigate={() => setOpen(false)} about={about} onClearAbout={() => setAbout(null)} />
           </div>
         </div>
       )}

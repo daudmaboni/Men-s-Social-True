@@ -19,6 +19,8 @@ import { deleteCloudData, stopSync } from "@/lib/account/sync";
 import { useSupportShare } from "@/lib/account/share";
 import { useT } from "@/lib/i18n";
 import FoldRow from "@/components/motion/FoldRow";
+import SaveDataSetting from "@/components/me/SaveDataSetting";
+import LockSettings from "@/components/privacy/LockSettings";
 import { FontStylePicker, TextSizePicker } from "@/components/me/FontChoices";
 import { TEXT_SIZES, fontById, useFont, useTextSize } from "@/lib/fonts";
 import { canVibrate, setHapticsOn, useHapticsOn } from "@/lib/motion/haptics";
@@ -217,6 +219,9 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
         />
       </label>
       <VibrationSwitch />
+      {/* Step 90 */}
+      <SaveDataSetting />
+      <LockSettings />
     </section>
   );
 }

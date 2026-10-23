@@ -34,16 +34,10 @@ import { useT } from "@/lib/i18n";
 import { habitsStore } from "@/lib/social/discoverPrefs";
 import { animateSpring, releaseVelocity, type SpringHandle } from "@/lib/motion/spring";
 import { haptic } from "@/lib/motion/haptics";
+import { useSaveData } from "@/lib/media/saveData";
 import { ShareSheet } from "./Hooks";
 
 const SOUND_KEY = "ms_reels_sound";
-const saveData = () => {
-  try {
-    return Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
-  } catch {
-    return false;
-  }
-};
 
 /** The reel's picture: its cover photo, or the video's first frame. */
 function Poster({ reel }: { reel: ContentItem }) {
@@ -72,7 +66,8 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
   const title = cleanTitle(sw && reel.titleSw ? reel.titleSw : reel.title); // Step 81: no brand, no shouting
   const caption = reelCaption(reel, sw);
   const handle = "@kayaniherbs"; // one name everywhere (Step 84)
-  const lite = useMemo(() => saveData(), []);
+  // Step 90: Save data (his choice in Me, or Data Saver / a slow connection): reels in the feed wait for a tap
+  const lite = useSaveData();
   const yt = youtubeId(reel.videoUrl);
 
   // Tell the feed player how much of this reel is on screen

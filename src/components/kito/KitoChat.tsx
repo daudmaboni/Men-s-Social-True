@@ -14,6 +14,7 @@ import type { Turn } from "@/lib/kito/prompt";
 import { useOnline } from "@/lib/offline/online";
 import { useT } from "@/lib/i18n";
 import KitoMark from "./KitoMark";
+import type { KitoAbout } from "./KitoLauncher";
 
 type Msg = { role: "user"; text: string } | ({ role: "kito"; text: string; error?: boolean } & Partial<KitoAnswer>);
 const KEY = "ms_kito_chat";
@@ -23,7 +24,24 @@ const STARTERS = {
   sw: ["Nifanye nini nidumu muda mrefu leo?", "Nile nini kwa nguvu za kiume?", "Zoezi la Kegel linafanywaje?", "Nimwandaeje mke wangu?"],
 };
 
-export default function KitoChat({ onClose, onNavigate }: { onClose?: () => void; onNavigate?: () => void }) {
+// Step 90: questions to start with when he opened Kito from a card
+const ABOUT_STARTERS = {
+  en: ["Can I do this if I have high blood pressure?", "How often should I do this?", "When will I feel a difference?", "Explain it more simply"],
+  sw: ["Naweza kufanya hivi kama nina presha?", "Nifanye hivi mara ngapi?", "Nitaona tofauti lini?", "Nieleze kwa urahisi zaidi"],
+};
+
+export default function KitoChat({
+  onClose,
+  onNavigate,
+  about = null,
+  onClearAbout,
+}: {
+  onClose?: () => void;
+  onNavigate?: () => void;
+  /** The card he opened Kito from (Step 90). */
+  about?: KitoAbout | null;
+  onClearAbout?: () => void;
+}) {
   const t = useT();
   const lang = t.lang === "sw" ? "sw" : "en";
   const acc = useAccount();
@@ -56,7 +74,7 @@ export default function KitoChat({ onClose, onNavigate }: { onClose?: () => void
     setText("");
     setBusy(true);
     try {
-      const a = await askKito(question, lang, history);
+      const a = await askKito(question, lang, history, about?.id);
       setMsgs((m) => [...m, { role: "kito", text: a.answer, sources: a.sources, confident: a.confident, flag: a.flag }]);
     } catch (e) {
       const msg = e instanceof KitoError ? e.message : "Kito couldn't answer. Try again.";
@@ -108,9 +126,34 @@ export default function KitoChat({ onClose, onNavigate }: { onClose?: () => void
         </div>
       ) : (
         <>
+          {/* Step 90: the card he's asking about */}
+          {about && (
+            <div className="shrink-0 border-b border-line bg-mint/40 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <BookOpen size={15} className="shrink-0 text-forest" />
+                <p className="min-w-0 flex-1 truncate text-xs">
+                  <span className="text-ink-soft">{t("Asking about")}</span> <b>{about.title}</b>
+                </p>
+                {onClearAbout && (
+                  <button onClick={onClearAbout} aria-label={t("Ask about anything")} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+              {!busy && (
+                <div className="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto">
+                  {ABOUT_STARTERS[lang].map((s) => (
+                    <button key={s} onClick={() => void send(s)} disabled={!online} className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-[0.75rem] font-semibold text-forest-deep ring-1 ring-line disabled:opacity-50">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {/* Messages */}
           <div ref={scroller} className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4" aria-live="polite">
-            {msgs.length === 0 && (
+            {msgs.length === 0 && !about && (
               <div className="rounded-3xl bg-bg p-4 ring-1 ring-line">
                 <p className="font-semibold">{t("Habari kaka. What do you want to know?")}</p>
                 <p className="mt-1 text-sm text-ink-soft">{t("I answer from Kayani's own guides and show you where to read more. If it's not in the library, I'll tell you.")}</p>

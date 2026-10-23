@@ -16,7 +16,7 @@ import { LIBRARY } from "@/lib/content/library";
 import { mergeLibrary, rowToItem } from "@/lib/content/rows";
 import type { ContentItem } from "@/lib/content/types";
 import { flatLessons, visibleCourse, type Course } from "@/lib/course/types";
-import { buildIndex, docsFromItems, docsFromLessons, search, type KitoDoc } from "@/lib/kito/search";
+import { buildIndex, docsFromItems, docsFromLessons, pinAbout, search, type KitoDoc } from "@/lib/kito/search";
 import { buildKitoMessage, CRISIS_REPLY, KITO_SYSTEM, libraryAnswer, NOT_IN_LIBRARY, parseKito, safetyFlag, URGENT_LINE, type KitoSource, type Lang, type Turn } from "@/lib/kito/prompt";
 
 export const runtime = "nodejs";
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   const { data: who } = await sb.auth.getUser();
   if (!who.user) return fail(401, "Sign in to ask Kito.", "signin");
 
-  let body: { question?: string; lang?: string; history?: Turn[] };
+  let body: { question?: string; lang?: string; history?: Turn[]; about?: string };
   try {
     body = await req.json();
   } catch {
@@ -72,6 +72,8 @@ export async function POST(req: Request) {
     .filter((t) => t && (t.role === "user" || t.role === "kito") && typeof t.text === "string")
     .slice(-4);
 
+  // Step 90: asked from a card ("Ask Kito" on it): that card is his first source
+  const about = typeof body.about === "string" && /^[a-z0-9][a-z0-9:-]{2,80}$/.test(body.about) ? body.about : null;
   const flag = safetyFlag(question);
   if (flag === "crisis") return NextResponse.json({ answer: CRISIS_REPLY[lang], sources: [], confident: true, flag });
 
@@ -90,6 +92,7 @@ export async function POST(req: Request) {
     const index = buildIndex(await libraryDocs(sb));
     hits = search(index, question, 6);
     if (hits.length < 2 && lastAsked) hits = search(index, `${lastAsked} ${question}`, 6);
+    hits = pinAbout(index, about, hits);
   } catch {
     await done("error", 0, question.length, 0);
     return fail(502, lang === "sw" ? "Imeshindikana kufungua maktaba. Jaribu tena." : "Couldn't open the library. Try again.");
@@ -112,7 +115,9 @@ export async function POST(req: Request) {
     });
   }
 
-  const message = buildKitoMessage(question, hits, lang, history);
+  const aboutDoc = about && hits[0]?.doc.id === about ? hits[0].doc : null;
+  const asked = aboutDoc ? `${lang === "sw" ? "Kuhusu" : "About"} "${lang === "sw" && aboutDoc.titleSw ? aboutDoc.titleSw : aboutDoc.title}" (source 1): ${question}` : question;
+  const message = buildKitoMessage(asked, hits, lang, history);
   try {
     const res = await fetch(`${BASE}/v1/messages`, {
       method: "POST",

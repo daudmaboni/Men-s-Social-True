@@ -832,3 +832,8 @@ button:disabled { cursor: not-allowed; }
 .edge-pad { padding-inline: 10px; }
 @media (min-width: 1024px) { .edge-pad { padding-inline: 0; } }
 
+
+/* Step 90: a wrong PIN shakes the dots */
+@keyframes pin-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+.pin-shake { animation: pin-shake 0.36s ease-in-out; }
+@media (prefers-reduced-motion: reduce) { .pin-shake { animation: none; } }

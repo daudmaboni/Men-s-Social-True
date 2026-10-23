@@ -24,6 +24,10 @@ import { isYouTubeShort, youtubeId } from "@/lib/content/youtube";
 import { YouTubeFrame } from "@/components/media/YouTubeFrame";
 import { useAccount } from "@/lib/account/useAccount";
 import GuestGuideCard from "@/components/account/GuestGuideCard";
+import ListenButton from "./ListenButton";
+import KitoMark from "@/components/kito/KitoMark";
+import { openKito } from "@/components/kito/KitoLauncher";
+import { actionOf } from "@/lib/content/actions";
 
 /** Full page for any piece of content: guide, article, video, quiz, tool or expert answer. */
 export default function ContentDetail({ id, back }: { id: string; back: { href: string; label: string } }) {
@@ -183,6 +187,17 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
         </p>
         <h1 className="mt-2 text-[1.625rem] font-bold leading-tight">{title}</h1>
         {(lang !== "sw" || item.summarySw) && <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-soft">{lang === "sw" && item.summarySw ? item.summarySw : item.summary}</p>}
+        {/* Step 90: hear it read aloud, or ask Kito about it */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <ListenButton item={item} spec={actionOf(item)} big />
+          <button
+            type="button"
+            onClick={() => openKito({ id: item.id, title })}
+            className="flex items-center gap-2 rounded-full py-1 pl-1 pr-4 text-sm font-bold text-forest ring-1 ring-line transition-transform active:scale-95"
+          >
+            <KitoMark size={30} /> {t("Ask Kito about this")}
+          </button>
+        </div>
         <p className="mt-3 flex items-start gap-1.5 rounded-2xl bg-bg px-3 py-2 text-[0.6875rem] leading-snug text-ink-soft ring-1 ring-line">
           <ShieldCheck size={13} className="mt-px shrink-0 text-forest" />
           <span>

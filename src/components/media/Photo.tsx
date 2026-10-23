@@ -4,8 +4,9 @@
 // loaded only when he scrolls near it, decoded off the main thread, and smaller still with Data Saver.
 // Use it instead of a plain <img> for card, reel and article photos.
 
-import { useEffect, useMemo, useState } from "react";
-import { cdnOn, imgProps, lowData } from "@/lib/media/image";
+import { useMemo } from "react";
+import { cdnOn, imgProps } from "@/lib/media/image";
+import { useSaveData } from "@/lib/media/saveData";
 
 export default function Photo({
   src,
@@ -22,9 +23,8 @@ export default function Photo({
   /** The first photo on screen: load it straight away. */
   eager?: boolean;
 }) {
-  // Data Saver is only known on the phone: checked after the first draw, then the smaller copies are offered
-  const [low, setLow] = useState(false);
-  useEffect(() => setLow(lowData()), []);
+  // Save data (Step 90: his choice in Me, or Data Saver / a slow connection): the smaller copies are offered
+  const low = useSaveData();
   const props = useMemo(() => imgProps(src, { fullWidth, low, on: cdnOn() }), [src, fullWidth, low]);
   if (!props.src) return null;
   return (

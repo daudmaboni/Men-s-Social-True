@@ -21,7 +21,8 @@ export class KitoError extends Error {
   }
 }
 
-export async function askKito(question: string, lang: Lang, history: Turn[]): Promise<KitoAnswer> {
+/** `about`: the card he asked from (Step 90), so Kito answers about that card first. */
+export async function askKito(question: string, lang: Lang, history: Turn[], about?: string | null): Promise<KitoAnswer> {
   const sb = getSupabase();
   const { data } = sb ? await sb.auth.getSession() : { data: { session: null } };
   const token = data.session?.access_token;
@@ -31,7 +32,7 @@ export async function askKito(question: string, lang: Lang, history: Turn[]): Pr
     res = await fetch("/api/kito", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-      body: JSON.stringify({ question, lang, history }),
+      body: JSON.stringify({ question, lang, history, ...(about ? { about } : {}) }),
     });
   } catch {
     throw new KitoError("No connection. Check your internet and try again.", "offline");

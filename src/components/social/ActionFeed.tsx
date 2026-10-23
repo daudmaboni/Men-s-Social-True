@@ -58,6 +58,8 @@ import { challengeDates, dropCards, dropTimes, seriesOf, seriesOpen, seriesProgr
 import { isCircle } from "@/lib/content/circles";
 import { topicQueue } from "@/lib/content/reels";
 import { useProgress } from "@/lib/progress/store";
+import { useSaveData } from "@/lib/media/saveData";
+import ListenButton from "./ListenButton";
 import { dateKey, shiftKey } from "@/lib/progress/dates";
 import { thenAndNow, THEN_NOW_EVERY_DAYS, type ThenNow } from "@/lib/progress/thenNow";
 import { helpedShown, storyFor, useStories } from "@/lib/social/stories";
@@ -395,7 +397,7 @@ export default function ActionFeed() {
       {/* Kito lives here on a phone, so his floating button doesn't have to sit on the cards (Step 73) */}
       <button
         type="button"
-        onClick={openKito}
+        onClick={() => openKito()}
         data-kito-row
         className="flex w-full items-center gap-2.5 rounded-full bg-surface py-1 pl-1 pr-4 text-left ring-1 ring-line transition-transform active:scale-[0.98] lg:hidden"
       >
@@ -594,7 +596,12 @@ export function ActionPost({
         <IconButton label={t("Share")} onClick={() => setSharing(true)}>
           <Send size={21} />
         </IconButton>
-        <Link href={href} className="ml-1 flex items-center gap-1 rounded-full px-2 py-2 text-xs font-semibold text-ink-soft">
+        {/* Step 90: hear it, or ask Kito about this card */}
+        <ListenButton item={item} spec={spec} />
+        <IconButton label={t("Ask Kito about this")} onClick={() => openKito({ id: item.id, title })}>
+          <KitoMark size={26} />
+        </IconButton>
+        <Link href={href} className="ml-0.5 flex items-center gap-1 rounded-full px-1.5 py-2 text-xs font-semibold text-ink-soft">
           {t("Full page")} <ArrowRight size={13} />
         </Link>
         <span className="flex-1" />
@@ -748,9 +755,11 @@ function Carousel({ children, label, t, onSwipe }: { children: React.ReactNode[]
 
 function HookSlide({ item, spec, title, hook, first, t }: { item: ContentItem; spec: ActionSpec; title: string; hook: string; first: boolean; t: T }) {
   const steps = spec.steps.length;
+  // Step 90: with Save data on, the card opens on its words over a drawn background, not a photo
+  const lite = useSaveData();
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <Cover item={item} className="absolute inset-0 h-full w-full" showPlay={false} />
+      <Cover item={lite ? { ...item, coverImageUrl: undefined } : item} className="absolute inset-0 h-full w-full" showPlay={false} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/5" />
       <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5 text-white">
         <h3 className="line-clamp-3 font-display text-[1.4375rem] font-bold leading-[1.1]">{title}</h3>
