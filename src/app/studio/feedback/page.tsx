@@ -4,15 +4,16 @@
 // Staff who can see users (owner, editor, moderator, analyst) can read it; every change is in the audit log.
 
 import { useState } from "react";
-import { Star } from "lucide-react";
+import Link from "next/link";
+import { Quote, Star } from "lucide-react";
 import { Badge, Empty, ErrorBox, Loading, PageHeader, Panel, Segmented, btn, fmtDate, useLoad } from "@/components/admin/ui";
 import { rpc } from "@/lib/admin/api";
 
-type Row = { id: string; created_at: string; message: string; rating: number | null; place: string | null; lang: string | null; platform: string | null; status: "new" | "read" | "done"; who: string };
+type Row = { id: string; created_at: string; message: string; rating: number | null; place: string | null; lang: string | null; platform: string | null; status: "new" | "read" | "done"; who: string; share_ok?: boolean };
 const PLATFORM: Record<string, string> = { android: "Android app", ios: "iPhone app", pwa: "Home-screen app", web: "Browser" };
 
 export default function FeedbackPage() {
-  const [show, setShow] = useState<"open" | "done" | "all">("open");
+  const [show, setShow] = useState<"open" | "done" | "all" | "stories">("open");
   const list = useLoad(() => rpc<Row[]>("feedback_list", { p_status: show, p_limit: 300 }), [show]);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export default function FeedbackPage() {
             { id: "open", label: "To read" },
             { id: "done", label: "Done" },
             { id: "all", label: "All" },
+            { id: "stories", label: "May share" },
           ]}
         />
         {avg && (
@@ -79,9 +81,15 @@ export default function FeedbackPage() {
                   <span>· {r.who}</span>
                   {r.platform && <span>· {PLATFORM[r.platform] ?? r.platform}</span>}
                   {r.lang && <span>· {r.lang === "sw" ? "Kiswahili" : "English"}</span>}
+                  {r.share_ok && <Badge tone="info">May share as a story</Badge>}
                 </div>
                 <p className="mt-1.5 whitespace-pre-wrap text-sm">{r.message}</p>
-                <div className="mt-2 flex gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {r.share_ok && (
+                    <Link href={`/studio/stories?from=${r.id}`} className={btn.ghost}>
+                      <Quote size={14} /> Make a story
+                    </Link>
+                  )}
                   {r.status === "new" && (
                     <button disabled={busy === r.id} onClick={() => mark(r.id, "read")} className={btn.ghost}>
                       Mark read

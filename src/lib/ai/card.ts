@@ -25,6 +25,7 @@ const SHAPE = `{
  "need": [[english, kiswahili], ...] (ingredients or things to have ready; empty if none),
  "steps": [{"title": [english, kiswahili] or null, "text": [english, kiswahili]}, ...],
  "why": [english, kiswahili] or null (one or two lines: why it works),
+ "ask": null, or a question that opens the card and makes him curious, answered by the card: {"kind": "question" or "truefalse", "q": [english, kiswahili] (a question, or a statement men often believe), "truth": true or false (truefalse only), "a": [english, kiswahili] (the short answer or explanation)},
  "photo": one of ${JSON.stringify(CARD_PHOTOS)} (the background photo that fits best)
 }`;
 
@@ -107,7 +108,12 @@ export function parseCard(raw: string): CardDraft {
   });
   const need = (Array.isArray(d.need) ? d.need : []).map(pair).filter((p) => p[0]);
   const why = d.why ? pair(d.why) : null;
+  // Step 86: a question first, when the AI found a good one (staff can change or remove it)
+  const ask = d.ask && typeof d.ask === "object" ? (d.ask as Record<string, unknown>) : null;
+  const [q, qSw] = ask ? pair(ask.q) : ["", ""];
+  const [a, aSw] = ask ? pair(ask.a) : ["", ""];
   const action = cleanAction({
+    ...(ask && q && a ? { ask: { kind: ask.kind, q, qSw, a, aSw, truth: ask.truth === true } } : {}),
     type: d.type,
     challenges: d.challenges,
     results: d.results,

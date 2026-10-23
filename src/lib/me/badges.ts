@@ -50,6 +50,7 @@ export function computeBadges(i: BadgeInput): Badge[] {
   const lessons = Object.keys(i.feed.lessons).length;
   const best = bestStreak(i.pointDays);
   const level = Math.floor(i.points / 100) + 1;
+  const finished = Object.values(i.feed.challenges ?? {}).filter((c) => c?.finished).length;
 
   const list: Omit<Badge, "earned">[] = [
     { id: "first-step", emoji: "👣", title: "First step", titleSw: "Hatua ya kwanza", how: "Earn your first points.", current: Math.min(i.points, 1), target: 1 },
@@ -59,6 +60,7 @@ export function computeBadges(i: BadgeInput): Badge[] {
     { id: "curious-mind", emoji: "📖", title: "Curious mind", titleSw: "Akili ya kudadisi", how: "Read 5 lessons.", current: lessons, target: 5 },
     { id: "steady-week", emoji: "🔥", title: "Steady week", titleSw: "Wiki imara", how: "Keep a 7-day streak. One missed day is forgiven.", current: best, target: 7 },
     { id: "rising", emoji: "⭐", title: "Rising", titleSw: "Unapanda", how: "Reach level 3.", current: level, target: 3 },
+    { id: "finisher", emoji: "🏁", title: "Finisher", titleSw: "Mmalizaji", how: "Finish a Discover challenge (do it every day it asks).", current: finished, target: 1 },
     { id: "collector", emoji: "🔖", title: "Collector", titleSw: "Mkusanyaji", how: "Save 3 guides or answers.", current: i.bookmarks, target: 3 },
     { id: "your-voice", emoji: "💬", title: "Your voice", titleSw: "Sauti yako", how: "Ask a question or reply in Community.", current: Math.min(i.posts + i.replies, 1), target: 1 },
   ];

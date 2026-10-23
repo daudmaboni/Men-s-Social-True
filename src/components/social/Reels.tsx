@@ -34,6 +34,7 @@ import { useT } from "@/lib/i18n";
 import { habitsStore } from "@/lib/social/discoverPrefs";
 import { animateSpring, releaseVelocity, type SpringHandle } from "@/lib/motion/spring";
 import { haptic } from "@/lib/motion/haptics";
+import { ShareSheet } from "./Hooks";
 
 const SOUND_KEY = "ms_reels_sound";
 const saveData = () => {
@@ -109,17 +110,11 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
     } else v.pause();
   }, [playing, near, sound]);
 
-  const share = async () => {
-    const url = `${location.origin}${contentHref(reel.id)}`;
-    try {
-      if (navigator.share) return void (await navigator.share({ title, url }));
-      await navigator.clipboard.writeText(url);
-      showToast(t("Link copied"));
-    } catch {}
-  };
+  const [sharing, setSharing] = useState(false);
 
   return (
     <article className="overflow-hidden rounded-[20px] bg-surface ring-1 ring-line">
+      <ShareSheet open={sharing} onClose={() => setSharing(false)} item={reel} spec={reel.action} t={t} />
       <header className="flex items-center gap-2.5 px-3 py-2.5">
         <BrandMark size={32} className="shrink-0" />
         <div className="min-w-0 flex-1">
@@ -178,7 +173,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
         <IconButton label={t(liked ? "Helped ✓" : "This helped")} onClick={() => triedStore.toggleLike(reel.id)}>
           <Heart size={24} className={liked ? "text-red-500" : ""} fill={liked ? "currentColor" : "none"} />
         </IconButton>
-        <IconButton label={t("Share")} onClick={share}>
+        <IconButton label={t("Share")} onClick={() => setSharing(true)}>
           <Send size={22} />
         </IconButton>
         <span className="flex-1" />
@@ -187,7 +182,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
           onClick={() => {
             const now = socialStore.toggleBookmark(reel.id);
             if (now) trackContent(reel.id, "save");
-            showToast(t(now ? "Saved for later" : "Removed from saved"));
+            showToast(t(now ? "Saved to your playbook" : "Removed from your playbook"));
           }}
         >
           <Bookmark size={23} fill={saved ? "currentColor" : "none"} />
@@ -496,6 +491,12 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
                 closing.current = true;
                 onClose();
               }}
+              onFinished={() => {
+                // Step 86: on to the next reel (or the "enough for tonight" / "watched them all" card)
+                const here = strip.current?.querySelector<HTMLElement>(`[data-slide="r${i}"]`);
+                const next = here?.nextElementSibling as HTMLElement | null;
+                if (next) strip.current?.scrollTo({ top: next.offsetTop, behavior: "smooth" });
+              }}
             />
           </Fragment>
         ))}
@@ -533,6 +534,7 @@ function ReelSlide({
   onToggleSound,
   onSoundBlocked,
   onLeave,
+  onFinished,
 }: {
   reel: ContentItem;
   index: number;
@@ -542,6 +544,8 @@ function ReelSlide({
   onToggleSound: () => void;
   onSoundBlocked: () => void;
   onLeave: () => void;
+  /** It played through once: go to the next reel (Step 86). */
+  onFinished: () => void;
 }) {
   const t = useT();
   const sw = t.lang === "sw";
@@ -601,13 +605,18 @@ function ReelSlide({
     if (video.current) video.current.muted = !sound;
   }, [sound]);
 
-  const share = async () => {
-    const url = `${location.origin}${contentHref(reel.id)}`;
-    try {
-      if (navigator.share) return void (await navigator.share({ title, url }));
-      await navigator.clipboard.writeText(url);
-      showToast(t("Link copied"));
-    } catch {}
+  const [sharing, setSharing] = useState(false);
+  // Step 86: once it has played through, the next reel comes on its own (once per time it's on screen)
+  const ended = useRef(false);
+  const last = useRef(0);
+  useEffect(() => {
+    ended.current = false;
+    last.current = 0;
+  }, [active]);
+  const playedThrough = () => {
+    if (!active || ended.current) return;
+    ended.current = true;
+    onFinished();
   };
 
   return (
@@ -630,6 +639,7 @@ function ReelSlide({
               if (w.seconds > d - 1.5 && c < 1) {
                 if (w.max < 1) trackContent(reel.id, "complete");
                 w.max = 1;
+                playedThrough();
               }
               w.seconds = Math.max(w.seconds, c);
               w.max = Math.max(w.max, f);
@@ -651,6 +661,9 @@ function ReelSlide({
             const f = v.duration ? v.currentTime / v.duration : 0;
             setProgress(f);
             if (active) {
+              // It loops: jumping back to the start after the end means it played through
+              if (v.duration && last.current > v.duration - 1.5 && v.currentTime < 1) playedThrough();
+              last.current = v.currentTime;
               watched.current.seconds = Math.max(watched.current.seconds, v.currentTime);
               // It loops: once it has played through, it counts as finished
               watched.current.max = Math.max(watched.current.max, f, v.played.length && v.played.end(v.played.length - 1) >= v.duration - 0.5 ? 1 : 0);
@@ -677,12 +690,12 @@ function ReelSlide({
           onClick={() => {
             const now = socialStore.toggleBookmark(reel.id);
             if (now) trackContent(reel.id, "save");
-            showToast(t(now ? "Saved for later" : "Removed from saved"));
+            showToast(t(now ? "Saved to your playbook" : "Removed from your playbook"));
           }}
         >
           <Bookmark size={26} fill={saved ? "currentColor" : "none"} />
         </RailButton>
-        <RailButton label={t("Share")} onClick={share}>
+        <RailButton label={t("Share")} onClick={() => setSharing(true)}>
           <Send size={25} />
         </RailButton>
         <RailButton
@@ -712,6 +725,7 @@ function ReelSlide({
       <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/20">
         <div className="h-full bg-white" style={{ width: `${progress * 100}%` }} />
       </div>
+      <ShareSheet open={sharing} onClose={() => setSharing(false)} item={reel} spec={reel.action} above t={t} />
     </section>
   );
 }

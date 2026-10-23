@@ -9,12 +9,14 @@
 import { useSyncExternalStore } from "react";
 import type { ChallengeId } from "../content/types";
 import { feedStore, useFeed } from "../feed/store";
+import { trackContent } from "../analytics/track";
 
 /** Points for doing a Discover card, the first time (Step 79). */
 export const TRIED_POINTS = 10;
 const MOVED = "ms_tried_moved_v1";
 
-export type FeedFilter = ChallengeId | "all";
+/** What Discover shows: everything, one circle, his playbook (saved cards, Step 86) or one series (Step 86). */
+export type FeedFilter = ChallengeId | "all" | "saved" | `series:${string}`;
 
 export interface TriedDB {
   /** contentId → when he tapped "I did it" */
@@ -26,7 +28,8 @@ export interface TriedDB {
 
 const KEY = "ms_tried_v1";
 const EMPTY: TriedDB = { done: {}, liked: {}, filter: "all" };
-const FILTERS: FeedFilter[] = ["all", "last", "hard", "her", "mixes", "train", "reset", "desire"];
+const FILTERS: FeedFilter[] = ["all", "saved", "last", "hard", "her", "mixes", "train", "reset", "desire"];
+const okFilter = (f: unknown): f is FeedFilter => FILTERS.includes(f as FeedFilter) || (typeof f === "string" && /^series:[a-z0-9-]{1,60}$/.test(f));
 let cache: TriedDB | null = null;
 const listeners = new Set<() => void>();
 
@@ -39,7 +42,7 @@ function load(): TriedDB {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const p = JSON.parse(raw) as Partial<TriedDB>;
-      db = { done: obj(p.done), liked: obj(p.liked), filter: FILTERS.includes(p.filter as FeedFilter) ? (p.filter as FeedFilter) : "all" };
+      db = { done: obj(p.done), liked: obj(p.liked), filter: okFilter(p.filter) ? p.filter : "all" };
     }
   } catch {
     // storage blocked: keep working in memory
@@ -94,7 +97,15 @@ export const triedStore = {
   toggleLike(id: string) {
     const db = load();
     save({ ...db, liked: toggle(db.liked, id) });
-    return Boolean(load().liked[id]);
+    const now = Boolean(load().liked[id]);
+    // Step 86: counted (without who) for "N men said this helped"
+    trackContent(id, now ? "heart" : "unheart");
+    return now;
+  },
+  /** "Did it help?" → Yes also marks it helped, once (Step 86). */
+  markLiked(id: string) {
+    if (load().liked[id]) return;
+    triedStore.toggleLike(id);
   },
   setFilter(filter: FeedFilter) {
     save({ ...load(), filter });

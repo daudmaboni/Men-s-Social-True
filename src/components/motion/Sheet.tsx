@@ -22,6 +22,7 @@ export default function Sheet({
   onClose,
   title,
   anchored = false,
+  above = false,
   children,
 }: {
   open: boolean;
@@ -29,6 +30,8 @@ export default function Sheet({
   title: string;
   /** Grow out of the button that opened it, on phones too (for small lists like notifications). */
   anchored?: boolean;
+  /** Over full-screen layers like the reels viewer (Step 86). */
+  above?: boolean;
   children: React.ReactNode;
 }) {
   const t = useT();
@@ -144,7 +147,7 @@ export default function Sheet({
   // Rendered at the top of the page (portal) so it covers everything, including the bottom bar
   return createPortal(
     <div
-      className={`fixed inset-0 z-40 flex justify-center ${
+      className={`fixed inset-0 ${above ? "z-[70]" : "z-40"} flex justify-center ${
         bottom ? "items-end" : "items-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
       }`}
     >

@@ -101,6 +101,41 @@ export interface ActionSpec {
   whySw?: string;
   /** Opens a built-in tool from the card (e.g. the pelvic floor timer). */
   tool?: "pelvic-floor";
+  /* ── Step 86: hooks ── */
+  /** Question-first card: a question (tap for the answer) or a true/false (he guesses first). */
+  ask?: CardAsk;
+  /** Part of a series ("5 nights to last longer"): the next part opens the day after he does this one. */
+  series?: CardSeries;
+  /** A "try it for N days" challenge he can start from this card. */
+  challengeDays?: ChallengeDays;
+  /** A safe, plain title for sharing on WhatsApp (nothing private on a friend's lock screen). */
+  shareTitle?: string;
+  shareTitleSw?: string;
+}
+
+export type ChallengeDays = 3 | 5 | 7;
+
+export interface CardAsk {
+  kind: "question" | "truefalse";
+  q: string;
+  qSw: string;
+  /** The answer, or the explanation after he guesses. */
+  a: string;
+  aSw: string;
+  /** truefalse only: is the statement true? */
+  truth?: boolean;
+}
+
+export interface CardSeries {
+  /** Same id = same series (made from the English name). */
+  id: string;
+  name: string;
+  nameSw: string;
+  /** 1, 2, 3… */
+  part: number;
+  /** One line about the next part, shown at the end of this one ("Tomorrow: the breathing trick"). */
+  tease?: string;
+  teaseSw?: string;
 }
 
 export interface Topic {

@@ -20,6 +20,7 @@ import { rpc, select } from "@/lib/admin/api";
 import { actionOf } from "@/lib/content/actions";
 import { DEFAULT_DISCOVER, normalizeDiscover, orderCards, orderReels, placeReels, REEL_EVERY_MAX, REEL_EVERY_MIN, reelEvery, type DiscoverConfig, type FeedCard } from "@/lib/content/discover";
 import { isReel } from "@/lib/content/reels";
+import { seriesOf } from "@/lib/content/hooks";
 import { youtubeId, youtubeThumb } from "@/lib/content/youtube";
 import type { ChallengeId, ContentItem } from "@/lib/content/types";
 import { useLibrary } from "@/lib/content/useLibrary";
@@ -128,6 +129,8 @@ export default function DiscoverStudioPage() {
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-5">
           <FeedSettings cfg={cfg} canEdit={canEdit} onChange={setWork} />
+          <HookSettings cfg={cfg} canEdit={canEdit} onChange={setWork} />
+          <SeriesPanel cards={cards} stats={stats.data} />
           <ReelsPanel reels={reels} cfg={cfg} stats={stats.data} canEdit={canEdit} onToggle={toggle} />
           <CardsPanel cards={cards} cfg={cfg} stats={stats.data} canEdit={canEdit} onToggle={toggle} />
         </div>
@@ -197,6 +200,131 @@ function FeedSettings({ cfg, canEdit, onChange }: { cfg: DiscoverConfig; canEdit
           about="Cards and reels come in a different order each time he opens Discover, and differ from man to man. Cards he hasn't opened, topics he follows and challenges he found useful come earlier. Pinned items stay first; cards he already did go last. Off = the same order for everyone."
         />
       </div>
+    </Panel>
+  );
+}
+
+/* ───────── Step 86: what pulls men back ───────── */
+function HookSettings({ cfg, canEdit, onChange }: { cfg: DiscoverConfig; canEdit: boolean; onChange: (c: DiscoverConfig) => void }) {
+  return (
+    <Panel title="Hooks" sub="What brings men back: the daily drop, real stories, “N men said this helped”, series and “You, then and now”.">
+      <div className="space-y-5">
+        <div className="flex items-start justify-between gap-4">
+          <span>
+            <span className="block text-sm font-semibold">Daily drop</span>
+            <span className="mt-0.5 block text-xs text-ink-soft">
+              New cards go live at one time every day, so men learn to check in then. Use “At the next drop” in the Card maker. Men who want new-content
+              notifications get one discreet message at this time (only on days something new went live). Empty = no set time.
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <input
+              type="time"
+              className={`${input} w-28`}
+              value={cfg.dropAt}
+              disabled={!canEdit}
+              onChange={(e) => onChange({ ...cfg, dropAt: e.target.value })}
+              aria-label="Drop time"
+            />
+            {cfg.dropAt && (
+              <button className={btn.small} disabled={!canEdit} onClick={() => onChange({ ...cfg, dropAt: "" })}>
+                Off
+              </button>
+            )}
+          </span>
+        </div>
+        <label className="block">
+          <span className="flex items-baseline justify-between text-sm font-semibold">
+            <span>Show “N men said this helped” from</span>
+            <span className="tabular-nums">{cfg.helpedMin ? `${cfg.helpedMin} men` : "never"}</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={50}
+            value={cfg.helpedMin}
+            disabled={!canEdit}
+            onChange={(e) => onChange({ ...cfg, helpedMin: Number(e.target.value) })}
+            className="mt-2 w-full accent-forest"
+          />
+          <span className="mt-0.5 block text-xs text-ink-soft">Real counts of men who tapped the heart (or said “Yes, it helped”). Small numbers look weak, so start showing them from a few.</span>
+        </label>
+        <label className="block">
+          <span className="flex items-baseline justify-between text-sm font-semibold">
+            <span>A man&apos;s story after every</span>
+            <span className="tabular-nums">{cfg.storyEvery ? `${cfg.storyEvery} cards` : "never"}</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={20}
+            value={cfg.storyEvery}
+            disabled={!canEdit}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              onChange({ ...cfg, storyEvery: n > 0 && n < 3 ? 3 : n });
+            }}
+            className="mt-2 w-full accent-forest"
+          />
+          <span className="mt-0.5 block text-xs text-ink-soft">
+            Only published stories from <Link href="/studio/stories" className="font-semibold text-forest underline">Stories</Link>, written from messages men agreed to share.
+          </span>
+        </label>
+        <Switch
+          on={cfg.seriesWait}
+          disabled={!canEdit}
+          onChange={(v) => onChange({ ...cfg, seriesWait: v })}
+          title="Next part of a series opens tomorrow"
+          about="A man does part 1 today; part 2 opens tomorrow. Waiting for the next part is what brings him back. Off = the next part opens as soon as he does the one before."
+        />
+        <Switch
+          on={cfg.thenNow}
+          disabled={!canEdit}
+          onChange={(v) => onChange({ ...cfg, thenNow: v })}
+          title="“You, then and now” cards"
+          about="Once a week at most, a card puts his own numbers side by side: a month ago (or his first week) against the last 7 days (sleep, water, energy, mood, things he tried). Only when he recorded enough. It shows change, never claims what caused it."
+        />
+      </div>
+    </Panel>
+  );
+}
+
+function SeriesPanel({ cards, stats }: { cards: FeedCard[]; stats: Stats | null | undefined }) {
+  const all = [...seriesOf(cards).values()];
+  return (
+    <Panel title="Series" sub="Cards in parts. Add a card to a series in the Card maker or the Content editor (Hooks).">
+      {all.length === 0 ? (
+        <p className="text-sm text-ink-soft">No series yet. In the Card maker, open “Hooks” and tick “Part of a series”.</p>
+      ) : (
+        <ul className="space-y-4">
+          {all.map((s) => {
+            const nums = s.parts.map((p) => p.spec.series!.part);
+            const gaps = Array.from({ length: Math.max(...nums) }, (_, i) => i + 1).filter((n) => !nums.includes(n));
+            return (
+              <li key={s.id}>
+                <p className="text-sm font-bold">
+                  {s.name} <span className="font-normal text-ink-soft">· {s.nameSw}</span>
+                </p>
+                {gaps.length > 0 && <p className="text-xs font-semibold text-red-600">Missing part {gaps.join(", ")}: men can&apos;t get past the part before it.</p>}
+                <ol className="mt-1.5 space-y-1">
+                  {s.parts.map((p) => {
+                    const st = stats?.[p.item.id];
+                    return (
+                      <li key={p.item.id} className="flex items-center gap-2 text-xs">
+                        <Badge tone="info">Part {p.spec.series!.part}</Badge>
+                        <Link href={`/studio/edit?id=${encodeURIComponent(p.item.id)}`} className="min-w-0 flex-1 truncate hover:underline">
+                          {p.item.title}
+                        </Link>
+                        {st && <span className="shrink-0 tabular-nums text-ink-soft">{st.completes} did it</span>}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </Panel>
   );
 }

@@ -24,9 +24,31 @@ export interface DiscoverConfig {
   pinned: string[];
   /** Card or reel ids taken off Discover (they still open from links, search and Saved). */
   hidden: string[];
+  /* ── Step 86: hooks ── */
+  /** The daily drop: new cards go live at this time every day ("20:00"), or "" for no set time. */
+  dropAt: string;
+  /** Show "N men said this helped" once a card has at least this many (0 = never show counts). */
+  helpedMin: number;
+  /** A real man's story after every this many cards (0 = no stories in the feed). */
+  storyEvery: number;
+  /** The next part of a series opens the day after he did the one before (off = straight away). */
+  seriesWait: boolean;
+  /** Show "You, then and now" cards. */
+  thenNow: boolean;
 }
 
-export const DEFAULT_DISCOVER: DiscoverConfig = { reelEvery: 6, adaptive: true, shuffle: true, pinned: [], hidden: [] };
+export const DEFAULT_DISCOVER: DiscoverConfig = {
+  reelEvery: 6,
+  adaptive: true,
+  shuffle: true,
+  pinned: [],
+  hidden: [],
+  dropAt: "20:00",
+  helpedMin: 5,
+  storyEvery: 7,
+  seriesWait: true,
+  thenNow: true,
+};
 export const REEL_EVERY_MIN = 3;
 export const REEL_EVERY_MAX = 12;
 
@@ -42,7 +64,17 @@ export function normalizeDiscover(v: unknown): DiscoverConfig {
     shuffle: o.shuffle !== false,
     pinned: ids(o.pinned),
     hidden: ids(o.hidden),
+    dropAt: typeof o.dropAt === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(o.dropAt) ? o.dropAt : o.dropAt === "" ? "" : DEFAULT_DISCOVER.dropAt,
+    helpedMin: clampInt(o.helpedMin, 0, 100, DEFAULT_DISCOVER.helpedMin),
+    storyEvery: o.storyEvery === 0 ? 0 : clampInt(o.storyEvery, 3, 20, DEFAULT_DISCOVER.storyEvery),
+    seriesWait: o.seriesWait !== false,
+    thenNow: o.thenNow !== false,
   };
+}
+
+function clampInt(v: unknown, min: number, max: number, fallback: number): number {
+  const n = Math.round(Number(v));
+  return v === undefined || v === null || v === "" || !Number.isFinite(n) ? fallback : Math.min(max, Math.max(min, n));
 }
 
 /* ───────── Seeded randomness (same seed → same order) ───────── */
@@ -72,15 +104,48 @@ export interface Taste {
   liked: Record<string, string>;
   /** contentId → when he tapped "I did it" (fixed when the visit starts). */
   done: Record<string, string>;
+  /** Step 86: contentId → when he saved it (his playbook). */
+  saved?: Record<string, string>;
+  /** Step 86: cards he said did NOT help ("Did it help?" → No). */
+  notHelped?: Record<string, string>;
+  /** Step 86: the next part of each series he's in, when it's open to him now. */
+  nextParts?: Set<string>;
+}
+
+/** Step 86: how much he goes for each kind of card (technique, food, exercise…), from what he did, saved
+ *  and found helpful, minus what didn't help. Positive = more of these. */
+export function typeAffinity(cards: FeedCard[], taste: Taste): Partial<Record<ActionSpec["type"], number>> {
+  const out: Partial<Record<ActionSpec["type"], number>> = {};
+  for (const c of cards) {
+    const id = c.item.id;
+    let w = 0;
+    if (taste.done[id]) w += 1;
+    if (taste.liked[id]) w += 1;
+    if (taste.saved?.[id]) w += 0.5;
+    if (taste.notHelped?.[id]) w -= 1.5;
+    if (w) out[c.spec.type] = (out[c.spec.type] ?? 0) + w;
+  }
+  return out;
 }
 
 /** How well a card fits him: higher comes earlier. Part chance (changes each visit), part fit. */
-export function cardScore(c: FeedCard, seed: string, taste: Taste, likedChallenges: Set<string>): number {
+export function cardScore(
+  c: FeedCard,
+  seed: string,
+  taste: Taste,
+  likedChallenges: Set<string>,
+  affinity: Partial<Record<ActionSpec["type"], number>> = {},
+): number {
   let s = rand(seed, c.item.id);
   if (!taste.opened[c.item.id]) s += 0.6; // new to him
   if (taste.interests.includes(c.item.topic)) s += 0.35;
   if (c.spec.challenges.some((ch) => likedChallenges.has(ch))) s += 0.25;
   if (c.spec.results === "tonight") s += 0.1;
+  // Step 86: the kinds of card he actually uses come a bit earlier, the kinds that didn't help him later
+  const a = affinity[c.spec.type] ?? 0;
+  s += Math.max(-0.3, Math.min(0.3, a * 0.1));
+  // The next part of a series he started comes early, so he finds it
+  if (taste.nextParts?.has(c.item.id)) s += 0.8;
   return s;
 }
 
@@ -111,11 +176,12 @@ export function orderCards(cards: FeedCard[], seed: string, taste: Taste, cfg: D
   const taken = new Set([...pinned, ...fresh].map((c) => c.item.id));
   const others = shown.filter((c) => !taken.has(c.item.id));
 
-  const likedChallenges = new Set(cards.filter((c) => taste.liked[c.item.id] || taste.done[c.item.id]).flatMap((c) => c.spec.challenges));
+  const likedChallenges = new Set(cards.filter((c) => (taste.liked[c.item.id] || taste.done[c.item.id]) && !taste.notHelped?.[c.item.id]).flatMap((c) => c.spec.challenges));
+  const affinity = cfg.adaptive ? typeAffinity(cards, taste) : {};
   const todo = others.filter((c) => !taste.done[c.item.id]);
   const did = others.filter((c) => taste.done[c.item.id]);
   const ranked = cfg.shuffle
-    ? [...todo].sort((a, b) => cardScore(b, seed, taste, likedChallenges) - cardScore(a, seed, taste, likedChallenges))
+    ? [...todo].sort((a, b) => cardScore(b, seed, taste, likedChallenges, affinity) - cardScore(a, seed, taste, likedChallenges, affinity))
     : todo;
   const didOrder = cfg.shuffle ? [...did].sort((a, b) => rand(seed, a.item.id) - rand(seed, b.item.id)) : did;
   return [...pinned, ...fresh, ...spreadKinds(ranked), ...didOrder];

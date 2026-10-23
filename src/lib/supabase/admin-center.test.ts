@@ -56,6 +56,7 @@ beforeAll(async () => {
   await db.exec(readFileSync(join(dir, "0015_reels.sql"), "utf8")); // 0006 resets the list of content kinds; 0015 says to run again
   await db.exec(readFileSync(join(dir, "0016_discover_settings.sql"), "utf8")); // 0006 resets the list of settings; 0016 says to run again
   await db.exec(readFileSync(join(dir, "0017_push_and_helped.sql"), "utf8")); // 0006 puts back the old track_content; 0017 says to run again
+  await db.exec(readFileSync(join(dir, "0019_discover_hooks.sql"), "utf8")); // 0017 puts back the old track_content and push_due; 0019 says to run again
   await db.exec(`grant all on all tables in schema public to anon, authenticated; grant usage, select on all sequences in schema public to anon, authenticated;`);
   await db.exec(`grant select on storage.buckets to anon, authenticated;`);
   const people: [string, string][] = [[OWNER, "owner@x.co"], [EDITOR, "editor@x.co"], [WRITER, "writer@x.co"], [MOD, "mod@x.co"], [ANALYST, "analyst@x.co"], [JUMA, "juma@x.co"], [ALLY, "ally@x.co"]];
@@ -640,5 +641,77 @@ describe("Tell us feedback and retention (0018)", { timeout: 30_000 }, () => {
     expect(r.first.card).toBe(1);
     expect(r.first.nothing).toBeGreaterThanOrEqual(1);
     expect(JSON.stringify(r)).not.toContain("n1@x.co"); // never who
+  });
+});
+
+describe("Discover hooks (0019)", { timeout: 30_000 }, () => {
+  const MAN = "00000000-0000-0000-0000-0000000000e1";
+  const MAN2 = "00000000-0000-0000-0000-0000000000e2";
+  beforeAll(async () => {
+    await db.query("insert into auth.users (id, email) values ($1, 'man1@x.co'), ($2, 'man2@x.co') on conflict do nothing", [MAN, MAN2]);
+  });
+
+  it("counts hearts, shares and challenges without who; anyone reads helped totals", async () => {
+    await as(MAN, "select public.track_content('do-beet', 'heart')");
+    await as(MAN2, "select public.track_content('do-beet', 'heart')");
+    await as(MAN2, "select public.track_content('do-beet', 'unheart')");
+    await as(MAN2, "select public.track_content('do-beet', 'heart')");
+    await as(MAN, "select public.track_content('do-beet', 'share')");
+    await as(MAN, "select public.track_content('do-beet', 'challenge_start')");
+    await as(MAN, "select public.track_content('do-beet', 'challenge_finish')");
+    const [{ c }] = await as<{ c: Record<string, number> }>(null, "select public.helped_counts() as c");
+    expect(c["do-beet"]).toBe(2);
+    const rows = await as<{ hearts: number; shares: number; challenge_starts: number; challenge_finishes: number }>(ANALYST, "select * from public.admin_hook_stats(30) where content_id = 'do-beet'");
+    expect(rows[0]).toMatchObject({ hearts: 2, shares: 1, challenge_starts: 1, challenge_finishes: 1 });
+    await fails(MAN, "select * from public.admin_hook_stats(30)");
+  });
+
+  it("a man can say his message may be shared; staff see it; a story needs his yes", async () => {
+    const [{ id: yes }] = await as<{ id: string }>(MAN, "select public.feedback_send('The kegel timer changed my nights, thank you', 5, 'me', 'en', 'web', true) as id");
+    const [{ id: no }] = await as<{ id: string }>(MAN2, "select public.feedback_send('Please add more recipes', null, 'me') as id");
+    const list = await as<{ id: string; share_ok: boolean }>(MOD, "select id, share_ok from public.feedback_list('stories', 50)");
+    expect(list.map((r) => r.id)).toContain(yes);
+    expect(list.map((r) => r.id)).not.toContain(no);
+    await fails(EDITOR, "select public.story_save(null, 'Please add more recipes for us', null, 'A man', null, null, 'draft', $1)", [no]);
+    const [{ id: story }] = await as<{ id: string }>(EDITOR, "select public.story_save(null, 'The kegel timer changed my nights.', 'Kipima muda cha kegel kimebadilisha usiku wangu.', 'A man, 34, Dar', 'Mwanaume, 34, Dar', 'last', 'published', $1) as id", [yes]);
+    expect(await as(null, "select who_sw from public.men_stories")).toEqual([{ who_sw: "Mwanaume, 34, Dar" }]);
+    // Writers draft but can't publish or change a live story; men and visitors can't write
+    await as(WRITER, "select public.story_save(null, 'A draft story from a writer here', null, null, null, null, 'draft', null)");
+    expect(await as(null, "select count(*)::int as n from public.men_stories")).toEqual([{ n: 1 }]); // drafts stay hidden
+    await fails(WRITER, "select public.story_save(null, 'Trying to publish this one', null, null, null, null, 'published', null)");
+    await fails(WRITER, "select public.story_save($1, 'Changed words here', null, null, null, null, 'draft', null)", [story]);
+    await fails(MAN, "select public.story_save(null, 'My own fake story here', null, null, null, null, 'draft', null)");
+    await fails(MAN, "insert into public.men_stories (text_en, status) values ('Sneaky story text', 'published')");
+    await as(EDITOR, "select public.story_delete($1)", [story]);
+    expect(await as(null, "select count(*)::int as n from public.men_stories")).toEqual([{ n: 0 }]);
+  });
+
+  it("the daily drop: at the drop time, once, only when something new went live, not for staff", async () => {
+    const utcHour = new Date().getUTCHours();
+    let off = 12 - utcHour;
+    if (off > 14) off -= 24;
+    if (off < -12) off += 24;
+    const TZ = off === 0 ? "Etc/GMT" : `Etc/GMT${off > 0 ? "-" : "+"}${Math.abs(off)}`;
+    const EP = "https://fcm.googleapis.com/fcm/send/drop-man-1";
+    await as(MAN, "select public.push_subscribe($1, $2, $3)", [EP, "BOrK".padEnd(87, "y"), "auth-secret-abcdef"]);
+    await as(MAN, `insert into public.notification_prefs (user_id, daily_reminder, tz) values ($1, false, $2)
+                   on conflict (user_id) do update set daily_reminder = false, tz = excluded.tz`, [MAN, TZ]);
+    const at = (await db.query<{ t: string }>("select to_char((now() at time zone $1) - interval '20 minutes', 'HH24:MI') as t", [TZ])).rows[0].t;
+    await as(EDITOR, `select public.settings_set('discover_config', $1::jsonb)`, [JSON.stringify({ reelEvery: 6, pinned: [], hidden: [], dropAt: at })]);
+    const drops = async () => (await db.query<{ user_id: string; kind: string; body: string }>("select * from public.push_due(now())")).rows.filter((r) => r.kind === "drop" && r.user_id === MAN);
+    await db.query("update public.content_items set published_at = now() - interval '3 days' where published_at > now() - interval '1 day'");
+    expect(await drops()).toEqual([]); // nothing new today
+    await as(EDITOR, `insert into public.content_items (id, kind, topic, title, status, action) values ('drop-card', 'guide', 'erection', 'Beetroot at night', 'published',
+                      '{"type":"food","challenges":["hard"],"results":"days","steps":[{"text":"a","textSw":"a"}]}'::jsonb)`);
+    const rows = await drops();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].body).toBe("Something new is waiting for you."); // discreet
+    const [{ id }] = (await db.query<{ id: string }>("select id from public.push_subscriptions where endpoint = $1", [EP])).rows;
+    await db.query("select public.push_mark($1::jsonb, '[]'::jsonb)", [JSON.stringify([{ subscription_id: id, user_id: MAN, kind: "drop", ref: rows.length ? (await db.query<{ d: string }>("select (now() at time zone $1)::date::text as d", [TZ])).rows[0].d : "" }])]);
+    expect(await drops()).toEqual([]); // once a day
+    // Switched off in the Studio
+    await db.query("delete from public.push_log where user_id = $1 and kind = 'drop'", [MAN]);
+    await as(EDITOR, `select public.settings_set('discover_config', '{"reelEvery": 6, "pinned": [], "hidden": [], "dropAt": ""}'::jsonb)`);
+    expect(await drops()).toEqual([]);
   });
 });

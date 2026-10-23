@@ -3,6 +3,7 @@
 
 import { dayLatest, dayTotal } from "../progress/calc";
 import { shiftKey } from "../progress/dates";
+import { challengeDates, challengePoints } from "../content/hooks";
 import type { Goal, TrackingRecord } from "../progress/types";
 import type { Activity, Lesson, Slot } from "./catalog";
 import type { FeedDB } from "./store";
@@ -84,7 +85,7 @@ export function dayPoints(
   const fromLessons = lessons
     .filter((l) => feed.lessons[l.id]?.localDate === key)
     .reduce((s, l) => s + l.points, 0);
-  return fromActivities + fromLessons + coursePoints(feed, key) + triedPoints(feed, key);
+  return fromActivities + fromLessons + coursePoints(feed, key) + triedPoints(feed, key) + challengePoints(feed.challenges, key);
 }
 
 /** Points from Discover cards he did on this day (Step 79). */
@@ -104,6 +105,7 @@ export function activeDays(feed: FeedDB, records: TrackingRecord[]): string[] {
   Object.values(feed.lessons).forEach((l) => set.add(l.localDate));
   Object.values(feed.course ?? {}).forEach((c) => c.done && set.add(c.done.localDate));
   Object.values(feed.tried ?? {}).forEach((x) => x?.localDate && set.add(x.localDate));
+  challengeDates(feed.challenges).forEach((k) => set.add(k));
   records.forEach((r) => set.add(r.localDate));
   return [...set].sort();
 }

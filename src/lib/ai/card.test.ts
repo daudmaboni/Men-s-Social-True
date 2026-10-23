@@ -101,3 +101,13 @@ describe("card from a reel with stills (Step 85)", () => {
     expect(blocks.filter((b) => b.type === "image")).toHaveLength(6);
   });
 });
+
+describe("the AI's opening question (Step 86)", () => {
+  it("keeps a good question and drops a broken one", () => {
+    const base = { title: ["Beet shot", "Shoti ya beetroot"], hook: ["x", "y"], type: "food", challenges: ["hard"], results: "days", steps: [{ text: ["Blend", "Saga"] }] };
+    const a = parseCard(JSON.stringify({ ...base, ask: { kind: "truefalse", q: ["Beetroot helps blood flow", "Beetroot husaidia damu"], truth: true, a: ["True", "Kweli"] } }));
+    expect(a.action.ask).toMatchObject({ kind: "truefalse", truth: true, qSw: "Beetroot husaidia damu" });
+    const b = parseCard(JSON.stringify({ ...base, ask: { kind: "question", q: ["Why?", "Kwa nini?"] } }));
+    expect(b.action.ask).toBeUndefined();
+  });
+});

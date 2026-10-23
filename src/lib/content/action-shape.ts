@@ -1,7 +1,7 @@
 // Checks a "do this" card that came from the database or from the AI, so a bad value never breaks the feed.
 // Pure (no network), used by rows.ts and the Card maker.
 
-import type { ActionResult, ActionSlide, ActionSpec, ActionType, ChallengeId } from "./types";
+import type { ActionResult, ActionSlide, ActionSpec, ActionType, CardAsk, CardSeries, ChallengeDays, ChallengeId } from "./types";
 
 export const ACTION_TYPES: ActionType[] = ["technique", "position", "mix", "exercise", "food", "habit", "mind"];
 export const ACTION_RESULTS: ActionResult[] = ["tonight", "days", "weeks2", "weeks4", "daily"];
@@ -46,6 +46,55 @@ export function cleanAction(v: unknown): ActionSpec | undefined {
     out.whySw = whySw || why;
   }
   if (a.tool === "pelvic-floor") out.tool = "pelvic-floor";
+  const ask = cleanAsk(a.ask);
+  if (ask) out.ask = ask;
+  const series = cleanSeries(a.series);
+  if (series) out.series = series;
+  if (CHALLENGE_DAYS.includes(Number(a.challengeDays) as ChallengeDays)) out.challengeDays = Number(a.challengeDays) as ChallengeDays;
+  const shareTitle = str(a.shareTitle, 90);
+  const shareTitleSw = str(a.shareTitleSw, 90);
+  if (shareTitle || shareTitleSw) {
+    out.shareTitle = shareTitle || shareTitleSw;
+    out.shareTitleSw = shareTitleSw || shareTitle;
+  }
+  return out;
+}
+
+/* ───────── Step 86: hooks ───────── */
+export const CHALLENGE_DAYS: ChallengeDays[] = [3, 5, 7];
+
+/** A series id from its English name: "5 nights to last longer" → "5-nights-to-last-longer". */
+export const seriesId = (name: string) =>
+  name.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+
+export function cleanAsk(v: unknown): CardAsk | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  const q = str(o.q, 200) || str(o.qSw, 200);
+  const qSw = str(o.qSw, 200) || q;
+  const a = str(o.a, 400) || str(o.aSw, 400);
+  const aSw = str(o.aSw, 400) || a;
+  if (!q || !a) return undefined;
+  const kind = o.kind === "truefalse" ? "truefalse" : "question";
+  return kind === "truefalse" ? { kind, q, qSw, a, aSw, truth: o.truth === true } : { kind, q, qSw, a, aSw };
+}
+
+export function cleanSeries(v: unknown): CardSeries | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as Record<string, unknown>;
+  const name = str(o.name, 80) || str(o.nameSw, 80);
+  const nameSw = str(o.nameSw, 80) || name;
+  const part = Math.round(Number(o.part));
+  if (!name || !Number.isFinite(part) || part < 1 || part > 30) return undefined;
+  const id = seriesId(str(o.id, 60) || name) || seriesId(name);
+  if (!id) return undefined;
+  const out: CardSeries = { id, name, nameSw, part };
+  const tease = str(o.tease, 140);
+  const teaseSw = str(o.teaseSw, 140);
+  if (tease || teaseSw) {
+    out.tease = tease || teaseSw;
+    out.teaseSw = teaseSw || tease;
+  }
   return out;
 }
 

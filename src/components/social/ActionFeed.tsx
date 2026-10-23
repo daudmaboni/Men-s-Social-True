@@ -14,6 +14,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BatteryCharging,
+  BookOpen,
   Bookmark,
   Brain,
   Check,
@@ -23,6 +24,7 @@ import {
   Flame,
   Hand,
   Heart,
+  Layers,
   Leaf,
   MessageCircle,
   Moon,
@@ -51,7 +53,15 @@ import { ReelPost, ReelsViewer } from "./Reels";
 import { openKito } from "@/components/kito/KitoLauncher";
 import KitoMark from "@/components/kito/KitoMark";
 import { isReel } from "@/lib/content/reels";
-import { orderCards, orderReels, placeReels, reelEvery, type Habits } from "@/lib/content/discover";
+import { hash, orderCards, orderReels, placeReels, reelEvery, type Habits } from "@/lib/content/discover";
+import { challengeDates, dropCards, dropTimes, seriesOf, seriesOpen, seriesProgress } from "@/lib/content/hooks";
+import { isCircle } from "@/lib/content/circles";
+import { topicQueue } from "@/lib/content/reels";
+import { useProgress } from "@/lib/progress/store";
+import { dateKey, shiftKey } from "@/lib/progress/dates";
+import { thenAndNow, THEN_NOW_EVERY_DAYS, type ThenNow } from "@/lib/progress/thenNow";
+import { helpedShown, storyFor, useStories } from "@/lib/social/stories";
+import { AskSlide, ChallengeButton, ChallengeStrip, DropBanner, LockedPart, NextPartSlide, ShareSheet, StoryCard, ThenNowCard, type SeriesInfo } from "./Hooks";
 import { DISCOVER_REFRESH, habitsStore, useDiscoverConfig, visitSeed } from "@/lib/social/discoverPrefs";
 import { useAccount } from "@/lib/account/useAccount";
 
@@ -109,17 +119,51 @@ export function ActionFeedSkeleton() {
   );
 }
 
+type Visit = {
+  seed: string;
+  done: Record<string, string>;
+  /** card id → his date he did it (for series parts) */
+  doneOn: Record<string, string>;
+  opened: Record<string, string>;
+  saved: Record<string, string>;
+  habits: Habits;
+  today: string;
+  thenNow: ThenNow | null;
+};
+
+const THEN_NOW_KEY = "ms_then_now_seen";
+
+/** Is it time for "You, then and now" (at most once a week; it stays for the rest of that day)? */
+function thenNowDue(today: string): boolean {
+  try {
+    const seen = localStorage.getItem(THEN_NOW_KEY);
+    if (seen === `x:${today}`) return false; // he closed it today
+    return !seen || seen === today || seen < shiftKey(today, -THEN_NOW_EVERY_DAYS);
+  } catch {
+    return false;
+  }
+}
+function thenNowMark(v: string) {
+  try {
+    localStorage.setItem(THEN_NOW_KEY, v);
+  } catch {}
+}
+
 export default function ActionFeed() {
   const { items } = useLibrary();
   const feed = useFeed();
   const tried = useTried();
   const social = useSocial();
+  const progress = useProgress();
+  const { stories, counts } = useStories();
   const t = useT();
+  const sw = t.lang === "sw";
   const [shown, setShown] = useState(PAGE);
   // Reels (Step 70): the order is fixed when the viewer opens, so it doesn't move while he watches
   const [viewer, setViewer] = useState<{ list: ContentItem[]; start: number; sound: boolean } | null>(null);
   const top = useRef<HTMLDivElement>(null);
   const filter = tried.filter;
+  const circle: ChallengeId | null = isCircle(filter) ? filter : null;
 
   const acc = useAccount();
   const cfg = useDiscoverConfig();
@@ -134,16 +178,23 @@ export default function ActionFeed() {
       }),
     [items],
   );
+  const seriesMap = useMemo(() => seriesOf(all), [all]);
 
   // Step 71: a new order every visit, different for each man. What he did, opened and his habits are
   // read once when the visit starts (or he changes the challenge), so nothing jumps while he scrolls.
   const [refreshes, setRefreshes] = useState(0);
-  const [visit, setVisit] = useState<{ seed: string; done: Record<string, string>; opened: Record<string, string>; habits: Habits } | null>(null);
+  const [visit, setVisit] = useState<Visit | null>(null);
   useEffect(() => {
-    if (!tried.ready || !social.ready) return;
-    setVisit({ seed: visitSeed(accountId), done: { ...tried.done }, opened: { ...social.history }, habits: habitsStore.get() });
+    if (!tried.ready || !social.ready || !progress.ready) return;
+    const today = dateKey(new Date());
+    const doneOn: Record<string, string> = {};
+    for (const [id, at] of Object.entries(tried.done)) doneOn[id] = feed.tried?.[id]?.localDate ?? dateKey(new Date(at));
+    // Step 86: "You, then and now", from his own records and what he did
+    const doneDates = [...Object.values(doneOn), ...challengeDates(feed.challenges)];
+    const tn = cfg.thenNow && thenNowDue(today) ? thenAndNow(progress.records, doneDates, today) : null;
+    setVisit({ seed: visitSeed(accountId), done: { ...tried.done }, doneOn, opened: { ...social.history }, saved: { ...social.bookmarks }, habits: habitsStore.get(), today, thenNow: tn });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tried.ready, social.ready, filter, accountId, refreshes]);
+  }, [tried.ready, social.ready, progress.ready, filter, accountId, refreshes]);
   // Pull to refresh (Step 77) starts a new visit: a fresh order, from the top
   useEffect(() => {
     const on = () => {
@@ -153,20 +204,96 @@ export default function ActionFeed() {
     window.addEventListener(DISCOVER_REFRESH, on);
     return () => window.removeEventListener(DISCOVER_REFRESH, on);
   }, []);
-  const cards = useMemo(() => {
-    if (!visit) return [];
-    const picked = filter === "all" ? all : all.filter((c) => c.spec.challenges.includes(filter));
-    return orderCards(picked, `${visit.seed}:${filter}`, { interests: social.interests, opened: visit.opened, liked: { ...helpedYes(feed.tried), ...tried.liked }, done: visit.done }, cfg);
+
+  const notHelped = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const [id, x] of Object.entries(feed.tried ?? {})) if (x?.helped?.answer === "no") out[id] = x.helped.at;
+    return out;
+  }, [feed.tried]);
+
+  // What this view shows (Step 86: his playbook and series too). Later parts of a series stay hidden until they open.
+  const view = useMemo(() => {
+    const empty = { cards: [] as Card[], locked: [] as { part: number; total: number; opensOn: string | null }[] };
+    if (!visit) return empty;
+    const open = (c: Card) => seriesOpen(c, seriesMap, visit.doneOn, visit.today, cfg.seriesWait);
+    if (filter === "saved") {
+      const saved = all.filter((c) => visit.saved[c.item.id]);
+      saved.sort((a, b) => Number(Boolean(visit.done[a.item.id])) - Number(Boolean(visit.done[b.item.id])) || visit.saved[b.item.id].localeCompare(visit.saved[a.item.id]));
+      return { ...empty, cards: saved };
+    }
+    if (filter.startsWith("series:")) {
+      const s = seriesMap.get(filter.slice(7));
+      if (!s) return empty;
+      const cards = s.parts.filter(open);
+      const pr = seriesProgress(s, visit.doneOn, visit.today, cfg.seriesWait);
+      const locked = s.parts.filter((c) => !open(c)).map((c, i) => ({ part: c.spec.series!.part, total: s.parts.length, opensOn: i === 0 ? pr.opensOn : null }));
+      return { cards, locked };
+    }
+    const picked = (filter === "all" ? all : all.filter((c) => circle && c.spec.challenges.includes(circle))).filter(open);
+    const taste = {
+      interests: social.interests,
+      opened: visit.opened,
+      liked: { ...helpedYes(feed.tried), ...tried.liked },
+      done: visit.done,
+      saved: visit.saved,
+      notHelped,
+      nextParts: new Set(
+        [...seriesMap.values()].flatMap((s) => {
+          const p = seriesProgress(s, visit.doneOn, visit.today, cfg.seriesWait);
+          return p.started && p.next && !p.opensOn ? [p.next.item.id] : [];
+        }),
+      ),
+    };
+    return { ...empty, cards: orderCards(picked, `${visit.seed}:${filter}`, taste, cfg) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [all, filter, visit, cfg]);
+  }, [all, filter, visit, cfg, seriesMap]);
+  const cards = view.cards;
+  const plain = filter === "all" || Boolean(circle);
+
   const reels = useMemo(() => (visit ? orderReels(items.filter(isReel), visit.seed, visit.opened, cfg) : []), [items, visit, cfg]);
   // Reels inside the feed: how often depends on the Studio setting and (if allowed) on his habits
   // Step 80: inside a circle, only the reels staff put in that circle
   const reelSpots = useMemo(() => {
-    if (!visit) return new Map<number, ContentItem>();
-    const here = filter === "all" ? reels : reels.filter((r) => circlesOf(r).includes(filter));
+    if (!visit || !plain) return new Map<number, ContentItem>();
+    const here = filter === "all" ? reels : reels.filter((r) => circle && circlesOf(r).includes(circle));
     return placeReels(cards.length, here, reelEvery(cfg, visit.habits));
-  }, [visit, filter, reels, cards.length, cfg]);
+  }, [visit, filter, circle, plain, reels, cards.length, cfg]);
+
+  // Step 86: the daily drop — Studio cards that went live since the last drop time, not opened yet
+  const [now] = useState(() => new Date());
+  const drop = useMemo(() => {
+    if (!visit || filter !== "all") return { fresh: [] as Card[], next: null as Date | null };
+    const fresh = dropCards(cards, cfg.dropAt || null, now).filter((c) => !visit.opened[c.item.id] && !visit.done[c.item.id]);
+    return { fresh, next: cfg.dropAt ? (dropTimes(cfg.dropAt, now)?.next ?? null) : null };
+  }, [visit, filter, cards, cfg.dropAt, now]);
+  const goToDrop = useCallback(() => {
+    const id = drop.fresh[0]?.item.id;
+    if (id) document.querySelector(`[data-card="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [drop.fresh]);
+  // Opened from the drop notification: straight to the new cards
+  const dropLink = useRef(false);
+  useEffect(() => {
+    if (dropLink.current || !drop.fresh.length) return;
+    if (!/[?&]drop=1/.test(location.search)) return;
+    dropLink.current = true;
+    requestAnimationFrame(goToDrop);
+  }, [drop.fresh, goToDrop]);
+
+  // Series he's in the middle of: circles at the top (Step 86)
+  const seriesCircles = useMemo(() => {
+    if (!visit) return [];
+    return [...seriesMap.values()]
+      .map((s) => ({ s, p: seriesProgress(s, visit.doneOn, visit.today, cfg.seriesWait) }))
+      .filter((x) => x.p.started && !x.p.finished)
+      .sort((a, b) => Number(Boolean(a.p.opensOn)) - Number(Boolean(b.p.opensOn)))
+      .slice(0, 4);
+  }, [seriesMap, visit, cfg.seriesWait]);
+
+  const [thenNowOpen, setThenNowOpen] = useState(true);
+  useEffect(() => {
+    if (visit?.thenNow) thenNowMark(visit.today);
+  }, [visit]);
+  const seedNum = visit ? hash(visit.seed) % 997 : 0;
 
   // Load more cards as he nears the end
   const sentinel = useRef<HTMLDivElement>(null);
@@ -185,14 +312,42 @@ export default function ActionFeed() {
     top.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   };
 
-  // Tapping a reel opens the full-screen viewer with sound on. The tapped reel comes first and the ones
-  // before it go to the end (he has seen those in the feed), so pulling down on it closes the viewer (Step 77).
-  const openReels = (start: number, list = reels) =>
-    setViewer({ list: start > 0 ? [...list.slice(start), ...list.slice(0, start)] : list, start: 0, sound: true });
+  // Tapping a reel opens the full-screen viewer with sound on. The tapped reel comes first, then more reels
+  // on the same topic (Step 86), then the rest; pulling down on the first one closes the viewer (Step 77).
+  const openReels = (start: number, list = reels) => setViewer({ list: topicQueue(list, start, (r) => circlesOf(r)), start: 0, sound: true });
   if (!tried.ready || !social.ready || !visit) return <ActionFeedSkeleton />;
 
-  const left = (id: FeedFilter) => (id === "all" ? all : all.filter((c) => c.spec.challenges.includes(id))).some((c) => !tried.done[c.item.id]);
-  const current = CHALLENGES.find((c) => c.id === filter) ?? CHALLENGES[0];
+  const left = (id: ChallengeId | "all") => (id === "all" ? all : all.filter((c) => c.spec.challenges.includes(id))).some((c) => !tried.done[c.item.id]);
+  const savedCount = Object.keys(social.bookmarks).filter((id) => all.some((c) => c.item.id === id)).length;
+  const circles: { id: FeedFilter; label: string; icon: typeof Timer; fresh: boolean; ring?: number }[] = [
+    { ...CHALLENGES[0], fresh: left("all") },
+    ...(savedCount ? [{ id: "saved" as FeedFilter, label: "My playbook", icon: BookOpen, fresh: false }] : []),
+    ...seriesCircles.map(({ s, p }) => ({
+      id: `series:${s.id}` as FeedFilter,
+      label: sw ? s.nameSw : s.name,
+      icon: Layers,
+      fresh: !p.opensOn,
+      ring: p.done / p.total,
+    })),
+    ...CHALLENGES.slice(1).map((c) => ({ ...c, fresh: left(c.id as ChallengeId) })),
+  ];
+  const current = circles.find((c) => c.id === filter) ?? circles[0];
+  const helpedFor = (id: string) => helpedShown(counts[id], Boolean(tried.liked[id]), cfg.helpedMin);
+  const seriesInfo = (c: Card): SeriesInfo | undefined => {
+    const sp = c.spec.series;
+    const s = sp && seriesMap.get(sp.id);
+    if (!sp || !s) return undefined;
+    const i = s.parts.findIndex((x) => x.item.id === c.item.id);
+    const next = s.parts[i + 1];
+    return {
+      name: sw ? s.nameSw : s.name,
+      part: i + 1,
+      total: s.parts.length,
+      tease: (sw ? sp.teaseSw : sp.tease) || (next ? (sw && next.item.titleSw ? next.item.titleSw : next.item.title) : undefined),
+      wait: cfg.seriesWait,
+      last: !next,
+    };
+  };
 
   return (
     <div className="mx-auto w-full max-w-[480px] space-y-4">
@@ -201,9 +356,13 @@ export default function ActionFeed() {
           {t("What are you dealing with?")}
         </h2>
         <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-3.5 pb-1 lg:px-0">
-          {CHALLENGES.map(({ id, label, icon: Icon }) => {
+          {circles.map(({ id, label, icon: Icon, fresh, ring }) => {
             const on = filter === id;
-            const fresh = left(id);
+            // The ring is coloured while there are cards here he hasn't tried yet; a series shows how far he is
+            const bg =
+              ring !== undefined
+                ? { background: `conic-gradient(var(--honey) ${Math.round(ring * 360)}deg, var(--line) 0)` }
+                : undefined;
             return (
               <button
                 key={id}
@@ -212,19 +371,21 @@ export default function ActionFeed() {
                 onClick={() => pick(id)}
                 className="flex w-[74px] shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-95"
               >
-                {/* The ring is coloured while there are cards here he hasn't tried yet */}
                 <span
-                  className={`rounded-full p-[2.5px] ${fresh ? "bg-[conic-gradient(from_200deg,var(--honey),var(--mint-strong),var(--forest),var(--honey))]" : "bg-line"}`}
+                  style={bg}
+                  className={`rounded-full p-[2.5px] ${ring !== undefined ? "" : fresh ? "bg-[conic-gradient(from_200deg,var(--honey),var(--mint-strong),var(--forest),var(--honey))]" : "bg-line"}`}
                 >
                   <span className="block rounded-full bg-bg p-[2.5px]">
                     <span
-                      className={`flex h-[60px] w-[60px] items-center justify-center rounded-full transition-colors ${on ? "bg-forest text-white" : "bg-surface text-forest ring-1 ring-line"}`}
+                      className={`flex h-[60px] w-[60px] items-center justify-center rounded-full transition-colors ${on ? "bg-forest text-white" : id === "saved" || ring !== undefined ? "bg-honey/20 text-forest ring-1 ring-line" : "bg-surface text-forest ring-1 ring-line"}`}
                     >
                       <Icon size={24} strokeWidth={2} aria-hidden />
                     </span>
                   </span>
                 </span>
-                <span className={`line-clamp-2 text-center text-[0.6875rem] leading-tight ${on ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>{t(label)}</span>
+                <span className={`line-clamp-2 text-center text-[0.6875rem] leading-tight ${on ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>
+                  {ring !== undefined ? label : t(label)}
+                </span>
               </button>
             );
           })}
@@ -243,13 +404,25 @@ export default function ActionFeed() {
         <Send size={16} className="text-forest" aria-hidden />
       </button>
 
+      {/* Step 86: today's drop, and the challenges he's doing */}
+      {filter === "all" && <DropBanner fresh={drop.fresh.length} next={drop.next} onGo={goToDrop} t={t} />}
+      <ChallengeStrip items={items} t={t} />
+
       {/* A few days after he did a card: did it help? (Step 79) */}
       <HelpedCheck items={items} />
 
       {filter !== "all" && (
         <p className="edge-pad flex items-center justify-between gap-2 text-xs text-ink-soft">
           <span>
-            {t("{n} things to try for: {challenge}", { n: cards.length, challenge: t(current.label).toLowerCase() })}
+            {filter === "saved"
+              ? t("My playbook: {n} saved, {d} done", { n: cards.length, d: cards.filter((c) => tried.done[c.item.id]).length })
+              : filter.startsWith("series:")
+                ? t("{name}: {d} of {total} parts done", {
+                    name: current.label,
+                    d: cards.filter((c) => tried.done[c.item.id]).length,
+                    total: cards.length + view.locked.length,
+                  })
+                : t("{n} things to try for: {challenge}", { n: cards.length, challenge: t(current.label).toLowerCase() })}
           </span>
           <button onClick={() => pick("all")} className="font-semibold text-forest">
             {t("Show all")}
@@ -261,29 +434,62 @@ export default function ActionFeed() {
         {cards.slice(0, shown).map((c, i) => {
           // Reels between the cards: full width, the one on screen plays silently (each reel shows once)
           const r = reelSpots.get(i);
+          // A real man's story every few cards (Step 86)
+          const story = plain && cfg.storyEvery > 0 && i > 0 && i % cfg.storyEvery === 0 ? storyFor(stories, i / cfg.storyEvery - 1, circle, seedNum) : null;
           return (
             <Fragment key={`${filter}-${c.item.id}`}>
               {r && <ReelPost reel={r} onOpen={() => openReels(reels.indexOf(r))} />}
-              <ActionPost card={c} first={i === 0} done={Boolean(tried.done[c.item.id])} liked={Boolean(tried.liked[c.item.id])} saved={Boolean(social.bookmarks[c.item.id])} />
+              {i === 2 && filter === "all" && visit.thenNow && thenNowOpen && (
+                <ThenNowCard
+                  data={visit.thenNow}
+                  t={t}
+                  onClose={() => {
+                    setThenNowOpen(false);
+                    thenNowMark(`x:${visit.today}`);
+                  }}
+                />
+              )}
+              {story && <StoryCard story={story} onCircle={(ch) => pick(ch)} t={t} />}
+              <ActionPost
+                card={c}
+                first={i === 0}
+                done={Boolean(tried.done[c.item.id])}
+                liked={Boolean(tried.liked[c.item.id])}
+                saved={Boolean(social.bookmarks[c.item.id])}
+                helped={helpedFor(c.item.id)}
+                series={seriesInfo(c)}
+              />
             </Fragment>
           );
         })}
+        {view.locked.map((l) => (
+          <LockedPart key={l.part} part={l.part} total={l.total} opensOn={l.opensOn} t={t} />
+        ))}
       </div>
 
       {more ? (
         <div ref={sentinel} className="h-[40vh] animate-pulse rounded-[20px] lg:mx-0 bg-surface ring-1 ring-line" aria-hidden />
       ) : (
-        <EndOfFeed filter={filter} onPick={pick} t={t} />
+        <EndOfFeed filter={filter} empty={cards.length === 0} onPick={pick} t={t} />
       )}
       {viewer && <ReelsViewer reels={viewer.list} start={viewer.start} withSound={viewer.sound} onClose={() => setViewer(null)} />}
     </div>
   );
 }
 
-function EndOfFeed({ filter, onPick, t }: { filter: FeedFilter; onPick: (id: FeedFilter) => void; t: T }) {
+function EndOfFeed({ filter, empty, onPick, t }: { filter: FeedFilter; empty: boolean; onPick: (id: FeedFilter) => void; t: T }) {
+  if (filter === "saved" && empty) {
+    return (
+      <section className="rounded-[20px] bg-surface p-5 text-center ring-1 ring-line">
+        <p className="font-display text-lg font-bold">{t("Your playbook is empty")}</p>
+        <p className="mt-1 text-sm text-ink-soft">{t("Tap the bookmark on any card to keep it here, as your own plan.")}</p>
+      </section>
+    );
+  }
+  if (filter.startsWith("series:")) return null;
   return (
     <section className="rounded-[20px] bg-forest-deep p-5 text-center text-white">
-      <p className="font-display text-xl font-bold">{t("That's everything for now")}</p>
+      <p className="font-display text-xl font-bold">{t(filter === "saved" ? "That's your whole playbook" : "That's everything for now")}</p>
       <p className="mt-1 text-sm text-mint">{t("Pick one you haven't done yet, and do it tonight.")}</p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {CHALLENGES.filter((c) => c.id !== filter && c.id !== "all")
@@ -302,7 +508,25 @@ function EndOfFeed({ filter, onPick, t }: { filter: FeedFilter; onPick: (id: Fee
 }
 
 /** One card in the feed, Instagram-post style. Also used by the Studio's Card maker preview. */
-export function ActionPost({ card, first, done, liked, saved }: { card: Card; first: boolean; done: boolean; liked: boolean; saved: boolean }) {
+export function ActionPost({
+  card,
+  first,
+  done,
+  liked,
+  saved,
+  helped = null,
+  series,
+}: {
+  card: Card;
+  first: boolean;
+  done: boolean;
+  liked: boolean;
+  saved: boolean;
+  /** "N men said this helped" (Step 86), or null to show nothing. */
+  helped?: number | null;
+  /** Where this card sits in its series (Step 86). */
+  series?: SeriesInfo;
+}) {
   const { item, spec } = card;
   const t = useT();
   const sw = t.lang === "sw";
@@ -313,40 +537,36 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
   const need = sw ? spec.needSw : spec.need;
   const TypeIcon = TYPE_ICON[spec.type];
   const href = contentHref(item.id);
+  const [sharing, setSharing] = useState(false);
 
   const slides: React.ReactNode[] = [
-    <HookSlide key="hook" item={item} spec={spec} title={title} hook={hook} first={first} t={t} />,
+    // Step 86: a question first, when the card has one (the answer is one tap away)
+    spec.ask ? (
+      <AskSlide key="ask" ask={spec.ask} title={title} steps={spec.steps.length} t={t} onAnswer={habitsStore.cardUsed} />
+    ) : (
+      <HookSlide key="hook" item={item} spec={spec} title={title} hook={hook} first={first} t={t} />
+    ),
     ...(item.videoUrl || item.audioUrl ? [<MediaSlide key="media" item={item} t={t} />] : []),
     ...(need?.length ? [<NeedSlide key="need" need={need} t={t} />] : []),
     ...spec.steps.map((s, i) => (
       <StepSlide key={`s${i}`} n={i + 1} total={spec.steps.length} title={sw ? s.titleSw : s.title} text={sw ? s.textSw : s.text} t={t} />
     )),
     ...(why ? [<WhySlide key="why" why={why} t={t} />] : []),
+    ...(series ? [<NextPartSlide key="next" s={series} t={t} />] : []),
   ];
 
-  const share = async () => {
-    const url = `${location.origin}${href}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      showToast(t("Link copied"));
-    } catch {
-      // he closed the share sheet
-    }
-  };
-
   return (
-    <article className="overflow-hidden rounded-[20px] bg-surface ring-1 ring-line" aria-label={title}>
+    <article data-card={item.id} className="scroll-mt-4 overflow-hidden rounded-[20px] bg-surface ring-1 ring-line" aria-label={title}>
       <header className="flex items-center gap-2.5 px-3 py-2">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-forest">
           <TypeIcon size={16} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.8125rem] font-bold leading-tight">{t(TYPE_LABEL[spec.type])}</p>
-          <p className="truncate text-[0.6875rem] text-ink-soft">{t("{n} min", { n: item.minutes })} · @kayaniherbs</p>
+          <p className="truncate text-[0.8125rem] font-bold leading-tight">{series ? series.name : t(TYPE_LABEL[spec.type])}</p>
+          <p className="truncate text-[0.6875rem] text-ink-soft">
+            {series ? `${t("Part {n} of {total}", { n: series.part, total: series.total })} · ` : ""}
+            {t("{n} min", { n: item.minutes })} · @kayaniherbs
+          </p>
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ${spec.results === "tonight" ? "bg-honey text-on-honey" : "bg-mint text-forest"}`}
@@ -371,7 +591,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
         >
           <Heart size={22} className={liked ? "text-red-500" : ""} fill={liked ? "currentColor" : "none"} />
         </IconButton>
-        <IconButton label={t("Share")} onClick={share}>
+        <IconButton label={t("Share")} onClick={() => setSharing(true)}>
           <Send size={21} />
         </IconButton>
         <Link href={href} className="ml-1 flex items-center gap-1 rounded-full px-2 py-2 text-xs font-semibold text-ink-soft">
@@ -385,7 +605,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
             const now = socialStore.toggleBookmark(item.id);
             habitsStore.cardUsed();
             if (now) trackContent(item.id, "save");
-            showToast(t(now ? "Saved for later" : "Removed from saved"));
+            showToast(t(now ? "Saved to your playbook" : "Removed from your playbook"));
             if (now) inviteToAccount("first-save");
           }}
         >
@@ -394,6 +614,11 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
       </div>
 
       <div className="px-3 pb-3">
+        {helped !== null && (
+          <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-ink-soft">
+            <Heart size={12} className="text-red-500" fill="currentColor" aria-hidden /> {t(helped === 1 ? "1 man said this helped" : "{n} men said this helped", { n: helped })}
+          </p>
+        )}
         <p className="line-clamp-2 text-[0.875rem] font-bold leading-snug">{title}</p>
         <div className="mt-2 flex gap-2">
           <button
@@ -404,7 +629,13 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
                 haptic("done");
                 flyPoints(e.currentTarget, TRIED_POINTS); // Step 79: doing a card earns points
                 trackContent(item.id, "complete");
-                showToast(t("Nice one, bro. Keep going."));
+                showToast(
+                  !series
+                    ? t("Nice one, bro. Keep going.")
+                    : series.last
+                      ? t("Series finished. Respect.")
+                      : t(series.wait ? "Part {n} opens tomorrow." : "Part {n} is open now.", { n: series.part + 1 }),
+                );
               }
             }}
             aria-pressed={done}
@@ -422,7 +653,8 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
               </>
             )}
           </button>
-          {spec.tool === "pelvic-floor" && (
+          {spec.challengeDays && <ChallengeButton item={item} days={spec.challengeDays} t={t} />}
+          {spec.tool === "pelvic-floor" && !spec.challengeDays && (
             <Link
               href={contentHref(TIMER_ID)}
               className="flex shrink-0 items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-forest ring-1 ring-line"
@@ -432,6 +664,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
           )}
         </div>
       </div>
+      <ShareSheet open={sharing} onClose={() => setSharing(false)} item={item} spec={spec} t={t} />
     </article>
   );
 }

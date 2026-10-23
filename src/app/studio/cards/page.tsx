@@ -8,7 +8,10 @@ import { listen, stills } from "@/lib/studio/listen";
 import { CIRCLE_LABEL } from "@/lib/content/circles";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, FileUp, Link2, Loader2, Mic, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import { CheckCircle2, Clock, FileUp, Link2, Loader2, Mic, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import HookFields from "@/components/studio/HookFields";
+import { useDiscoverConfig } from "@/lib/social/discoverPrefs";
+import { dropTimes } from "@/lib/content/hooks";
 import { useStudio } from "@/components/admin/AdminShell";
 import { Badge, ErrorBox, PageHeader, Panel, Segmented, btn, input } from "@/components/admin/ui";
 import { useToast } from "@/components/motion/Toast";
@@ -102,6 +105,9 @@ export default function CardMakerPage() {
   const [published, setPublished] = useState<string | null>(null);
   const fk = file ? kindOf(file) : null;
   const canPublish = studio.can("content.publish");
+  // Step 86: publish at the next daily drop (Studio → Discover sets the time)
+  const discover = useDiscoverConfig();
+  const nextDrop = discover.dropAt ? (dropTimes(discover.dropAt, new Date())?.next ?? null) : null;
   const repo = getContentRepo();
 
   async function make() {
@@ -155,15 +161,21 @@ export default function CardMakerPage() {
   const item = useMemo(() => (card ? studioCardToItem(card) : null), [card]);
   const blocks = useMemo(() => (item ? checkClaims(item).filter((i) => i.level === "block") : []), [item]);
 
-  async function save(publish: boolean) {
+  async function save(publish: boolean, at?: Date) {
     if (!item) return;
     setError(null);
     setBusy(publish ? "publish" : "save");
     try {
-      // Publishing: goes live straight away (Step 66b: no professional-check gate)
-      await repo.save({ ...item, review: publish ? "reviewed" : "draft" }, publish ? "published" : "draft");
-      setPublished(publish ? "published" : "draft");
-      showToast(publish ? "Published · men see it at the top of Discover" : "Saved as a draft in Content");
+      // Publishing: goes live straight away (Step 66b: no professional-check gate), or at the next drop (Step 86)
+      await repo.save({ ...item, review: publish ? "reviewed" : "draft", ...(at ? { publishAt: at.toISOString() } : {}) }, publish ? "published" : "draft");
+      setPublished(publish ? (at ? `drop:${at.toISOString()}` : "published") : "draft");
+      showToast(
+        publish
+          ? at
+            ? `Scheduled · goes live at ${at.toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}`
+            : "Published · men see it at the top of Discover"
+          : "Saved as a draft in Content",
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -373,6 +385,12 @@ export default function CardMakerPage() {
                   long
                 />
 
+                {/* Step 86: what pulls men back */}
+                <div className="rounded-2xl bg-mint/30 p-3 ring-1 ring-line">
+                  <p className="mb-3 text-sm font-bold">Hooks (optional)</p>
+                  <HookFields spec={card.action} cardId={card.id} onChange={setAction} />
+                </div>
+
                 <div>
                   <p className="mb-2 text-sm font-semibold">Background photo</p>
                   <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
@@ -410,7 +428,25 @@ export default function CardMakerPage() {
               </div>
               <div className="mx-auto max-w-[390px] rounded-[32px] bg-bg p-3 ring-1 ring-line">
                 <LangOverride lang={lang}>
-                  <ActionPost card={{ item: { ...item, coverImageUrl: card!.photo === null && card!.imageUrl ? card!.imageUrl : card!.photo ? photoUrl(card!.photo) : item.coverImageUrl }, spec: item.action! }} first done={false} liked={false} saved={false} />
+                  <ActionPost
+                    card={{ item: { ...item, coverImageUrl: card!.photo === null && card!.imageUrl ? card!.imageUrl : card!.photo ? photoUrl(card!.photo) : item.coverImageUrl }, spec: item.action! }}
+                    first
+                    done={false}
+                    liked={false}
+                    saved={false}
+                    series={
+                      card!.action.series?.name
+                        ? {
+                            name: lang === "sw" ? card!.action.series.nameSw || card!.action.series.name : card!.action.series.name,
+                            part: card!.action.series.part,
+                            total: Math.max(card!.action.series.part + 1, card!.action.series.part),
+                            tease: (lang === "sw" ? card!.action.series.teaseSw : card!.action.series.tease) || undefined,
+                            wait: discover.seriesWait,
+                            last: false,
+                          }
+                        : undefined
+                    }
+                  />
                 </LangOverride>
               </div>
               {blocks.length > 0 && (
@@ -421,16 +457,27 @@ export default function CardMakerPage() {
                   {busy === "save" && <Loader2 size={15} className="animate-spin" />} Save as draft
                 </button>
                 {canPublish ? (
+                  <>
                   <button className={btn.primary} disabled={busy !== null || blocks.length > 0} onClick={() => save(true)}>
-                    {busy === "publish" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />} Publish
+                    {busy === "publish" ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />} Publish now
                   </button>
+                  {nextDrop && (
+                    <button className={btn.ghost} disabled={busy !== null || blocks.length > 0} onClick={() => save(true, nextDrop)} title="Men get one discreet notification at the drop time">
+                      <Clock size={15} /> At the next drop ({nextDrop.toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })})
+                    </button>
+                  )}
+                  </>
                 ) : (
                   <p className="text-xs text-ink-soft">Your role can save drafts. An editor or owner publishes them from Content.</p>
                 )}
               </div>
               {published && (
                 <p className="text-sm text-forest">
-                  {published === "published" ? "Live. It's at the top of Discover now." : "Saved. Find it in "}
+                  {published === "published"
+                    ? "Live. It's at the top of Discover now."
+                    : published.startsWith("drop:")
+                      ? "Scheduled for the drop. Until then it waits in "
+                      : "Saved. Find it in "}
                   {published !== "published" && <Link href="/studio/content" className="font-semibold underline">Content</Link>}
                 </p>
               )}

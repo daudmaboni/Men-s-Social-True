@@ -147,3 +147,22 @@ describe("deletions stay deleted (Step 35)", () => {
     expect(mergeProgress(pm, pa, "u", NOW)).toEqual(pm);
   });
 });
+
+describe("challenges across phones (Step 86)", () => {
+  const base = { days: {}, lessons: {}, settings: { discreet: false } };
+  it("keeps days done on both phones and the first finish", () => {
+    const a = { ...base, challenges: { k: { start: "2026-10-20", at: "2026-10-20T08:00:00Z", length: 3, days: { "2026-10-20": "t1" } } } };
+    const b = { ...base, challenges: { k: { start: "2026-10-20", at: "2026-10-20T08:00:00Z", length: 3, days: { "2026-10-21": "t2", "2026-10-22": "t3" }, finished: { localDate: "2026-10-22", at: "t3", points: 30 } } } };
+    const m = mergeFeed(a, b);
+    expect(Object.keys(m.challenges!.k.days).sort()).toEqual(["2026-10-20", "2026-10-21", "2026-10-22"]);
+    expect(m.challenges!.k.finished?.points).toBe(30);
+    expect(mergeFeed(b, a)).toEqual(m);
+  });
+  it("a fresh start replaces the old one, and quitting sticks", () => {
+    const old = { ...base, challenges: { k: { start: "2026-09-01", at: "2026-09-01T08:00:00Z", length: 3, days: { "2026-09-01": "x" } } } };
+    const fresh = { ...base, challenges: { k: { start: "2026-10-20", at: "2026-10-20T08:00:00Z", length: 7, days: {} } } };
+    expect(mergeFeed(old, fresh).challenges!.k.length).toBe(7);
+    const quit = { ...base, challenges: {}, deleted: { "challenge:k": "2026-10-21T00:00:00Z" } };
+    expect(mergeFeed(quit, fresh).challenges!.k).toBeUndefined();
+  });
+});

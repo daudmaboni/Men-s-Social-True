@@ -40,3 +40,15 @@ export function softEndIndex(start: number, total: number, now: Date): number {
   const at = start + softEndAfter(now);
   return at < total ? at : -1;
 }
+
+/** Step 86: the viewer's queue when he taps a reel. That reel first, then other reels in the same circle(s)
+ *  (one interest becomes a session), then everything else in the feed's order. */
+export function topicQueue(reels: ContentItem[], start: number, circlesOf: (r: ContentItem) => string[]): ContentItem[] {
+  const first = reels[start];
+  if (!first) return reels;
+  const mine = new Set(circlesOf(first));
+  const rest = [...reels.slice(start + 1), ...reels.slice(0, start)];
+  const same = mine.size ? rest.filter((r) => circlesOf(r).some((c) => mine.has(c))) : [];
+  const other = rest.filter((r) => !same.includes(r));
+  return [first, ...same, ...other];
+}

@@ -4,6 +4,7 @@
 // Unmeasured things are labelled as such, never shown as 0.
 
 import Retention from "@/components/admin/Retention";
+import HookStats from "@/components/admin/HookStats";
 import { useMemo, useState } from "react";
 import { useStudio } from "@/components/admin/AdminShell";
 import DailyColumns, { RankBars } from "@/components/admin/Chart";
@@ -94,6 +95,7 @@ export default function AnalyticsPage() {
       />
       {/* Step 85: the pilot's real test, first */}
       <Retention />
+      <HookStats />
       {o.error && <ErrorBox error={o.error} onRetry={o.reload} />}
       {!d && o.loading && <Loading />}
       {d && (

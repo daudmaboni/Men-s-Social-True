@@ -106,7 +106,29 @@ export function mergeFeed(local: FeedDB, remote: Partial<FeedDB> | null, now: Da
       tried[id] = { localDate: first.localDate, at: first.at, points: first.points, ...(helped ? { helped } : {}) };
     }
   }
-  return { days, lessons, settings, deleted, course, tried };
+  // Challenges (Step 86): the newest start wins (he may have quit and started again); days done on either phone
+  // since that start are kept, and the first finish counts
+  const challenges: NonNullable<FeedDB["challenges"]> = {};
+  for (const src of [local.challenges ?? {}, remote?.challenges ?? {}]) {
+    for (const [id, c] of Object.entries(src)) {
+      if (!c || typeof c !== "object" || typeof c.at !== "string") continue;
+      if (isDeleted(deleted, `challenge:${id}`, c.at)) continue;
+      const have = challenges[id];
+      if (!have || c.at > have.at) {
+        challenges[id] = have && have.start === c.start ? joinChallenge(c, have) : c;
+        continue;
+      }
+      if (c.at === have.at || c.start === have.start) challenges[id] = joinChallenge(have, c);
+    }
+  }
+  return { days, lessons, settings, deleted, course, tried, challenges };
+}
+
+function joinChallenge(a: NonNullable<FeedDB["challenges"]>[string], b: NonNullable<FeedDB["challenges"]>[string]) {
+  const days: Record<string, string> = {};
+  for (const [k, at] of [...Object.entries(b.days ?? {}), ...Object.entries(a.days ?? {})]) if (k >= a.start && (!days[k] || at < days[k])) days[k] = at;
+  const finished = !a.finished ? b.finished : !b.finished ? a.finished : a.finished.at < b.finished.at ? a.finished : b.finished;
+  return { start: a.start, at: a.at, length: a.length, days, ...(finished ? { finished } : {}) };
 }
 
 const HISTORY_LIMIT = 150;

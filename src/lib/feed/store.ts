@@ -6,6 +6,7 @@
 import { useSyncExternalStore } from "react";
 import { dateKey } from "../progress/dates";
 import { markDeleted, unmarkDeleted, type Tombstones } from "../account/tombstones";
+import type { ChallengeEntry } from "../content/hooks";
 
 export type ChoiceStatus = "done" | "later" | "skipped";
 
@@ -22,6 +23,8 @@ export interface FeedDB {
   course?: Record<string, CourseProgress>;
   /** Discover "do this" cards he did (Step 79): tried["do-kegel"] = when, the points, and "Did it help?". */
   tried?: Record<string, TriedEntry>;
+  /** "Try it for N days" challenges from Discover cards (Step 86): challenges["do-kegel"] = start, days done, finish. */
+  challenges?: Record<string, ChallengeEntry>;
 }
 
 export type HelpedAnswer = "yes" | "some" | "no" | "skip";
@@ -47,7 +50,7 @@ export interface CourseProgress {
 export type FeedState = FeedDB & { ready: boolean };
 
 const KEY = "ms_feed_v1";
-const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false }, deleted: {}, course: {}, tried: {} };
+const EMPTY: FeedDB = { days: {}, lessons: {}, settings: { discreet: false }, deleted: {}, course: {}, tried: {}, challenges: {} };
 const SERVER_STATE: FeedState = { ...EMPTY, ready: false };
 let cache: FeedState | null = null;
 const listeners = new Set<() => void>();
@@ -71,6 +74,7 @@ function load(): FeedState {
         deleted: p.deleted && typeof p.deleted === "object" ? p.deleted : {},
         course: p.course && typeof p.course === "object" ? p.course : {},
         tried: p.tried && typeof p.tried === "object" ? p.tried : {},
+        challenges: p.challenges && typeof p.challenges === "object" ? p.challenges : {},
       };
     }
   } catch {
@@ -207,6 +211,50 @@ export const feedStore = {
       changed = true;
     }
     if (changed) save({ ...db, tried });
+  },
+
+  /** Start a "try it for N days" challenge (Step 86). Starting it again after quitting starts fresh. */
+  startChallenge(id: string, length: number, at: Date = new Date()) {
+    const db = load();
+    const have = db.challenges?.[id];
+    if (have && !have.finished) return;
+    save({
+      ...db,
+      challenges: { ...db.challenges, [id]: { start: dateKey(at), at: at.toISOString(), length, days: {} } },
+      deleted: unmarkDeleted(db.deleted, `challenge:${id}`),
+    });
+  },
+
+  /** He did today's day of a challenge. Doing the last day finishes it (and earns the finish points). */
+  challengeDay(id: string, finishPoints: number, at: Date = new Date()) {
+    const db = load();
+    const have = db.challenges?.[id];
+    if (!have || have.finished) return;
+    const key = dateKey(at);
+    if (have.days?.[key]) return;
+    const days = { ...have.days, [key]: at.toISOString() };
+    const finished = Object.keys(days).length >= have.length ? { localDate: key, at: at.toISOString(), points: finishPoints } : undefined;
+    save({ ...db, challenges: { ...db.challenges, [id]: { ...have, days, ...(finished ? { finished } : {}) } } });
+  },
+
+  /** He took today's day back. */
+  undoChallengeDay(id: string, at: Date = new Date()) {
+    const db = load();
+    const have = db.challenges?.[id];
+    const key = dateKey(at);
+    if (!have?.days?.[key] || have.finished) return;
+    const days = { ...have.days };
+    delete days[key];
+    save({ ...db, challenges: { ...db.challenges, [id]: { ...have, days } } });
+  },
+
+  /** He stopped a challenge (the points from days he did go too, like taking back "I did it"). */
+  quitChallenge(id: string) {
+    const db = load();
+    if (!db.challenges?.[id]) return;
+    const challenges = { ...db.challenges };
+    delete challenges[id];
+    save({ ...db, challenges, deleted: markDeleted(db.deleted, `challenge:${id}`) });
   },
 
   setDiscreet(discreet: boolean) {

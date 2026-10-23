@@ -8,6 +8,7 @@ import type { ContentItem } from "@/lib/content/types";
 import { feedStore, useFeed, type HelpedAnswer } from "@/lib/feed/store";
 import { dueHelpedCheck, HELPED_EVENT } from "@/lib/social/helped";
 import { trackContent } from "@/lib/analytics/track";
+import { triedStore } from "@/lib/social/tried";
 import { useToast } from "@/components/motion/Toast";
 import { haptic } from "@/lib/motion/haptics";
 import { useT } from "@/lib/i18n";
@@ -35,6 +36,7 @@ export default function HelpedCheck({ items }: { items: ContentItem[] }) {
     setTimeout(() => {
       feedStore.answerHelped(id, a);
       if (a !== "skip") trackContent(id, HELPED_EVENT[a]);
+      if (a === "yes") triedStore.markLiked(id); // Step 86: counts toward "N men said this helped"
       if (a === "yes") showToast(t("Good to hear. You'll see more like it."));
       else if (a !== "skip") showToast(t("Thanks. Your feed will use this."));
       setLeaving(false);

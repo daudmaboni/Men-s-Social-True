@@ -20,18 +20,17 @@ export default function TellUs() {
   const [rating, setRating] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  // Step 86: he may let us share it as a story, without his name (off unless he ticks it)
+  const [shareOk, setShareOk] = useState(false);
 
   async function send() {
     const sb = getSupabase();
     if (!sb || text.trim().length < 2) return;
     setBusy(true);
-    const { error } = await sb.rpc("feedback_send", {
-      p_message: text.trim(),
-      p_rating: rating,
-      p_place: "me",
-      p_lang: currentLang(),
-      p_platform: appPlatform(),
-    });
+    const args = { p_message: text.trim(), p_rating: rating, p_place: "me", p_lang: currentLang(), p_platform: appPlatform() };
+    let { error } = await sb.rpc("feedback_send", shareOk ? { ...args, p_share_ok: true } : args);
+    // Database not updated to 0019 yet: send it without the story permission
+    if (error && shareOk && /feedback_send|function/i.test(error.message)) ({ error } = await sb.rpc("feedback_send", args));
     setBusy(false);
     if (error) {
       // The database's own message for "5 a day"; anything else (offline, not updated yet): try later
@@ -42,6 +41,7 @@ export default function TellUs() {
     setSent(true);
     setText("");
     setRating(null);
+    setShareOk(false);
   }
 
   return (
@@ -87,6 +87,10 @@ export default function TellUs() {
             placeholder={t("E.g. the reels are slow on my phone, or: add a guide about…")}
             className="mt-3 w-full resize-none rounded-2xl bg-bg px-4 py-3 text-sm outline-none ring-1 ring-line focus:ring-2 focus:ring-forest"
           />
+          <label className="mt-2 flex items-start gap-2.5 text-xs text-ink-soft">
+            <input type="checkbox" checked={shareOk} onChange={(e) => setShareOk(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--forest)]" />
+            <span>{t("If this is a story of what worked for you, you may share it with other men, without my name.")}</span>
+          </label>
           <button
             onClick={send}
             disabled={busy || text.trim().length < 2}

@@ -51,6 +51,7 @@ import { checkClaims } from "@/lib/studio/claims";
 import { placesOf, presetFor, type PlaceId } from "@/lib/studio/places";
 import type { ChallengeId, TopicId } from "@/lib/content/types";
 import { actionOf } from "@/lib/content/actions";
+import HookFields from "./HookFields";
 import {
   blankItem,
   fromLines,
@@ -1112,6 +1113,17 @@ export default function Editor({
               </Section>
 
               {/* Where men see it */}
+              {/* Step 86: hooks on a "do this" card (question first, series, challenge, share title) */}
+              {actionOf(item) && (
+                <Section title="Hooks on Discover">
+                  <HookFields
+                    spec={actionOf(item)!}
+                    cardId={item.id}
+                    onChange={(patch) => setDraft((d) => ({ ...d, action: { ...actionOf(d)!, ...patch } }))}
+                  />
+                </Section>
+              )}
+
               <Section title="Where it shows">
                 <ul className="flex flex-wrap gap-2">
                   {placesOf(item).map((p) => (

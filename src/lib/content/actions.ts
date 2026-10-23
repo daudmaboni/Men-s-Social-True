@@ -5,6 +5,7 @@
 // Rules: no prices, phone numbers or product pushes; strong, specific results language, but never
 // "cures" or "100%". Where something is risky for some men, the step itself says what to do instead.
 
+import { BUILT_IN_HOOKS } from "./actions-hooks";
 import { INSTAGRAM_DEFS } from "./actions-instagram";
 import { PHOTO_OF, photoUrl } from "./card-photos";
 import { VOICE } from "./voice";
@@ -90,6 +91,7 @@ function card(raw: Def): ContentItem {
       steps,
       ...(d.why ? { why: d.why[0], whySw: d.why[1] } : {}),
       ...(d.tool ? { tool: d.tool } : {}),
+      ...BUILT_IN_HOOKS[d.id], // Step 86
     },
   };
 }

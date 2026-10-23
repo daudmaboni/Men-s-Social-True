@@ -23,9 +23,24 @@ function call(fn: string, args: Record<string, unknown>) {
 }
 
 /** He opened, finished or saved a piece of content. Views count once per app session. */
-export function trackContent(id: string, event: "view" | "complete" | "save" | "helped_yes" | "helped_some" | "helped_no") {
+export type ContentEvent =
+  | "view"
+  | "complete"
+  | "save"
+  | "helped_yes"
+  | "helped_some"
+  | "helped_no"
+  // Step 86
+  | "heart"
+  | "unheart"
+  | "share"
+  | "challenge_start"
+  | "challenge_finish";
+const ONCE: ContentEvent[] = ["view", "complete"];
+
+export function trackContent(id: string, event: ContentEvent) {
   const key = `${event}:${id}`;
-  if (event !== "save" && !event.startsWith("helped") && seen.has(key)) return;
+  if (ONCE.includes(event) && seen.has(key)) return;
   seen.add(key);
   call("track_content", { p_id: id, p_event: event });
 }
