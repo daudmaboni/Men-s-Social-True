@@ -30,6 +30,11 @@ export default function InboxButton() {
   }, [signedIn]);
 
   const unread = inbox.items.filter((i) => !i.opened).length;
+  // Step 89: when the list opens, fetch the pages its messages link to, so a tap opens them at once
+  useEffect(() => {
+    if (!open) return;
+    for (const i of inbox.items.slice(0, 8)) if (i.link?.startsWith("/")) router.prefetch(i.link);
+  }, [open, inbox.items, router]);
   const usable = signedIn && inbox.status !== "unavailable";
 
   function tap(i: InboxItem) {

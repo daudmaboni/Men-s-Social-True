@@ -5,7 +5,7 @@
 // Tap it to go back to the lesson; ✕ stops and closes it (his place is saved).
 // Step 77: it moves with his finger. Swipe it up to open the lesson; swipe it sideways off the screen to stop.
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { animateSpring, project, releaseVelocity, rubberband, type SpringHandle } from "@/lib/motion/spring";
 import { haptic } from "@/lib/motion/haptics";
@@ -41,6 +41,11 @@ export default function MiniPlayer() {
   const pose = useRef({ x: 0, y: 0 });
   const anim = useRef<{ x?: SpringHandle; y?: SpringHandle }>({});
   const drag = useRef<{ id: number; x0: number; y0: number; axis: "x" | "y" | null; sx: { t: number; x: number }[]; sy: { t: number; x: number }[] } | null>(null);
+  // Step 89: the lesson page is fetched ahead, so a tap or swipe up opens it at once
+  const lessonId = l?.id;
+  useEffect(() => {
+    if (visible && lessonId) router.prefetch(`/man/course/${lessonId}`);
+  }, [router, visible, lessonId]);
   if (!visible || !l) return null;
 
   const place = (x: number, y: number) => {
@@ -117,6 +122,7 @@ export default function MiniPlayer() {
   const discreet = feed.settings.discreet;
   const pct = p.duration ? Math.min(100, (p.time / p.duration) * 100) : 0;
   const open = () => router.push(`/man/course/${l.id}`);
+
 
   return (
     <div
