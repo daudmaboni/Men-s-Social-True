@@ -1,12 +1,14 @@
 "use client";
 
-// Bottom of the Studio sidebar: one clean row (avatar, name, role). Tapping it opens a small card with
+// Bottom of the Studio sidebar: one clean row (avatar, name, role). Tapping it opens a card in the middle of the screen,
+// over a blurred background (Step 88, phones and computers), with
 // Appearance (light / dark / auto), Colour, Font style, Text size, Account settings and Sign out — so the menu stays about navigation.
 
 import { growFromTrigger } from "@/lib/motion/origin";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Check, ChevronUp, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
+import { Check, ChevronUp, LogOut, Monitor, Moon, Settings, Sun, X } from "lucide-react";
 import { FontStylePicker, TextSizePicker } from "@/components/me/FontChoices";
 import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 
@@ -41,13 +43,27 @@ export default function AccountMenu({
 }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement | null>(null);
+  // Nothing behind scrolls while it's open in the middle
+  useEffect(() => {
+    if (!open) return;
+    const html = document.documentElement;
+    const was = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = was;
+    };
+  }, [open]);
   const display = prettyName(name);
   const initial = (display.match(/[A-Za-z0-9]/)?.[0] ?? "?").toUpperCase();
 
   // Close on a tap outside or Escape
   useEffect(() => {
     if (!open) return;
-    const onDown = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!box.current?.contains(t) && !card.current?.contains(t)) setOpen(false);
+    };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("pointerdown", onDown);
     document.addEventListener("keydown", onKey);
@@ -78,70 +94,90 @@ export default function AccountMenu({
         )}
       </button>
 
-      {open && (
-        <div
-          ref={growFromTrigger}
-          role="menu"
-          aria-label="Account"
-          className={`menu-pop absolute z-50 max-h-[calc(100dvh-5rem)] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-surface p-3 shadow-2xl ring-1 ring-line ${
-            compact ? "bottom-0 left-full ml-3" : "bottom-full left-0 mb-2"
-          }`}
-        >
-          {/* Who */}
-          <div className="flex items-center gap-3 px-1 pb-3">
-            <Avatar initial={initial} big />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">{display}</p>
-              <p className="truncate text-xs text-ink-soft">{email && !email.endsWith("@studio.menssocial.app") ? email : role}</p>
-            </div>
-          </div>
-
-          {/* Appearance */}
-          <div className="border-t border-line pt-3">
-            <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">Appearance</p>
-            <ThemeChoice />
-          </div>
-
-          {/* Colour */}
-          <div className="mt-3">
-            <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">Colour</p>
-            <AccentChoice />
-          </div>
-
-          {/* Font style and text size (Step 66): the Studio keeps its own, separate from the men's app */}
-          <div className="mt-3">
-            <FontStylePicker scope="studio" />
-          </div>
-          <div className="mt-3 px-1">
-            <TextSizePicker scope="studio" />
-          </div>
-
-          {/* Links */}
-          <div className="mt-3 space-y-0.5 border-t border-line pt-2">
-            <Link
-              href="/studio/settings"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onNavigate?.();
-              }}
-              className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm font-medium hover:bg-bg"
-            >
-              <Settings size={16} className="text-ink-soft" /> Account settings
-            </Link>
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
             <button
-              role="menuitem"
-              onClick={() => {
-                setOpen(false);
-                onSignOut();
+              type="button"
+              aria-label="Close"
+              onClick={() => setOpen(false)}
+              className="menu-scrim absolute inset-0 bg-black/40 backdrop-blur-md"
+            />
+            <div
+              ref={(el) => {
+                card.current = el;
+                growFromTrigger(el);
               }}
-              className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+              role="menu"
+              aria-label="Account"
+              className="menu-pop relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl bg-surface p-4 shadow-2xl ring-1 ring-line lg:max-w-md lg:p-6"
             >
-              <LogOut size={16} /> Sign out
-            </button>
-          </div>
-        </div>
-      )}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-ink-soft ring-1 ring-line"
+              >
+                <X size={16} />
+              </button>
+              {/* Who */}
+              <div className="flex items-center gap-3 px-1 pb-3 pr-10">
+                <Avatar initial={initial} big />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold">{display}</p>
+                  <p className="truncate text-xs text-ink-soft">{email && !email.endsWith("@studio.menssocial.app") ? email : role}</p>
+                </div>
+              </div>
+
+              {/* Appearance */}
+              <div className="border-t border-line pt-3">
+                <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">Appearance</p>
+                <ThemeChoice />
+              </div>
+
+              {/* Colour */}
+              <div className="mt-3">
+                <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-soft">Colour</p>
+                <AccentChoice />
+              </div>
+
+              {/* Font style and text size (Step 66): the Studio keeps its own, separate from the men's app */}
+              <div className="mt-3">
+                <FontStylePicker scope="studio" />
+              </div>
+              <div className="mt-3 px-1">
+                <TextSizePicker scope="studio" />
+              </div>
+
+              {/* Links */}
+              <div className="mt-3 space-y-0.5 border-t border-line pt-2">
+                <Link
+                  href="/studio/settings"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    onNavigate?.();
+                  }}
+                  className="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm font-medium hover:bg-bg"
+                >
+                  <Settings size={16} className="text-ink-soft" /> Account settings
+                </Link>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    onSignOut();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                >
+                  <LogOut size={16} /> Sign out
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
