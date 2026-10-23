@@ -9,6 +9,7 @@
 // Saved as app_settings "discover_config" (migration 0016); every change is in the audit log.
 // Replaces the old Homepage editor (Featured insight, For you, Explore topics…), which men no longer see.
 
+import { CIRCLE_LABEL } from "@/lib/content/circles";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Pin, PinOff, RefreshCw, Search, Shuffle, Upload, Wand2 } from "lucide-react";
@@ -23,15 +24,8 @@ import { youtubeId, youtubeThumb } from "@/lib/content/youtube";
 import type { ChallengeId, ContentItem } from "@/lib/content/types";
 import { useLibrary } from "@/lib/content/useLibrary";
 
-const CHALLENGE_LABEL: Record<ChallengeId, string> = {
-  last: "Last longer",
-  hard: "Stronger erections",
-  her: "Satisfy her",
-  mixes: "Natural mixes",
-  train: "Exercises",
-  reset: "Quit porn",
-  desire: "Desire and round two",
-};
+// The same names men see on Discover (Step 80)
+const CHALLENGE_LABEL: Record<ChallengeId, string> = CIRCLE_LABEL;
 type Stats = Record<string, { views: number; completes: number; saves: number; yes: number; some: number; no: number }>;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 

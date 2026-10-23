@@ -4,6 +4,7 @@
 // AI turns it into one "do this" card in the Discover format: photo, hook, what you need, steps, the secret.
 // Staff check it in a real phone preview, fix any words, then publish. Men see it at the top of Discover.
 
+import { CIRCLE_LABEL } from "@/lib/content/circles";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, FileUp, Link2, Loader2, Plus, Sparkles, Trash2, Type } from "lucide-react";
@@ -25,15 +26,8 @@ type Mode = "text" | "file" | "link";
 type FileKind = "pdf" | "image" | "audio" | "video" | "textfile";
 
 const MAX_SEND = 4 * 1024 * 1024;
-const CHALLENGE_NAME: Record<ChallengeId, string> = {
-  last: "Last longer",
-  hard: "Stronger erections",
-  her: "Satisfy her",
-  mixes: "Natural mixes",
-  train: "Exercises",
-  reset: "Quit porn / confidence",
-  desire: "Desire and round two",
-};
+// The same names men see on Discover (Step 80)
+const CHALLENGE_NAME: Record<ChallengeId, string> = CIRCLE_LABEL;
 const RESULT_NAME: Record<ActionResult, string> = { tonight: "Works tonight", days: "Results in days", weeks2: "1–3 weeks", weeks4: "3–6 weeks", daily: "Daily habit" };
 
 function kindOf(f: File): FileKind | null {
@@ -263,7 +257,7 @@ export default function CardMakerPage() {
                   </label>
                 </div>
                 <fieldset className="text-sm">
-                  <legend className="mb-1 font-semibold">Challenges (circles at the top of Discover)</legend>
+                  <legend className="mb-1 font-semibold">Circle on Discover (what men tap at the top)</legend>
                   <div className="flex flex-wrap gap-2">
                     {CHALLENGE_IDS.map((c) => {
                       const on = card.action.challenges.includes(c);

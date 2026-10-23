@@ -5,6 +5,7 @@
 // action cards. Each card is a carousel he swipes through: the hook, what he needs, the steps,
 // why it works. Then: "Useful", share, save, and "I did it".
 
+import { CIRCLES, circlesOf } from "@/lib/content/circles";
 import { haptic } from "@/lib/motion/haptics";
 import { flyPoints } from "@/lib/motion/flyPoints";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -34,7 +35,7 @@ import { contentHref } from "./ContentCards";
 import { useToast } from "@/components/motion/Toast";
 import { useLibrary } from "@/lib/content/useLibrary";
 import { actionOf } from "@/lib/content/actions";
-import type { ActionResult, ActionSpec, ActionType, ContentItem } from "@/lib/content/types";
+import type { ActionResult, ActionSpec, ActionType, ChallengeId, ContentItem } from "@/lib/content/types";
 import { socialStore, useSocial } from "@/lib/social/store";
 import { TRIED_POINTS, triedStore, useTried, type FeedFilter } from "@/lib/social/tried";
 import { helpedYes } from "@/lib/social/helped";
@@ -53,15 +54,11 @@ import { orderCards, orderReels, placeReels, reelEvery, type Habits } from "@/li
 import { DISCOVER_REFRESH, habitsStore, useDiscoverConfig, visitSeed } from "@/lib/social/discoverPrefs";
 import { useAccount } from "@/lib/account/useAccount";
 
+// The circles: names from the shared list (lib/content/circles.ts), so the Studio uses the very same ones (Step 80)
+const ICON: Record<ChallengeId, typeof Timer> = { last: Timer, hard: Zap, her: Flame, mixes: Leaf, train: Dumbbell, reset: Brain, desire: BatteryCharging };
 const CHALLENGES: { id: FeedFilter; label: string; icon: typeof Timer }[] = [
   { id: "all", label: "For you", icon: Sparkles },
-  { id: "last", label: "Last longer", icon: Timer },
-  { id: "hard", label: "Stronger erections", icon: Zap },
-  { id: "her", label: "Satisfy her", icon: Flame },
-  { id: "mixes", label: "Natural mixes", icon: Leaf },
-  { id: "train", label: "Exercises", icon: Dumbbell },
-  { id: "reset", label: "Quit porn", icon: Brain },
-  { id: "desire", label: "Desire and round two", icon: BatteryCharging },
+  ...CIRCLES.map((c) => ({ id: c.id, label: c.label, icon: ICON[c.id] })),
 ];
 
 const TYPE_LABEL: Record<ActionType, string> = {
@@ -163,9 +160,11 @@ export default function ActionFeed() {
   }, [all, filter, visit, cfg]);
   const reels = useMemo(() => (visit ? orderReels(items.filter(isReel), visit.seed, visit.opened, cfg) : []), [items, visit, cfg]);
   // Reels inside the feed: how often depends on the Studio setting and (if allowed) on his habits
+  // Step 80: inside a circle, only the reels staff put in that circle
   const reelSpots = useMemo(() => {
-    if (!visit || filter !== "all") return new Map<number, ContentItem>();
-    return placeReels(cards.length, reels, reelEvery(cfg, visit.habits));
+    if (!visit) return new Map<number, ContentItem>();
+    const here = filter === "all" ? reels : reels.filter((r) => circlesOf(r).includes(filter));
+    return placeReels(cards.length, here, reelEvery(cfg, visit.habits));
   }, [visit, filter, reels, cards.length, cfg]);
 
   // Load more cards as he nears the end

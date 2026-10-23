@@ -1,5 +1,6 @@
 "use client";
 
+import { captionPreview, cleanTitle } from "@/lib/content/caption";
 import { useState } from "react";
 import { MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
 import Cover from "@/components/social/Cover";
@@ -64,9 +65,9 @@ export default function Preview({ item }: { item: ContentItem }) {
                 <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-mint">
                   Reel
                 </p>
-                <p className="mt-1 font-bold leading-snug">{title}</p>
+                <p className="mt-1 font-bold leading-snug">{cleanTitle(title)}</p>
                 <p className="mt-1 line-clamp-3 text-xs text-white/85">
-                  {reelCaption(item, sw)}
+                  {captionPreview(reelCaption(item, sw))}
                 </p>
               </div>
             </div>

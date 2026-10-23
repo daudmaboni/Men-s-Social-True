@@ -10,7 +10,18 @@ import Cover from "@/components/social/Cover";
 import { useStudio } from "@/components/admin/AdminShell";
 import { Badge, Confirm, Empty, ErrorBox, Loading, PageHeader, Segmented, btn, input } from "@/components/admin/ui";
 import { useToast } from "@/components/motion/Toast";
-import { LIBRARY, TOPICS } from "@/lib/content/library";
+import { LIBRARY } from "@/lib/content/library";
+import { CIRCLES, NO_CIRCLE, circleNames, circlesOf } from "@/lib/content/circles";
+import { actionOf } from "@/lib/content/actions";
+import type { ChallengeId } from "@/lib/content/types";
+
+/** Filter by Discover circle ("last"…), or "none:fertility" for content outside the circles. */
+function inCircle(c: ContentItem, f: string): boolean {
+  if (f === "all") return true;
+  const circles = circlesOf({ ...c, action: actionOf(c) });
+  if (f.startsWith("none:")) return circles.length === 0 && c.topic === f.slice(5);
+  return circles.includes(f as ChallengeId);
+}
 import { publishProblems } from "@/lib/studio/validate";
 import { getContentRepo } from "@/lib/content/repo";
 import { KIND_LABEL } from "@/lib/content/select";
@@ -81,7 +92,7 @@ export default function ContentList() {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
     const after = since === "all" ? 0 : Date.now() - Number(since) * 864e5;
     return list
-      .filter((c) => (kind === "all" || c.kind === kind) && (topic === "all" || c.topic === topic))
+      .filter((c) => (kind === "all" || c.kind === kind) && inCircle(c, topic))
       .filter((c) => !after || (c.updatedAt && new Date(c.updatedAt).getTime() >= after))
       .filter((c) => {
         const text = `${c.title} ${c.titleSw ?? ""} ${c.id} ${c.tags.join(" ")}`.toLowerCase();
@@ -198,11 +209,17 @@ export default function ContentList() {
                   </option>
                 ))}
               </select>
-              <select aria-label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} className={input}>
-                <option value="all">All topics</option>
-                {TOPICS.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}
+              {/* The same circles men tap at the top of Discover (Step 80) */}
+              <select aria-label="Circle" value={topic} onChange={(e) => setTopic(e.target.value)} className={input}>
+                <option value="all">All circles</option>
+                {CIRCLES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+                {NO_CIRCLE.map((n) => (
+                  <option key={n.topic} value={`none:${n.topic}`}>
+                    {n.label} (no circle)
                   </option>
                 ))}
               </select>
@@ -293,7 +310,7 @@ export default function ContentList() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold">{c.title}</p>
                           <p className="truncate text-xs text-ink-soft">
-                            {KIND_LABEL[c.kind]} · {TOPICS.find((t) => t.id === c.topic)?.short}
+                            {KIND_LABEL[c.kind]} · {circleNames({ ...c, action: actionOf(c) })}
                             {c.titleSw ? " · EN + SW" : ""}
                             {c.kind === "reel" ? " · on Discover" : c.inManFeed ? " · Man tab" : ""}
                             {c.aiGenerated ? " · AI-assisted" : ""}

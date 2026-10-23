@@ -1,5 +1,6 @@
 "use client";
 
+import { CIRCLES, NO_CIRCLE, circlesOf, isCircle, setCircles } from "@/lib/content/circles";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -48,7 +49,8 @@ import type {
 } from "@/lib/content/types";
 import { checkClaims } from "@/lib/studio/claims";
 import { placesOf, presetFor, type PlaceId } from "@/lib/studio/places";
-import type { TopicId } from "@/lib/content/types";
+import type { ChallengeId, TopicId } from "@/lib/content/types";
+import { actionOf } from "@/lib/content/actions";
 import {
   blankItem,
   fromLines,
@@ -102,7 +104,8 @@ const textsOf = (c: ContentItem): Texts => ({
   body: fromParagraphs(c.body),
   bodySw: fromParagraphs(c.bodySw),
   keyPoints: fromLines(c.keyPoints),
-  tags: c.tags.join(", "),
+  // Circle tags ("last", "hard"…) are set with the circle buttons, not typed (Step 80)
+  tags: c.tags.filter((t) => !isCircle(t)).join(", "),
 });
 
 const compose = (draft: ContentItem, texts: Texts): ContentItem => ({
@@ -110,10 +113,15 @@ const compose = (draft: ContentItem, texts: Texts): ContentItem => ({
   body: toParagraphs(texts.body),
   bodySw: toParagraphs(texts.bodySw),
   keyPoints: toLines(texts.keyPoints),
-  tags: texts.tags
-    .split(",")
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean),
+  tags: [
+    ...new Set([
+      ...texts.tags
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter((t) => t && !isCircle(t)),
+      ...draft.tags.filter(isCircle),
+    ]),
+  ],
 });
 
 type Loaded =
@@ -707,31 +715,20 @@ export default function Editor({
               {/* 2. The caption */}
               <Field
                 label="Caption"
-                hint="Write it once, in Kiswahili or English. The first line is the title."
+                hint="Write it once, in Kiswahili or English, or paste the Instagram caption (up to 2,200 characters). The first line is the title; lists with • or ✅ show as tidy points."
               >
                 <textarea
                   className={`${input} min-h-24`}
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="e.g. Mchanganyiko wa vitunguu saumu, tangawizi na manjano"
-                  maxLength={600}
+                  maxLength={2200}
                 />
               </Field>
 
-              {/* 3. The topic */}
-              <Field group label="Topic">
-                <div className="flex flex-wrap gap-1.5">
-                  {TOPICS.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => set("topic", t.id)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${item.topic === t.id ? "bg-forest text-white ring-forest" : "ring-line"}`}
-                    >
-                      {t.short}
-                    </button>
-                  ))}
-                </div>
+              {/* 3. Where men find it: the same circles they tap at the top of Discover (Step 80) */}
+              <Field group label="Circle on Discover" hint="The circles men tap at the top of Discover. Pick one or more.">
+                <CirclePicker item={item} onChange={(c, noTopic) => setDraft((d) => setCircles(d, c, noTopic))} />
               </Field>
 
               {(problems.length > 0 || blocks.length > 0) &&
@@ -765,18 +762,8 @@ export default function Editor({
                     </Chip>
                   ))}
                 </div>
-                <Field group label="Topic">
-                  <div className="flex flex-wrap gap-2">
-                    {TOPICS.map((t) => (
-                      <Chip
-                        key={t.id}
-                        on={item.topic === t.id}
-                        onClick={() => set("topic", t.id)}
-                      >
-                        {t.title}
-                      </Chip>
-                    ))}
-                  </div>
+                <Field group label="Circle on Discover" hint="The circles men tap at the top of Discover. Pick one or more.">
+                  <CirclePicker item={item} onChange={(c, noTopic) => setDraft((d) => setCircles(d, c, noTopic))} />
                 </Field>
               </Section>
 
@@ -1718,6 +1705,44 @@ function Field({
         </span>
       )}
     </Tag>
+  );
+}
+
+/** The Discover circles, as staff pick them for a piece of content (Step 80). */
+function CirclePicker({ item, onChange }: { item: ContentItem; onChange: (circles: ChallengeId[], noCircleTopic?: TopicId) => void }) {
+  const on = circlesOf({ ...item, action: actionOf(item) });
+  const btn = (active: boolean) =>
+    `rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${active ? "bg-forest text-white ring-forest" : "ring-line"}`;
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {CIRCLES.map((c) => {
+          const active = on.includes(c.id);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(active ? on.filter((x) => x !== c.id) : [...on, c.id])}
+              className={btn(active)}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[0.6875rem] text-ink-soft">Fits no circle (shows in For you):</span>
+        {NO_CIRCLE.map((n) => {
+          const active = on.length === 0 && item.topic === n.topic;
+          return (
+            <button key={n.topic} type="button" aria-pressed={active} onClick={() => onChange([], n.topic)} className={btn(active)}>
+              {n.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

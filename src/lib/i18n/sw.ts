@@ -998,4 +998,7 @@ export const SW: Record<string, string> = {
   "Yes, it helped": "Ndiyo, imesaidia",
   "A little": "Kidogo",
   "Not really": "Hapana sana",
+  // Step 81: reel captions
+  "more": "zaidi",
+  "less": "punguza",
 };

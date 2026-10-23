@@ -11,6 +11,8 @@
 // Only the reel on screen (and the next one) loads, to save his data. Late at night, or after 15 reels,
 // a "that's enough for tonight" card comes up (see lib/content/reels.ts).
 
+import ReelCaption from "./ReelCaption";
+import { cleanTitle } from "@/lib/content/caption";
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -61,12 +63,11 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
   const video = useRef<HTMLVideoElement>(null);
   const [near, setNear] = useState(false); // any part on screen → load the video
   const [progress, setProgress] = useState(0);
-  const [more, setMore] = useState(false);
   const playing = usePlayingReel() === key;
   const sound = useFeedSound();
   const liked = Boolean(tried.liked[reel.id]);
   const saved = Boolean(social.bookmarks[reel.id]);
-  const title = sw && reel.titleSw ? reel.titleSw : reel.title;
+  const title = cleanTitle(sw && reel.titleSw ? reel.titleSw : reel.title); // Step 81: no brand, no shouting
   const caption = reelCaption(reel, sw);
   const handle = reel.origin ? "@kayaniherbs" : "Kayani Herbs";
   const lite = useMemo(() => saveData(), []);
@@ -196,11 +197,8 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
         <p className="mt-0.5 text-[0.875rem] leading-snug">
           <span className="font-bold">{handle}</span> <span className="font-semibold">{title}</span>
         </p>
-        {caption && (
-          <button type="button" onClick={() => setMore((m) => !m)} className={`mt-0.5 block w-full text-left text-[0.8125rem] leading-snug text-ink-soft ${more ? "" : "line-clamp-2"}`}>
-            {caption}
-          </button>
-        )}
+        {/* Two lines, then "more" opens it as a tidy list (Step 81) */}
+        <ReelCaption text={caption} className="mt-0.5 text-[0.8125rem] leading-snug" />
       </div>
     </article>
   );
@@ -551,11 +549,10 @@ function ReelSlide({
   const social = useSocial();
   const video = useRef<HTMLVideoElement>(null);
   const [progress, setProgress] = useState(0);
-  const [more, setMore] = useState(false);
   const liked = Boolean(tried.liked[reel.id]);
   const done = Boolean(tried.done[reel.id]);
   const saved = Boolean(social.bookmarks[reel.id]);
-  const title = sw && reel.titleSw ? reel.titleSw : reel.title;
+  const title = cleanTitle(sw && reel.titleSw ? reel.titleSw : reel.title); // Step 81: no brand, no shouting
   const caption = reelCaption(reel, sw);
 
   // How much of it he watched (for the reels/reading mix, Step 71): counted when he moves on
@@ -707,11 +704,7 @@ function ReelSlide({
       <div className="absolute inset-x-0 bottom-0 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pr-20">
         <p className="text-[0.8125rem] font-bold text-white/90">{reel.origin ? "@kayaniherbs" : "Kayani Herbs"}</p>
         <p className="mt-1 font-display text-[1.125rem] font-bold leading-snug">{title}</p>
-        {caption && (
-          <button onClick={() => setMore((m) => !m)} className={`mt-1 block text-left text-[0.875rem] leading-snug text-white/85 ${more ? "" : "line-clamp-2"}`}>
-            {caption}
-          </button>
-        )}
+        <ReelCaption text={caption} dark className="mt-1 max-h-[45dvh] overflow-y-auto overscroll-contain text-[0.875rem] leading-snug" />
         <Link href={contentHref(reel.id)} onClick={onLeave} className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-bold backdrop-blur">
           {t("Full page")} <ArrowRight size={13} />
         </Link>
