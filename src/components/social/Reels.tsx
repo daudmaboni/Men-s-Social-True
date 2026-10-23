@@ -69,7 +69,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
   const saved = Boolean(social.bookmarks[reel.id]);
   const title = cleanTitle(sw && reel.titleSw ? reel.titleSw : reel.title); // Step 81: no brand, no shouting
   const caption = reelCaption(reel, sw);
-  const handle = reel.origin ? "@kayaniherbs" : "Kayani Herbs";
+  const handle = "@kayaniherbs"; // one name everywhere (Step 84)
   const lite = useMemo(() => saveData(), []);
   const yt = youtubeId(reel.videoUrl);
 
@@ -702,7 +702,7 @@ function ReelSlide({
 
       {/* Caption */}
       <div className="absolute inset-x-0 bottom-0 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pr-20">
-        <p className="text-[0.8125rem] font-bold text-white/90">{reel.origin ? "@kayaniherbs" : "Kayani Herbs"}</p>
+        <p className="text-[0.8125rem] font-bold text-white/90">@kayaniherbs</p>
         <p className="mt-1 font-display text-[1.125rem] font-bold leading-snug">{title}</p>
         <ReelCaption text={caption} dark className="mt-1 max-h-[45dvh] overflow-y-auto overscroll-contain text-[0.875rem] leading-snug" />
         <Link href={contentHref(reel.id)} onClick={onLeave} className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1.5 text-xs font-bold backdrop-blur">

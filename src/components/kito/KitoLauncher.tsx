@@ -23,32 +23,65 @@ export function openKito() {
   window.dispatchEvent(new Event(OPEN_EVENT));
 }
 
-/** Phones only: true while he is scrolling down through the page (Kito steps aside). */
+/**
+ * Phones only: true while Kito should step aside.
+ * - while he scrolls down through a page (back when he scrolls up a bit, or near the top)
+ * - while the "Ask Kito…" row on Discover is on screen (Kito is right there already)
+ * Step 84: the tabs scroll inside their own panels, not the window, so we listen to every scroll
+ * (capture) and read the position of whatever scrolled. Before, Kito never noticed and sat on the cards.
+ */
 function useTucked(pathname: string) {
-  const [tucked, setTucked] = useState(false);
+  const [scrolling, setScrolling] = useState(false);
+  const [rowShown, setRowShown] = useState(false);
   useEffect(() => {
-    setTucked(false);
+    setScrolling(false);
     if (window.matchMedia("(min-width: 1024px)").matches) return;
-    let anchor = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      if (y < 160) {
-        setTucked(false);
+    let target: EventTarget | null = null;
+    let anchor = 0;
+    const posOf = (t: EventTarget | null) => (t instanceof Element ? t.scrollTop : window.scrollY);
+    const onScroll = (e: Event) => {
+      const t = e.target === document ? window : e.target;
+      if (t instanceof Element && t.scrollHeight - t.clientHeight < 200) return; // small inner lists don't count
+      const y = posOf(t);
+      if (t !== target) {
+        target = t; // another page or tab: measure from its top
+        anchor = 0;
+      }
+      if (y < 120) {
+        setScrolling(false);
         anchor = y;
       } else if (y > anchor + 24) {
-        setTucked(true);
+        setScrolling(true);
         anchor = y;
-      } else if (y < anchor - 80) {
-        setTucked(false);
+      } else if (y < anchor - 60) {
+        setScrolling(false);
         anchor = y;
       } else if (y > anchor) {
         anchor = Math.max(anchor, y - 24);
       }
     };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    document.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true });
   }, [pathname]);
-  return tucked;
+
+  // The "Ask Kito…" row: while it's on screen, the floating button isn't needed
+  useEffect(() => {
+    setRowShown(false);
+    if (window.matchMedia("(min-width: 1024px)").matches || typeof IntersectionObserver === "undefined") return;
+    const seen = new Map<Element, boolean>();
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) seen.set(e.target, e.isIntersecting);
+      setRowShown([...seen.values()].some(Boolean));
+    });
+    const watch = () => document.querySelectorAll("[data-kito-row]").forEach((el) => !seen.has(el) && (seen.set(el, false), io.observe(el)));
+    watch();
+    const again = setInterval(watch, 1500); // Discover may draw the row a moment later
+    return () => {
+      clearInterval(again);
+      io.disconnect();
+    };
+  }, [pathname]);
+  return scrolling || rowShown;
 }
 
 export default function KitoLauncher() {
@@ -131,7 +164,7 @@ export default function KitoLauncher() {
               : "bottom-[calc(max(12px,env(safe-area-inset-bottom))+88px)] lg:bottom-6"
           }`}
         >
-          <KitoMark size={46} className="kito-wave ring-0 lg:hidden" />
+          <KitoMark size={40} className="kito-wave ring-0 lg:hidden" />
           <KitoMark size={58} className="kito-wave hidden ring-0 lg:block" />
           <span className="hidden text-sm font-bold text-forest-deep lg:inline">{t("Ask Kito")}</span>
         </button>

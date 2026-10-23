@@ -459,7 +459,7 @@ export default function TabPager({ children }: { children: React.ReactNode }) {
           onPointerUp={endOverlayDrag}
           onPointerCancel={endOverlayDrag}
         >
-          <div className="mx-auto max-w-md px-1 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">{children}</div>
+          <div className="mx-auto max-w-md px-3.5 pb-32 pt-6 lg:max-w-3xl lg:px-10 lg:pb-14 lg:pt-8">{children}</div>
         </div>
       )}
     </>

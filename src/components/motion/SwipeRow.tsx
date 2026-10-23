@@ -118,7 +118,7 @@ export default function SwipeRow({
       </div>
 
       {many && (
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="edge-pad mt-3 flex items-center justify-between gap-3">
           <p className={`flex items-center gap-1.5 text-xs font-semibold text-forest transition-opacity duration-500 ${teach ? "opacity-100" : "opacity-0"}`} aria-live="polite">
             <Hand size={15} className="swipe-hand" aria-hidden />
             {hint}

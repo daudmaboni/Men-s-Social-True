@@ -10,7 +10,7 @@ export default function TopBar() {
   const showToast = useToast();
   const t = useT();
   return (
-    <header className="flex items-center justify-between">
+    <header className="edge-pad flex items-center justify-between">
       {/* On a computer the logo is already in the sidebar, so the page shows its name instead */}
       <h1 className="hidden text-2xl font-bold lg:block">{t("Man")}</h1>
       <div className="flex items-center gap-2 lg:hidden">

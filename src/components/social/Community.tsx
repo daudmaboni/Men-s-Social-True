@@ -43,7 +43,7 @@ export default function Community() {
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-6">
       <div className="contents lg:col-start-1 lg:row-start-1 lg:flex lg:flex-col lg:gap-4">
         {/* Topic filter + sort */}
-        <div className="order-3 flex gap-2 overflow-x-auto lg:flex-wrap lg:overflow-visible rounded-full pb-1 [scrollbar-width:none]" role="tablist" aria-label={t("Topic")}>
+        <div className="edge-pad order-3 flex gap-2 overflow-x-auto lg:flex-wrap lg:overflow-visible rounded-full pb-1 [scrollbar-width:none]" role="tablist" aria-label={t("Topic")}>
           {[{ id: "all", label: "All" }, ...COMMUNITY_TOPICS].map((x) => (
             <button
               key={x.id}
@@ -58,7 +58,7 @@ export default function Community() {
             </button>
           ))}
         </div>
-        <div className="order-4 flex items-center justify-between text-xs">
+        <div className="edge-pad order-4 flex items-center justify-between text-xs">
           <span className="text-ink-soft">
             {t(items.length === 1 ? "{n} conversation" : "{n} conversations", { n: items.length })}
           </span>

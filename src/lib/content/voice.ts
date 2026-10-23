@@ -79,7 +79,7 @@ export const VOICE: Record<string, { t?: Bi; h?: Bi; w?: Bi }> = {
   },
   "ig-moringa-guava-tea": { h: ["Two handfuls of leaves from the garden, one litre of water. Strength from home.", "Viganja viwili vya majani ya bustanini, lita moja ya maji. Nguvu kutoka nyumbani."] },
   "do-beetroot-drink": {
-    h: ["Red, earthy, powerful. Beetroot is one of the best drinks for blood flow.", "Nyekundu, ya udongo, ina nguvu. Beetroot ni moja ya vinywaji bora kwa mzunguko wa damu."],
+    h: ["Red, earthy, powerful. Beetroot helps blood flow.", "Nyekundu, ya udongo, ina nguvu. Beetroot husaidia mzunguko wa damu."],
     w: ["Beetroot and spinach are packed with nitrates. Your body turns them into nitric oxide and the blood vessels open up.", "Beetroot na spinachi zimejaa nitrates. Mwili unazigeuza kuwa nitric oxide, mishipa inafunguka."],
   },
   "do-kiss-lower-lip": { h: ["Most men kiss like they're in a hurry. Start with her lower lip.", "Wanaume wengi hubusu kama wana haraka. Anza na mdomo wake wa chini."] },

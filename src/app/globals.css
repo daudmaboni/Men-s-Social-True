@@ -713,7 +713,8 @@ button:disabled { cursor: not-allowed; }
 .trend-inner > section { padding: 0; background: transparent; box-shadow: none; border-radius: 0; }
 
 /* Kito (Step 67): the floating button pops in; the window slides up on a phone, grows from the corner on a computer */
-.kito-fab { animation: kito-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+/* "backwards", not "both": once it has popped in, the animation lets go, so hiding him (Step 84) can work */
+.kito-fab { animation: kito-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards; }
 .kito-panel { animation: kito-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 @media (min-width: 1024px) { .kito-panel { transform-origin: bottom right; animation-name: kito-grow; } }
 @keyframes kito-pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
@@ -821,3 +822,10 @@ button:disabled { cursor: not-allowed; }
   .ring-line { --tw-ring-color: var(--ink-soft); }
   .text-ink-soft { color: var(--ink); }
 }
+
+/* ===== Step 84 ===== */
+/* Phones: cards run to 4px from the screen edge, but loose text and buttons (headings, filters, the top row)
+   sit 14px in, so nothing looks squeezed against the glass or gets cut by curved screens. */
+.edge-pad { padding-inline: 10px; }
+@media (min-width: 1024px) { .edge-pad { padding-inline: 0; } }
+

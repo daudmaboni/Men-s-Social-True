@@ -49,7 +49,7 @@ function SocialInner() {
   return (
     <div className="space-y-5">
       {/* One row: Discover / Community on the left, Search and Saved on the right */}
-      <header className="flex items-center justify-between gap-2">
+      <header className="edge-pad flex items-center justify-between gap-2">
         <h1 className="sr-only">{t("Social")}</h1>
         <LiquidSegment
           label={t("Social sections")}

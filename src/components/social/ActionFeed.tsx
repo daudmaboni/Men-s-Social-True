@@ -196,10 +196,10 @@ export default function ActionFeed() {
   return (
     <div className="mx-auto w-full max-w-[480px] space-y-4">
       <section aria-labelledby="challenge-h" className="-mx-1 scroll-mt-4 lg:mx-0" ref={top}>
-        <h2 id="challenge-h" className="px-1 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
+        <h2 id="challenge-h" className="px-3.5 font-display text-[1.25rem] font-bold leading-tight lg:px-0">
           {t("What are you dealing with?")}
         </h2>
-        <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-1 pb-1 lg:px-0">
+        <div role="tablist" aria-label={t("What are you dealing with?")} className="no-scrollbar mt-3 flex gap-3.5 overflow-x-auto px-3.5 pb-1 lg:px-0">
           {CHALLENGES.map(({ id, label, icon: Icon }) => {
             const on = filter === id;
             const fresh = left(id);
@@ -234,6 +234,7 @@ export default function ActionFeed() {
       <button
         type="button"
         onClick={openKito}
+        data-kito-row
         className="flex w-full items-center gap-2.5 rounded-full bg-surface py-1 pl-1 pr-4 text-left ring-1 ring-line transition-transform active:scale-[0.98] lg:hidden"
       >
         <KitoMark size={36} />
@@ -245,7 +246,7 @@ export default function ActionFeed() {
       <HelpedCheck items={items} />
 
       {filter !== "all" && (
-        <p className="flex items-center justify-between gap-2 text-xs text-ink-soft">
+        <p className="edge-pad flex items-center justify-between gap-2 text-xs text-ink-soft">
           <span>
             {t("{n} things to try for: {challenge}", { n: cards.length, challenge: t(current.label).toLowerCase() })}
           </span>
@@ -344,7 +345,7 @@ export function ActionPost({ card, first, done, liked, saved }: { card: Card; fi
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[0.8125rem] font-bold leading-tight">{t(TYPE_LABEL[spec.type])}</p>
-          <p className="truncate text-[0.6875rem] text-ink-soft">{t("{n} min", { n: item.minutes })} · {item.origin ? "@kayaniherbs" : "Kayani Herbs"}</p>
+          <p className="truncate text-[0.6875rem] text-ink-soft">{t("{n} min", { n: item.minutes })} · @kayaniherbs</p>
         </div>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ${spec.results === "tonight" ? "bg-honey text-on-honey" : "bg-mint text-forest"}`}
@@ -518,8 +519,7 @@ function HookSlide({ item, spec, title, hook, first, t }: { item: ContentItem; s
       <Cover item={item} className="absolute inset-0 h-full w-full" showPlay={false} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/5" />
       <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5 text-white">
-        <p className="text-[0.6875rem] font-bold uppercase tracking-wider text-mint-strong">{t(TYPE_LABEL[spec.type])}</p>
-        <h3 className="mt-1 line-clamp-3 font-display text-[1.4375rem] font-bold leading-[1.1]">{title}</h3>
+        <h3 className="line-clamp-3 font-display text-[1.4375rem] font-bold leading-[1.1]">{title}</h3>
         <p className="mt-1.5 line-clamp-2 text-[0.875rem] leading-snug text-white/85">{hook}</p>
         <p className="mt-2.5 flex items-center gap-1.5 text-[0.8125rem] font-semibold text-white">
           <span className="inline-flex w-5 shrink-0 justify-center">
