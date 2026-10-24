@@ -23,7 +23,7 @@ export interface StudioCard {
   summarySw: string;
   minutes: number;
   action: ActionSpec;
-  /** One of the card photos, or an uploaded image. */
+  /** One of the card photos, or null for his uploaded image (imageUrl). */
   photo: CardPhoto | null;
   imageUrl?: string;
   videoUrl?: string;
@@ -54,7 +54,8 @@ export function studioCardToItem(c: StudioCard): ContentItem {
     fixture: false,
     aiGenerated: true,
     cover: { tone: "forest", motif: "rings" },
-    coverImageUrl: c.imageUrl || (c.photo ? photoUrl(c.photo) : undefined),
+    // Step 93: the photo he picked last wins (a stock photo, or his own upload when photo is null)
+    coverImageUrl: c.photo ? photoUrl(c.photo) : c.imageUrl,
     ...(c.videoUrl ? { videoUrl: c.videoUrl } : {}),
     ...(c.audioUrl ? { audioUrl: c.audioUrl } : {}),
     ...(c.sourceNote ? { reviewNote: c.sourceNote.slice(0, 280) } : {}),

@@ -6,9 +6,10 @@
 
 import { listen, stills } from "@/lib/studio/listen";
 import { CIRCLE_LABEL } from "@/lib/content/circles";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock, FileUp, Link2, Loader2, Mic, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import { CheckCircle2, Clock, FileUp, ImagePlus, Link2, Loader2, Mic, Plus, Sparkles, Trash2, Type } from "lucide-react";
+import { shrinkPhoto } from "@/lib/media/shrinkPhoto";
 import HookFields from "@/components/studio/HookFields";
 import { useDiscoverConfig } from "@/lib/social/discoverPrefs";
 import { dropTimes } from "@/lib/content/hooks";
@@ -146,7 +147,7 @@ export default function CardMakerPage() {
         summarySw: d.summarySw,
         minutes: d.minutes,
         action: d.action,
-        photo: d.photo,
+        photo: imageUrl ? null : d.photo, // null = his own photo
         imageUrl,
         ...media,
         sourceNote: mode === "link" ? `From ${url}` : mode === "file" && file ? `From file ${file.name}` : "From pasted text",
@@ -184,6 +185,26 @@ export default function CardMakerPage() {
   }
 
   const set = (patch: Partial<StudioCard>) => setCard((c) => (c ? { ...c, ...patch } : c));
+
+  // Step 93: his own background photo, straight from the phone (gallery or camera)
+  const ownPhoto = useRef<HTMLInputElement>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  async function uploadOwnPhoto(f: File) {
+    if (!card) return;
+    setError(null);
+    setPhotoBusy(true);
+    try {
+      const ready = await shrinkPhoto(f);
+      const link = await repo.uploadImage(ready, card.id);
+      set({ imageUrl: link, photo: null });
+      showToast("Your photo is on the card");
+    } catch (e) {
+      setError(`Couldn't add the photo: ${(e as Error).message}`);
+    } finally {
+      setPhotoBusy(false);
+      if (ownPhoto.current) ownPhoto.current.value = "";
+    }
+  }
   const setAction = (patch: Partial<StudioCard["action"]>) => setCard((c) => (c ? { ...c, action: { ...c.action, ...patch } } : c));
   const setStep = (i: number, patch: Partial<ActionSlide>) =>
     setCard((c) => (c ? { ...c, action: { ...c.action, steps: c.action.steps.map((s, k) => (k === i ? { ...s, ...patch } : s)) } } : c));
@@ -394,8 +415,29 @@ export default function CardMakerPage() {
                 <div>
                   <p className="mb-2 text-sm font-semibold">Background photo</p>
                   <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
+                    {/* Step 93: upload his own photo from the phone */}
+                    <button
+                      type="button"
+                      onClick={() => ownPhoto.current?.click()}
+                      disabled={photoBusy}
+                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-forest/50 bg-mint/30 text-forest disabled:opacity-60"
+                      title="Upload your own photo"
+                    >
+                      {photoBusy ? <Loader2 size={22} className="animate-spin" /> : <ImagePlus size={22} />}
+                      <span className="text-[0.625rem] font-bold leading-tight">{photoBusy ? "Adding…" : card.imageUrl ? "Change" : "Your photo"}</span>
+                    </button>
+                    <input
+                      ref={ownPhoto}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void uploadOwnPhoto(f);
+                      }}
+                    />
                     {card.imageUrl && (
-                      <button onClick={() => set({ photo: null })} className={`overflow-hidden rounded-xl ring-2 ${card.photo === null ? "ring-forest" : "ring-transparent"}`} title="Your uploaded photo">
+                      <button type="button" onClick={() => set({ photo: null })} className={`overflow-hidden rounded-xl ring-2 ${card.photo === null ? "ring-forest" : "ring-transparent"}`} title="Your uploaded photo">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={card.imageUrl} alt="Uploaded" className="aspect-square w-full object-cover" />
                       </button>
@@ -403,8 +445,10 @@ export default function CardMakerPage() {
                     {CARD_PHOTOS.map((p: CardPhoto) => (
                       <button
                         key={p}
-                        onClick={() => set({ photo: p, imageUrl: card.photo === null ? undefined : card.imageUrl })}
-                        className={`overflow-hidden rounded-xl ring-2 ${card.photo === p && !(card.imageUrl && card.photo === null) ? "ring-forest" : "ring-transparent"}`}
+                        type="button"
+                        // Keeps his uploaded photo in the row, so he can switch back to it
+                        onClick={() => set({ photo: p })}
+                        className={`overflow-hidden rounded-xl ring-2 ${card.photo === p ? "ring-forest" : "ring-transparent"}`}
                         title={p}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
