@@ -36,15 +36,18 @@ import { animateSpring, releaseVelocity, type SpringHandle } from "@/lib/motion/
 import { haptic } from "@/lib/motion/haptics";
 import { useSaveData } from "@/lib/media/saveData";
 import { ShareSheet } from "./Hooks";
+import { UPRIGHT, useVideoShape } from "@/lib/media/videoShape";
 
 const SOUND_KEY = "ms_reels_sound";
 
 /** The reel's picture: its cover photo, or the video's first frame. */
-function Poster({ reel }: { reel: ContentItem }) {
+function Poster({ reel, onMeasure }: { reel: ContentItem; onMeasure?: React.ReactEventHandler<HTMLVideoElement> }) {
   const yt = youtubeId(reel.videoUrl);
   if (reel.coverImageUrl || yt)
     return <Photo src={reel.coverImageUrl || youtubeThumb(yt!)} className="absolute inset-0 h-full w-full object-cover" />;
-  return <video src={`${reel.videoUrl}#t=0.5`} muted playsInline preload="metadata" className="absolute inset-0 h-full w-full object-cover" aria-hidden />;
+  return (
+    <video src={`${reel.videoUrl}#t=0.5`} muted playsInline preload="metadata" onLoadedMetadata={onMeasure} className="absolute inset-0 h-full w-full object-cover" aria-hidden />
+  );
 }
 
 /* ───────── A reel in the feed ───────── */
@@ -58,6 +61,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
   const box = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [near, setNear] = useState(false); // any part on screen → load the video
+  const shape = useVideoShape(reel.videoUrl, UPRIGHT); // Step 92: wide videos stay wide, upright stay upright
   const [progress, setProgress] = useState(0);
   const playing = usePlayingReel() === key;
   const sound = useFeedSound();
@@ -118,8 +122,13 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
         </div>
       </header>
 
-      {/* The video, nothing written over it. Tall like Instagram, but never taller than the screen. */}
-      <div ref={box} data-reel-card={reel.id} className="relative aspect-[9/16] max-h-[min(78svh,820px)] w-full overflow-hidden bg-black">
+      {/* The video, nothing written over it, in its own shape (Step 92). Never taller than the screen. */}
+      <div
+        ref={box}
+        data-reel-card={reel.id}
+        style={{ aspectRatio: shape.ratio }}
+        className="relative max-h-[min(78svh,820px)] w-full overflow-hidden bg-black transition-[aspect-ratio] duration-300"
+      >
         {yt && near && !lite && (
           <YouTubeFrame id={yt} playing={playing} muted={!sound} loop title={title} className="absolute inset-0" onProgress={(c, d) => setProgress(c / d)} />
         )}
@@ -133,14 +142,15 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
               loop
               playsInline
               preload="metadata"
+              onLoadedMetadata={shape.measure}
               onTimeUpdate={(e) => {
                 const v = e.currentTarget;
                 setProgress(v.duration ? v.currentTime / v.duration : 0);
               }}
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full ${shape.upright ? "object-cover" : "object-contain"}`}
             />
           ) : (
-            <Poster reel={reel} />
+            <Poster reel={reel} onMeasure={shape.measure} />
           )}
           {lite && (
             <span className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">
@@ -558,6 +568,9 @@ function ReelSlide({
   // How much of it he watched (for the reels/reading mix, Step 71): counted when he moves on
   const watched = useRef({ seconds: 0, max: 0, on: false });
   const yt = youtubeId(reel.videoUrl);
+  // Step 92: phone-shaped videos fill the screen; wide or square ones show whole (black above and below)
+  const shape = useVideoShape(reel.videoUrl, UPRIGHT);
+  const fill = shape.ratio < 0.7;
   useEffect(() => {
     const v = video.current;
     if (!v && !(yt && active)) {
@@ -665,12 +678,13 @@ function ReelSlide({
             }
           }}
           onEnded={() => trackContent(reel.id, "complete")}
+          onLoadedMetadata={shape.measure}
           onClick={onToggleSound}
-          className="absolute inset-0 h-full w-full object-cover"
+                    className={`absolute inset-0 h-full w-full ${fill ? "object-cover" : "object-contain"}`}
         />
       ) : (
         (reel.coverImageUrl || yt) && (
-          <Photo src={reel.coverImageUrl || youtubeThumb(yt!)} eager className="absolute inset-0 h-full w-full object-cover" />
+          <Photo src={reel.coverImageUrl || youtubeThumb(yt!)} eager className={`absolute inset-0 h-full w-full ${fill ? "object-cover" : "object-contain"}`} />
         )
       )}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/30" />

@@ -787,7 +787,8 @@ function MediaSlide({ item, t }: { item: ContentItem; t: T }) {
         playsInline
         preload="metadata"
         onEnded={() => trackContent(item.id, "complete")}
-        className="h-full w-full bg-black object-cover"
+        // Step 92: the whole video, in its own shape (wide or upright), never zoomed in
+        className="h-full w-full bg-black object-contain"
       />
     );
   }

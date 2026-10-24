@@ -22,6 +22,8 @@ import { metaOf, topicTitle } from "@/lib/content/display";
 import { trackContent } from "@/lib/analytics/track";
 import { isYouTubeShort, youtubeId } from "@/lib/content/youtube";
 import { YouTubeFrame } from "@/components/media/YouTubeFrame";
+import ShapedVideo from "@/components/media/ShapedVideo";
+import { UPRIGHT, WIDE } from "@/lib/media/videoShape";
 import { useAccount } from "@/lib/account/useAccount";
 import GuestGuideCard from "@/components/account/GuestGuideCard";
 import ListenButton from "./ListenButton";
@@ -126,25 +128,27 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
             className={upright ? "mx-auto aspect-[9/16] max-h-[78dvh] w-full" : "aspect-video w-full"}
           />
         ) : item.kind === "reel" && item.videoUrl ? (
-          // A reel (Step 70): upright video, as tall as the screen allows
-          <video
+          // A reel (Step 70): in the shape it was filmed (Step 92), as tall as the screen allows
+          <ShapedVideo
             src={item.videoUrl}
+            fallback={UPRIGHT}
             poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined}
             controls
             playsInline
             preload="metadata"
             onEnded={() => trackContent(item.id, "complete")}
-            className="mx-auto aspect-[9/16] max-h-[78dvh] w-full bg-black object-contain"
+            className="rounded-[inherit]"
           />
         ) : item.kind === "video" && item.videoUrl ? (
-          <video
+          <ShapedVideo
             src={item.videoUrl}
+            fallback={WIDE}
             poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined}
             controls
             playsInline
             preload="metadata"
             onEnded={() => trackContent(item.id, "complete")}
-            className="aspect-video w-full bg-black"
+            className="rounded-[inherit]"
           />
         ) : item.kind === "infographic" && item.coverImageUrl ? (
           <Photo src={item.coverImageUrl} alt={title} eager className="w-full bg-surface" />
@@ -158,7 +162,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
             )}
           </div>
         ) : item.action && item.videoUrl ? (
-          <video src={item.videoUrl} poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined} controls playsInline preload="metadata" className="aspect-video w-full bg-black" />
+          <ShapedVideo src={item.videoUrl} poster={item.coverImageUrl ? sized(item.coverImageUrl, 720) : undefined} controls playsInline preload="metadata" className="rounded-[inherit]" />
         ) : item.action && item.audioUrl ? (
           <div className="space-y-3 bg-forest-deep p-4">
             <Cover item={item} className="aspect-[2/1] w-full rounded-2xl" showPlay={false} />

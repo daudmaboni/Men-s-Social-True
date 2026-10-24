@@ -8,6 +8,7 @@
 // - Step 49: audio plays in the app-wide player (keeps playing on other pages, mini player), a 10-second
 //   countdown to the next lesson at the top right when it ends, and lessons that wait for him show what to do.
 
+import ShapedVideo from "@/components/media/ShapedVideo";
 import { haptic } from "@/lib/motion/haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -447,7 +448,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
   return (
     <section className="overflow-hidden rounded-[28px] bg-forest-deep text-white">
       {lesson.kind === "video" ? (
-        <video ref={video} {...common} controls playsInline className="aspect-video w-full bg-black" />
+        <ShapedVideo ref={video} {...common} controls playsInline />
       ) : (
         <>
           <audio ref={audio} {...common} />

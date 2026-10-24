@@ -1,5 +1,6 @@
 "use client";
 
+import { UPRIGHT, useVideoShape } from "@/lib/media/videoShape";
 import { captionPreview, cleanTitle } from "@/lib/content/caption";
 import { useState } from "react";
 import { MessageCircle, PlayCircle, ShieldCheck } from "lucide-react";
@@ -46,15 +47,7 @@ export default function Preview({ item }: { item: ContentItem }) {
               {youtubeId(item.videoUrl) ? (
                 <YouTubeFrame id={youtubeId(item.videoUrl)!} playing muted loop title={title} className="absolute inset-0" />
               ) : item.videoUrl ? (
-                <video
-                  src={item.videoUrl}
-                  poster={item.coverImageUrl}
-                  muted
-                  loop
-                  playsInline
-                  autoPlay
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
+<ReelVideo src={item.videoUrl} poster={item.coverImageUrl} />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">
                   Upload the video to see it here
@@ -189,5 +182,22 @@ export default function Preview({ item }: { item: ContentItem }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Step 92: as the reel plays full screen: phone-shaped fills the screen, wide shows whole. */
+function ReelVideo({ src, poster }: { src: string; poster?: string }) {
+  const shape = useVideoShape(src, UPRIGHT);
+  return (
+    <video
+      src={src}
+      poster={poster}
+      muted
+      loop
+      playsInline
+      autoPlay
+      onLoadedMetadata={shape.measure}
+      className={`absolute inset-0 h-full w-full ${shape.ratio < 0.7 ? "object-cover" : "object-contain"}`}
+    />
   );
 }

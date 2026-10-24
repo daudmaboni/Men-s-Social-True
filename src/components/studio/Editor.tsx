@@ -1,5 +1,7 @@
 "use client";
 
+import ShapedVideo from "@/components/media/ShapedVideo";
+import { UPRIGHT, WIDE } from "@/lib/media/videoShape";
 import { CIRCLES, NO_CIRCLE, circlesOf, isCircle, setCircles } from "@/lib/content/circles";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -649,13 +651,9 @@ export default function Editor({
                       className="aspect-[9/16] w-36 shrink-0 rounded-2xl"
                     />
                   ) : (
-                    <video
-                      src={item.videoUrl}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="aspect-[9/16] w-36 shrink-0 rounded-2xl bg-black"
-                    />
+                    <div className="w-36 shrink-0">
+                      <ShapedVideo src={item.videoUrl} fallback={UPRIGHT} maxHeight="16rem" controls playsInline preload="metadata" className="rounded-2xl" />
+                    </div>
                   )}
                   <div className="space-y-2">
                     <button
@@ -982,16 +980,14 @@ export default function Editor({
                       />
                     )}
                     {item.videoUrl && !yt && (
-                      <video
+                      <ShapedVideo
                         src={item.videoUrl}
+                        fallback={item.kind === "reel" ? UPRIGHT : WIDE}
+                        maxHeight="28rem"
                         controls
                         playsInline
                         preload="metadata"
-                        className={
-                          item.kind === "reel"
-                            ? "mx-auto aspect-[9/16] max-h-[28rem] rounded-2xl bg-black"
-                            : "aspect-video w-full rounded-2xl bg-black"
-                        }
+                        className="rounded-2xl"
                       />
                     )}
                     <div className="flex flex-wrap items-center gap-3">
