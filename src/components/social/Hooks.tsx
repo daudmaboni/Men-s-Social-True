@@ -29,11 +29,12 @@ import type { ActionSpec, CardAsk, ChallengeId, ContentItem } from "@/lib/conten
 import type { ThenNow, ThenNowRow } from "@/lib/progress/thenNow";
 import type { Story } from "@/lib/social/stories";
 import type { T } from "@/lib/i18n";
+import { useContentSw } from "@/lib/me/contentLang";
 
 /* ───────── Question-first slide ───────── */
 
 export function AskSlide({ ask, title, steps, t, onAnswer }: { ask: CardAsk; title: string; steps: number; t: T; onAnswer?: () => void }) {
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const [guess, setGuess] = useState<boolean | null>(null);
   const [open, setOpen] = useState(false);
   const q = sw ? ask.qSw : ask.q;
@@ -205,7 +206,7 @@ function ChallengeDayButton({ id, entry, compact, t, children }: { id: string; e
 /** His challenges, at the top of Discover: one row each, with the days as dots. */
 export function ChallengeStrip({ items, t }: { items: ContentItem[]; t: T }) {
   const feed = useFeed();
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const today = dateKey(new Date());
   const list = Object.entries(feed.challenges ?? {})
     .map(([id, e]) => ({ id, e, st: challengeState(e, today), item: items.find((i) => i.id === id) }))
@@ -333,7 +334,7 @@ export function ThenNowCard({ data, onClose, t }: { data: ThenNow; onClose: () =
 /* ───────── Real men's stories ───────── */
 
 export function StoryCard({ story, onCircle, t }: { story: Story; onCircle: (c: ChallengeId) => void; t: T }) {
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   return (
     <section className="rounded-[20px] bg-mint p-4 text-forest-deep" aria-label={t("A man's story")}>
       <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-forest">
@@ -355,7 +356,7 @@ export function StoryCard({ story, onCircle, t }: { story: Story; onCircle: (c: 
 
 export function ShareSheet({ open, onClose, item, spec, above = false, t }: { open: boolean; onClose: () => void; item: ContentItem; spec?: ActionSpec; above?: boolean; t: T }) {
   const showToast = useToast();
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const url = typeof location === "undefined" ? contentHref(item.id) : `${location.origin}${contentHref(item.id)}?s=share`;
   const text = shareText(spec, url, sw);
   const done = () => {

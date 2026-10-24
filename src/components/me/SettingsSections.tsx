@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, CloudDownload, Vibrate, Download, Droplet, EyeOff, Globe, HeartHandshake, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
+import { BookOpen, ChevronRight, CloudDownload, Vibrate, Download, Droplet, EyeOff, Globe, HeartHandshake, Moon, MoonStar, ShieldCheck, Stethoscope, Trash2 } from "lucide-react";
 import { ACCENTS, setAccent, setThemePref, useAccent, useThemePref, type ThemePref } from "@/lib/theme";
 import Sheet from "@/components/motion/Sheet";
 import { useToast } from "@/components/motion/Toast";
@@ -12,6 +12,7 @@ import type { TopicId } from "@/lib/content/types";
 import { feedStore } from "@/lib/feed/store";
 import { deleteMyData, exportMyData } from "@/lib/me/data";
 import { setLang, type Lang } from "@/lib/me/lang";
+import { setContentLang, useContentLang } from "@/lib/me/contentLang";
 import { progressStore } from "@/lib/progress/store";
 import AccountCard from "@/components/account/AccountCard";
 import type { AccountState } from "@/lib/account/useAccount";
@@ -112,6 +113,7 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
   const theme = useThemePref();
   const accent = useAccent();
   const t = useT();
+  const contentLang = useContentLang();
   const font = fontById(useFont("app"));
   const size = useTextSize("app");
   const fontName = font.id === "kayani" || font.id === "system" ? t(font.name) : font.name;
@@ -175,7 +177,7 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
         <Globe size={18} className="shrink-0 text-forest" />
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{t("Language")}</p>
-          <p className="text-xs text-ink-soft">{t("The whole app, and guides that have a Kiswahili version.")}</p>
+          <p className="text-xs text-ink-soft">{t("Buttons, menus and labels.")}</p>
         </div>
         <div className="inline-flex shrink-0 rounded-full bg-bg p-1 text-xs font-semibold ring-1 ring-line" role="radiogroup" aria-label={t("Language")}>
           {(["en", "sw"] as const).map((l) => (
@@ -188,6 +190,31 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
                 showToast(l === "sw" ? "Kiswahili imechaguliwa" : "English selected");
               }}
               className={`rounded-full px-3 py-1.5 ${lang === l ? "bg-forest text-white" : "text-ink-soft"}`}
+            >
+              {l === "en" ? "EN" : "SW"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Step 94: content (Discover cards, guides, reels) has its own language, Kiswahili by default */}
+      <div className="flex items-center gap-3 p-5">
+        <BookOpen size={18} className="shrink-0 text-forest" />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">{t("Content language")}</p>
+          <p className="text-xs text-ink-soft">{t("Cards, guides and videos on Discover.")}</p>
+        </div>
+        <div className="inline-flex shrink-0 rounded-full bg-bg p-1 text-xs font-semibold ring-1 ring-line" role="radiogroup" aria-label={t("Content language")}>
+          {(["sw", "en"] as const).map((l) => (
+            <button
+              key={l}
+              role="radio"
+              aria-checked={contentLang === l}
+              onClick={() => {
+                setContentLang(l);
+                showToast(l === "sw" ? "Maudhui sasa ni kwa Kiswahili" : "Content now in English");
+              }}
+              className={`rounded-full px-3 py-1.5 ${contentLang === l ? "bg-forest text-white" : "text-ink-soft"}`}
             >
               {l === "en" ? "EN" : "SW"}
             </button>

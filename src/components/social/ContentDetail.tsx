@@ -13,7 +13,8 @@ import { ContentRow } from "./ContentCards";
 import { DoctorCheck, PelvicFloorTrainer, QuizRunner } from "./ContentTools";
 import { useToast } from "@/components/motion/Toast";
 import { useLibrary } from "@/lib/content/useLibrary";
-import { useLang, type Lang } from "@/lib/me/lang";
+import type { Lang } from "@/lib/me/lang";
+import { useContentLang } from "@/lib/me/contentLang";
 import { getContent } from "@/lib/content/select";
 import { feedStore, useFeed } from "@/lib/feed/store";
 import { socialStore } from "@/lib/social/store";
@@ -41,8 +42,8 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   const acc = useAccount();
   const showToast = useToast();
   const t = useT();
-  // Opens in the language he chose (Me tab); he can still switch on the page
-  const appLang = useLang();
+  // Opens in the content language (Kiswahili by default, Step 94); he can still switch on the page
+  const appLang = useContentLang();
   const [picked, setLang] = useState<Lang | null>(null);
   const lang = picked ?? appLang;
   // Reading completion: he scrolled to the end of a guide, article or answer

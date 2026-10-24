@@ -9,17 +9,18 @@ import { useToast } from "@/components/motion/Toast";
 import { canSpeak, cardSpeech, speak, stopSpeaking, useSpeaking } from "@/lib/media/speak";
 import type { ActionSpec, ContentItem } from "@/lib/content/types";
 import { useT } from "@/lib/i18n";
+import { useContentSw } from "@/lib/me/contentLang";
 
 export default function ListenButton({ item, spec, big = false }: { item: ContentItem; spec?: ActionSpec; big?: boolean }) {
   const t = useT();
   const showToast = useToast();
   const speaking = useSpeaking() === item.id;
+  const sw = useContentSw(); // Step 94: reads the card in the content language
   const [can, setCan] = useState(false);
   useEffect(() => setCan(canSpeak()), []);
   // Leaving the card's page stops the voice
   useEffect(() => () => (speaking ? stopSpeaking() : undefined), [speaking]);
   if (!can) return null;
-  const sw = t.lang === "sw";
   const go = async () => {
     if (speaking) return stopSpeaking();
     const r = await speak(item.id, cardSpeech(item, spec, sw), sw ? "sw" : "en", sw ? cardSpeech(item, spec, false) : undefined);

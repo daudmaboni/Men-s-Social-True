@@ -66,6 +66,7 @@ import { helpedShown, storyFor, useStories } from "@/lib/social/stories";
 import { AskSlide, ChallengeButton, ChallengeStrip, DropBanner, LockedPart, NextPartSlide, ShareSheet, StoryCard, ThenNowCard, type SeriesInfo } from "./Hooks";
 import { DISCOVER_REFRESH, habitsStore, useDiscoverConfig, visitSeed } from "@/lib/social/discoverPrefs";
 import { useAccount } from "@/lib/account/useAccount";
+import { useContentSw } from "@/lib/me/contentLang";
 
 // The circles: names from the shared list (lib/content/circles.ts), so the Studio uses the very same ones (Step 80)
 const ICON: Record<ChallengeId, typeof Timer> = { last: Timer, hard: Zap, her: Flame, mixes: Leaf, train: Dumbbell, reset: Brain, desire: BatteryCharging };
@@ -159,7 +160,7 @@ export default function ActionFeed() {
   const progress = useProgress();
   const { stories, counts } = useStories();
   const t = useT();
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const [shown, setShown] = useState(PAGE);
   // Reels (Step 70): the order is fixed when the viewer opens, so it doesn't move while he watches
   const [viewer, setViewer] = useState<{ list: ContentItem[]; start: number; sound: boolean } | null>(null);
@@ -531,7 +532,7 @@ export function ActionPost({
 }) {
   const { item, spec } = card;
   const t = useT();
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const showToast = useToast();
   const title = sw && item.titleSw ? item.titleSw : item.title;
   const hook = sw && item.summarySw ? item.summarySw : item.summary;

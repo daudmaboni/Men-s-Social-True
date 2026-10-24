@@ -7,6 +7,7 @@ import { Bookmark, Search } from "lucide-react";
 import Discover, { DiscoverSkeleton } from "@/components/social/Discover";
 import Community from "@/components/social/Community";
 import SearchPanel from "@/components/social/SearchPanel";
+import ContentLangOffer from "@/components/social/ContentLangOffer";
 import LiquidSegment from "@/components/LiquidSegment";
 import LockedTab from "@/components/account/LockedTab";
 import { useAccount } from "@/lib/account/useAccount";
@@ -104,6 +105,7 @@ function SocialInner() {
           </PullToRefresh>
         )}
       </div>
+      {tab === "discover" && !searching && <ContentLangOffer />}
     </div>
   );
 }

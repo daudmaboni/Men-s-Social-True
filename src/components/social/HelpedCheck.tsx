@@ -12,6 +12,7 @@ import { triedStore } from "@/lib/social/tried";
 import { useToast } from "@/components/motion/Toast";
 import { haptic } from "@/lib/motion/haptics";
 import { useT } from "@/lib/i18n";
+import { useContentSw } from "@/lib/me/contentLang";
 
 const ANSWERS: { id: Exclude<HelpedAnswer, "skip">; label: string }[] = [
   { id: "yes", label: "Yes, it helped" },
@@ -21,7 +22,7 @@ const ANSWERS: { id: Exclude<HelpedAnswer, "skip">; label: string }[] = [
 
 export default function HelpedCheck({ items }: { items: ContentItem[] }) {
   const t = useT();
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const feed = useFeed();
   const showToast = useToast();
   const [leaving, setLeaving] = useState(false);

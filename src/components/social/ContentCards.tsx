@@ -7,12 +7,14 @@ import BookmarkButton from "./BookmarkButton";
 import type { ContentItem } from "@/lib/content/types";
 import { useT } from "@/lib/i18n";
 import { metaOf, titleOf } from "@/lib/content/display";
+import { useContentLang } from "@/lib/me/contentLang";
 
 export const contentHref = (id: string) => `/social/c/${id}`;
 
 /** Small card for horizontal rows on Discover. */
 export function ContentCard({ item, className = "w-44 shrink-0 snap-start" }: { item: ContentItem; className?: string }) {
   const t = useT();
+  const cl = { lang: useContentLang() }; // Step 94: titles in the content language
   return (
     <Link
       href={contentHref(item.id)}
@@ -23,7 +25,7 @@ export function ContentCard({ item, className = "w-44 shrink-0 snap-start" }: { 
         <p className="text-[0.625rem] font-semibold uppercase tracking-wide text-forest">
           {metaOf(item, t)}
         </p>
-        <p className="mt-1 line-clamp-3 text-[0.8125rem] font-semibold leading-snug">{titleOf(item, t)}</p>
+        <p className="mt-1 line-clamp-3 text-[0.8125rem] font-semibold leading-snug">{titleOf(item, cl)}</p>
       </div>
     </Link>
   );
@@ -32,6 +34,7 @@ export function ContentCard({ item, className = "w-44 shrink-0 snap-start" }: { 
 /** Row for lists: search results, saved, topic pages. With `reason`, it also says why it's suggested. */
 export function ContentRow({ item, reason }: { item: ContentItem; reason?: string }) {
   const t = useT();
+  const cl = { lang: useContentLang() }; // Step 94: titles in the content language
   return (
     <Link href={contentHref(item.id)} className="flex items-center gap-3 rounded-3xl bg-surface p-3 ring-1 ring-line">
       <Cover item={item} className="h-16 w-16 shrink-0 rounded-2xl" showPlay={false} />
@@ -39,7 +42,7 @@ export function ContentRow({ item, reason }: { item: ContentItem; reason?: strin
         <p className="text-[0.625rem] font-semibold uppercase tracking-wide text-forest">
           {metaOf(item, t)}
         </p>
-        <p className="line-clamp-2 text-sm font-semibold leading-snug">{titleOf(item, t)}</p>
+        <p className="line-clamp-2 text-sm font-semibold leading-snug">{titleOf(item, cl)}</p>
         {reason && <p className="mt-0.5 truncate text-[0.6875rem] text-ink-soft">{reason}</p>}
       </div>
       <BookmarkButton contentId={item.id} variant="plain" />

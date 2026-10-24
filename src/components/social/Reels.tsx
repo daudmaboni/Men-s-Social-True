@@ -37,6 +37,7 @@ import { haptic } from "@/lib/motion/haptics";
 import { useSaveData } from "@/lib/media/saveData";
 import { ShareSheet } from "./Hooks";
 import { UPRIGHT, useVideoShape } from "@/lib/media/videoShape";
+import { useContentSw } from "@/lib/me/contentLang";
 
 const SOUND_KEY = "ms_reels_sound";
 
@@ -53,7 +54,7 @@ function Poster({ reel, onMeasure }: { reel: ContentItem; onMeasure?: React.Reac
 /* ───────── A reel in the feed ───────── */
 export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => void }) {
   const t = useT();
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const showToast = useToast();
   const tried = useTried();
   const social = useSocial();
@@ -553,7 +554,7 @@ function ReelSlide({
   onFinished: () => void;
 }) {
   const t = useT();
-  const sw = t.lang === "sw";
+  const sw = useContentSw(); // Step 94: content language (Kiswahili by default)
   const showToast = useToast();
   const tried = useTried();
   const social = useSocial();

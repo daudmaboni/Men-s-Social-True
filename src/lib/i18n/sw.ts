@@ -1117,4 +1117,8 @@ export const SW: Record<string, string> = {
   "Choose a 4-digit PIN": "Chagua PIN ya tarakimu 4",
   "On": "Washa",
   "Off": "Zima",
+  // Step 94: content language
+  "Buttons, menus and labels.": "Vitufe, menyu na maandishi ya programu.",
+  "Content language": "Lugha ya maudhui",
+  "Cards, guides and videos on Discover.": "Kadi, miongozo na video kwenye Gundua.",
 };

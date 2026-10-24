@@ -8,12 +8,14 @@ import { contentHref } from "./ContentCards";
 import type { ContentItem } from "@/lib/content/types";
 import { useT } from "@/lib/i18n";
 import { ctaOf, metaOf, summaryOf, titleOf, topicShort } from "@/lib/content/display";
+import { useContentLang } from "@/lib/me/contentLang";
 
 /** The one featured piece at the top of Discover — compact, so the sections below show on the first screen. */
 export default function FeaturedCard({ item, reason }: { item: ContentItem; reason: string }) {
   const t = useT();
+  const cl = { lang: useContentLang() }; // Step 94: titles in the content language
   const topic = topicShort(item.topic, t);
-  const title = titleOf(item, t);
+  const title = titleOf(item, cl);
   return (
     <article className="overflow-hidden rounded-[28px] bg-forest-deep text-white">
       <Link href={contentHref(item.id)} className="relative block" aria-label={title}>
@@ -33,7 +35,7 @@ export default function FeaturedCard({ item, reason }: { item: ContentItem; reas
         <Link href={contentHref(item.id)}>
           <h2 className="mt-1.5 text-[1.25rem] font-bold leading-snug">{title}</h2>
         </Link>
-        <p className="mt-1 line-clamp-2 text-sm text-mint">{summaryOf(item, t)}</p>
+        <p className="mt-1 line-clamp-2 text-sm text-mint">{summaryOf(item, cl)}</p>
 
         <div className="mt-3 flex items-center gap-2">
           <Link
