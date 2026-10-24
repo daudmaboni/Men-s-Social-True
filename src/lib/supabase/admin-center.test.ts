@@ -481,6 +481,10 @@ describe("Kito, the members' assistant (0013)", { timeout: 30_000 }, () => {
     expect(cols.some((c) => /question|answer|text|body/.test(c))).toBe(false);
     expect(await as(KITO, "select * from public.kito_usage")).toEqual([]); // men can't read the log
   });
+  it("checks each man's questions one at a time, so sending many at once can't beat the limit (0020)", async () => {
+    const [{ src }] = (await db.query<{ src: string }>("select prosrc as src from pg_proc where proname = 'kito_allow'")).rows;
+    expect(src).toMatch(/pg_advisory_xact_lock/);
+  });
   it("stops at 15 questions an hour per man", async () => {
     for (let i = 0; i < 14; i++) await as(KITO, "select public.kito_allow('en')");
     await expect(as(KITO, "select public.kito_allow('en')")).rejects.toThrow(/this hour/);

@@ -53,6 +53,17 @@ async function libraryDocs(sb: NonNullable<ReturnType<typeof clientFor>>): Promi
   return [...docsFromItems(items), ...lessons];
 }
 
+// Step 91: the library index is kept ready for a few minutes instead of being rebuilt for every question.
+// Every signed-in man sees the same library (published content + the published course), so one copy serves all.
+const INDEX_FOR_MS = 5 * 60_000;
+let cached: { at: number; index: ReturnType<typeof buildIndex> } | null = null;
+async function libraryIndex(sb: NonNullable<ReturnType<typeof clientFor>>) {
+  if (cached && Date.now() - cached.at < INDEX_FOR_MS) return cached.index;
+  const index = buildIndex(await libraryDocs(sb));
+  cached = { at: Date.now(), index };
+  return index;
+}
+
 export async function POST(req: Request) {
   const sb = clientFor(req);
   if (!sb) return fail(401, "Sign in to ask Kito.", "signin");
@@ -89,7 +100,7 @@ export async function POST(req: Request) {
   const lastAsked = [...history].reverse().find((t) => t.role === "user")?.text ?? "";
   let hits = [] as ReturnType<typeof search>;
   try {
-    const index = buildIndex(await libraryDocs(sb));
+    const index = await libraryIndex(sb);
     hits = search(index, question, 6);
     if (hits.length < 2 && lastAsked) hits = search(index, `${lastAsked} ${question}`, 6);
     hits = pinAbout(index, about, hits);
