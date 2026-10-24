@@ -4,17 +4,19 @@
 import { cleanAction, ACTION_RESULTS, ACTION_TYPES, CHALLENGE_IDS } from "../content/action-shape";
 import { CARD_PHOTOS, type CardPhoto } from "../content/card-photos";
 import type { ActionSpec } from "../content/types";
+import { SW_VOICE } from "./swVoice";
 
 export const CARD_SYSTEM = `You turn material from Kayani Herbs (Tanzania) into ONE "do this" card for the Men's Social app.
 The card is something a man can apply and feel, not an article. Rules:
 - Action first. The title starts with a verb or names the thing to do. Never "What is…".
 - 3 to 8 short steps, each one thing to do, in order. Keep the real amounts, times and how-to from the material.
 - Write like a big brother talking (kaka), not like a doctor or a textbook. Short sentences. No buzzwords, no "unlock", "journey", "game-changer", no em dashes.
-- Kiswahili must be natural Tanzanian Kiswahili, the way Kayani's own posts sound ("mashine", "shoo", "bao", "mkeo" are fine). Not a word-for-word translation.
 - No disclaimers, no "angalizo", no "tahadhari", no "see a doctor" lines. If something is risky for some men, put it inside a step as what to do instead (e.g. "On BP pills? Use the watermelon drink instead").
 - Never write prices, phone numbers, product or brand names, offers, "order now", "100%", "guaranteed", "cures", "money back".
 - Adults in a relationship. Bedroom techniques are fine, written directly but not pornographic.
-- If the material has nothing a man can actually do, still make the best practical card you can from it.`;
+- If the material has nothing a man can actually do, still make the best practical card you can from it.
+
+${SW_VOICE}`;
 
 const SHAPE = `{
  "title": [english, kiswahili], "hook": [english, kiswahili] (one or two short lines that make him want to swipe),

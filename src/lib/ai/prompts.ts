@@ -1,5 +1,7 @@
 // What the AI is asked to do, and the safety rules it always gets. Pure (testable, no network).
 
+import { SW_VOICE } from "./swVoice";
+
 export type AiAction = "draft" | "summarize" | "titles" | "quiz" | "translate" | "repurpose";
 export const AI_ACTIONS: AiAction[] = ["draft", "summarize", "titles", "quiz", "translate", "repurpose"];
 
@@ -27,7 +29,7 @@ Use short paragraphs; a paragraph starting with "## " is a heading. ${asJson('{"
     summarize: `Summarise this for the app card in 1–2 short sentences, saying what he gains.\n\n${text}\n\n${asJson('{"summary": string}')}`,
     titles: `Suggest 5 clear, respectful titles (max 70 characters) and 2 one-sentence descriptions for this content.\n\n${text}\n\n${asJson('{"titles": string[], "descriptions": string[]}')}`,
     quiz: `Write 4 multiple-choice questions that check understanding of this content. Each has 3–4 options, one correct, and a one-sentence explanation.\n\n${text}\n\n${asJson('{"questions": [{"q": string, "options": string[], "answer": number, "explain": string}]}')}`,
-    translate: `Translate into natural, simple Tanzanian Kiswahili. Keep "## " headings and paragraph breaks.\n\n${text}\n\n${asJson('{"title": string, "summary": string, "body": string[]}')}`,
+    translate: `Rewrite this in Kiswahili for Tanzanian men. Keep the meaning, "## " headings and paragraph breaks, but do not translate word for word.\n\n${SW_VOICE}\n\n${text}\n\n${asJson('{"title": string, "summary": string, "body": string[]}')}`,
     repurpose: `Turn this content into ${input.to === "expert" ? "an expert Q&A: one question a man would ask, and a clear answer" : "4–6 key points for a short video"}.\n\n${text}\n\n${asJson(
       input.to === "expert" ? '{"question": string, "body": string[]}' : '{"keyPoints": string[]}',
     )}`,
