@@ -75,7 +75,7 @@ export default function LockScreen() {
           }
         />
       </div>
-      <button type="button" onClick={() => setForgot(true)} className="mt-5 text-sm font-semibold text-forest">
+      <button type="button" onClick={() => setForgot(true)} className="tap-target mt-5 text-sm font-semibold text-forest">
         {t("Forgot PIN?")}
       </button>
 

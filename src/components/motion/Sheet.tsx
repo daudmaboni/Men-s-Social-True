@@ -10,10 +10,12 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { animateSpring, type SpringHandle } from "@/lib/motion/spring";
 import { pullCloses, useSheetDrag } from "@/lib/motion/useSheetDrag";
 import { lastTrigger, originWithin } from "@/lib/motion/origin";
+import { useDialogFocus } from "@/lib/a11y/useDialogFocus";
 
 const isPhone = () => typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 1023px)").matches;
 
@@ -140,6 +142,8 @@ export default function Sheet({
     [onClose, placeBottom],
   );
   useSheetDrag(panel, { enabled: mounted && open && mode === "bottom", onDrag, onRelease });
+  // Step 96: focus moves into the pop-up, stays inside while it's open, and goes back to the button after
+  useDialogFocus(panel, mounted && open);
 
   if (!mounted || typeof document === "undefined") return null;
   const bottom = mode === "bottom";
@@ -151,7 +155,7 @@ export default function Sheet({
         bottom ? "items-end" : "items-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]"
       }`}
     >
-      <button ref={scrim} aria-label={t("Close")} onClick={onClose} style={{ opacity: 0 }} className="absolute inset-0 bg-ink/30 backdrop-blur-sm" />
+      <button ref={scrim} aria-label={t("Close")} tabIndex={-1} onClick={onClose} style={{ opacity: 0 }} className="absolute inset-0 bg-ink/30 backdrop-blur-sm" />
       <div
         ref={panel}
         role="dialog"
@@ -170,8 +174,19 @@ export default function Sheet({
             <span className="h-1.5 w-10 rounded-full bg-line" />
           </div>
         )}
-        <h2 className="text-lg font-bold">{title}</h2>
-        <div className="mt-4">{children}</div>
+        {/* Step 96: a Close button in every pop-up, so closing never depends on a gesture or the Escape key */}
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="pt-1.5 text-lg font-bold">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("Close")}
+            className="-mr-2 -mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-bg hover:text-ink"
+          >
+            <X size={20} aria-hidden />
+          </button>
+        </div>
+        <div className="mt-2.5">{children}</div>
       </div>
     </div>,
     document.body,

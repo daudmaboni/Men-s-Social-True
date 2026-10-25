@@ -16,6 +16,7 @@ import { useMiniPlayerVisible } from "@/components/course/MiniPlayer";
 import { useT } from "@/lib/i18n";
 import KitoChat from "./KitoChat";
 import KitoMark from "./KitoMark";
+import { useDialogFocus } from "@/lib/a11y/useDialogFocus";
 
 const OPEN_EVENT = "kito:open";
 /** What he's asking about when Kito opens from a card (Step 90). */
@@ -114,6 +115,7 @@ export default function KitoLauncher() {
 
   // Pull the window down to close it (phones)
   const panel = useRef<HTMLDivElement>(null);
+  useDialogFocus(panel, open); // Step 96
   const scrim = useRef<HTMLButtonElement>(null);
   const anim = useRef<SpringHandle | null>(null);
   const pulled = useRef(0);
@@ -180,7 +182,7 @@ export default function KitoLauncher() {
       {open && (
         <div className="fixed inset-0 z-50 lg:inset-auto lg:bottom-6 lg:right-6" role="dialog" aria-modal="true" aria-label="Kito">
           {/* Phone: dim the app behind; computer: just the panel */}
-          <button ref={scrim} className="absolute inset-0 bg-black/40 lg:hidden" aria-label={t("Close")} onClick={() => setOpen(false)} />
+          <button ref={scrim} className="absolute inset-0 bg-black/40 lg:hidden" aria-label={t("Close")} tabIndex={-1} onClick={() => setOpen(false)} />
           <div ref={panel} className="kito-panel absolute inset-x-0 bottom-0 top-[max(1rem,env(safe-area-inset-top))] overflow-hidden rounded-t-[28px] bg-surface shadow-2xl ring-1 ring-line lg:static lg:h-[min(640px,calc(100dvh-3rem))] lg:w-[400px] lg:rounded-[28px]">
             <KitoChat onClose={() => setOpen(false)} onNavigate={() => setOpen(false)} about={about} onClearAbout={() => setAbout(null)} />
           </div>

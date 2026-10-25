@@ -57,7 +57,7 @@ export default function TellUs() {
       {sent ? (
         <div className="mt-4 rounded-2xl bg-mint/60 px-4 py-3 text-sm text-forest-deep">
           <p className="font-semibold">{t("Asante! We got it.")}</p>
-          <button onClick={() => setSent(false)} className="mt-1 text-xs font-semibold underline">
+          <button onClick={() => setSent(false)} className="tap-target mt-1 text-xs font-semibold underline">
             {t("Send another")}
           </button>
         </div>
@@ -80,6 +80,7 @@ export default function TellUs() {
             ))}
           </div>
           <textarea
+            aria-label={t("Tell us")}
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={1000}

@@ -393,7 +393,7 @@ function UserDrawer({ user: u, onClose, onChanged, canRestrict, canWarn, canDele
         }}
       >
         <p>He sees it in his app inbox (the bell) next time he opens the app. It&apos;s logged.</p>
-        <textarea value={message} onChange={(e) => setMessage(e.target.value)} maxLength={300} className={`${input} mt-3 min-h-24`} placeholder="Please keep Community free of selling. Next time your account will be restricted." />
+        <textarea aria-label="Warning message" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={300} className={`${input} mt-3 min-h-24`} placeholder="Please keep Community free of selling. Next time your account will be restricted." />
       </Confirm>
 
       <Confirm

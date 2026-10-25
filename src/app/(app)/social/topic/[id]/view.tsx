@@ -18,7 +18,7 @@ export default function TopicPage() {
 
   return (
     <div className="stagger space-y-4">
-      <Link href="/social" className="flex items-center gap-1 text-sm text-ink-soft">
+      <Link href="/social" className="tap-target flex items-center gap-1 text-sm text-ink-soft">
         <ArrowLeft size={16} /> {t("Discover")}
       </Link>
 

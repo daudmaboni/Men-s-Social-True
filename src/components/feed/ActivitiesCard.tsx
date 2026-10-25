@@ -127,14 +127,14 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <button
                   onClick={(e) => done(a, e.currentTarget)}
-                  className="rounded-full bg-forest px-3.5 py-1.5 text-xs font-semibold text-white transition-transform active:scale-95"
+                  className="tap-target rounded-full bg-forest px-3.5 py-1.5 text-xs font-semibold text-white transition-transform active:scale-95"
                 >
                   {t("Done")}
                 </button>
                 {s !== "later" && (
                   <button
                     onClick={() => later(a)}
-                    className="rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 ring-line"
+                    className="tap-target rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 ring-line"
                   >
                     {t("Later")}
                   </button>
@@ -145,7 +145,7 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
                     feedStore.setChoice(a.id, "skipped");
                     showToast(t("Skipped. No problem."));
                   }}
-                  className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-ink-soft"
+                  className="tap-target rounded-full px-3.5 py-1.5 text-xs font-semibold text-ink-soft"
                 >
                   {t("Skip")}
                 </button>
@@ -154,9 +154,9 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
             {closed && (
               <button
                 onClick={() => feedStore.clearChoice(a.id)}
-                className="mt-1 flex items-center gap-1 text-[0.6875rem] font-semibold text-forest"
+                className="tap-target mt-1 flex items-center gap-1 py-1 text-xs font-semibold text-forest"
               >
-                <Undo2 size={11} /> {t("Undo")}
+                <Undo2 size={13} aria-hidden /> {t("Undo")}
               </button>
             )}
             {!closed && <Why text={a.why} />}

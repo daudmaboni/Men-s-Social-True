@@ -313,10 +313,12 @@ h1, h2, .font-display { font-family: var(--font-display); letter-spacing: -0.01e
 .slide-from-right { animation: slide-from-right 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 
 /* Frosted glass bar: page shows through, blurred and a little brighter */
+/* Step 96: a little more frost and much less colour boost, so the tab labels stay readable (4.5:1)
+   over the brightest card scrolling underneath (Apple: tab bars stay monochrome over colourful content) */
 .glass-bar {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.42));
-  -webkit-backdrop-filter: blur(22px) saturate(1.8);
-  backdrop-filter: blur(22px) saturate(1.8);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.68));
+  -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  backdrop-filter: blur(22px) saturate(1.15);
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
     0 10px 30px rgb(var(--a-deep-rgb) / 0.16),
@@ -405,7 +407,7 @@ h1, h2, .font-display { font-family: var(--font-display); letter-spacing: -0.01e
 
 /* Dark glass tab bar */
 [data-theme="dark"] .glass-bar {
-  background: linear-gradient(180deg, rgba(30, 46, 40, 0.66), rgba(19, 31, 27, 0.5));
+  background: linear-gradient(180deg, rgba(30, 46, 40, 0.8), rgba(19, 31, 27, 0.7));
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow:
     0 10px 30px rgba(0, 0, 0, 0.45),
@@ -837,3 +839,44 @@ button:disabled { cursor: not-allowed; }
 @keyframes pin-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
 .pin-shake { animation: pin-shake 0.36s ease-in-out; }
 @media (prefers-reduced-motion: reduce) { .pin-shake { animation: none; } }
+
+/* ===== Step 96: Apple design pass ===== */
+
+/* Small text buttons and links (Back, See all, Done / Later / Skip, Undo) look the same,
+   but the finger area is at least 44 x 44 (Apple's default control size). Only on elements that
+   aren't positioned themselves. */
+.tap-target { position: relative; }
+.tap-target::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/* Keyboard focus is always visible (computers, keyboards, switch control), in the brand colour.
+   Text boxes keep their own focus ring. */
+:where(a[href], button, [role="button"], [role="radio"], [role="tab"], [role="switch"], summary, select, input[type="checkbox"], input[type="radio"], input[type="range"]):focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 2px;
+}
+[data-theme="dark"] :where(a[href], button, [role="button"], [role="radio"], [role="tab"], [role="switch"], summary, select, input[type="checkbox"], input[type="radio"], input[type="range"]):focus-visible {
+  outline-color: var(--a-bright);
+}
+/* The pop-up box itself takes focus when it opens (so its name is read first): no ring on the whole box */
+[role="dialog"]:focus, [role="dialog"]:focus-visible { outline: none; }
+
+/* Reduce motion: loading placeholders stop pulsing and the typing dots stop bouncing (the spinner stays,
+   it's the only sign something is happening) */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse, .animate-bounce, .animate-ping { animation: none !important; }
+}
+
+/* Bigger text sizes (150–200%): like iOS, the bars keep their labels close to normal size (they'd be cut off
+   otherwise) while everything he reads grows. Rows that sit side by side stack instead. */
+html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .cap-xs { font-size: 13px; }
+html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .cap-sm { font-size: 16px; }
+html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .big-stack { flex-direction: column; align-items: stretch; }
+html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .big-stack > :is(a, button) { text-align: center; }

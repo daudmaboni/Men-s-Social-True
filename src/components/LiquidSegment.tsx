@@ -82,7 +82,7 @@ export default function LiquidSegment<T extends string>({
 
   const faces = (active: boolean) =>
     options.map((o) => (
-      <span key={o.id} className={`flex items-center justify-center py-2 text-sm font-semibold ${active ? "text-forest-deep" : ""}`}>
+      <span key={o.id} className={`cap-sm flex items-center justify-center py-2 text-sm font-semibold ${active ? "text-forest-deep" : ""}`}>
         {o.label}
       </span>
     ));
@@ -105,7 +105,7 @@ export default function LiquidSegment<T extends string>({
       <div ref={glass} aria-hidden className="liquid-glass pointer-events-none absolute left-0 overflow-hidden rounded-full" style={{ top: PAD, bottom: PAD }}>
         <div ref={lens} className="absolute inset-y-0 left-0 grid will-change-transform" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`, paddingLeft: PAD, paddingRight: PAD, transformOrigin: "0 0" }}>
           {options.map((o) => (
-            <span key={o.id} className="flex items-center justify-center px-4 text-sm font-semibold text-forest-deep">
+            <span key={o.id} className="cap-sm flex items-center justify-center px-4 text-sm font-semibold text-forest-deep">
               {o.label}
             </span>
           ))}

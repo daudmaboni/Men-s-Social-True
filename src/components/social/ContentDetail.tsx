@@ -82,7 +82,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   if (!item) {
     return (
       <div className="space-y-4">
-        <Link href={back.href} className="flex items-center gap-1 text-sm text-ink-soft">
+        <Link href={back.href} className="tap-target flex items-center gap-1 text-sm text-ink-soft">
           <ArrowLeft size={16} /> {t(back.label)}
         </Link>
         <div className="rounded-3xl bg-surface p-8 text-center ring-1 ring-line">
@@ -109,7 +109,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
   return (
     <article className="stagger space-y-5">
       <div className="flex items-center justify-between">
-        <Link href={back.href} className="flex items-center gap-1 text-sm text-ink-soft">
+        <Link href={back.href} className="tap-target flex items-center gap-1 text-sm text-ink-soft">
           <ArrowLeft size={16} /> {t(back.label)}
         </Link>
         <div className="flex items-center gap-2">
@@ -214,7 +214,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
           <div className="mt-3 flex items-center justify-between gap-2">
             {item.bodySw ? (
               <div className="inline-flex rounded-full bg-surface p-1 text-xs font-semibold ring-1 ring-line" role="tablist" aria-label={t("Language")}>
-                {(["en", "sw"] as const).map((l) => (
+                {(["sw", "en"] as const).map((l) => (
                   <button
                     key={l}
                     role="tab"
@@ -234,7 +234,7 @@ export default function ContentDetail({ id, back }: { id: string; back: { href: 
                 href={item.origin.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs font-semibold text-forest"
+                className="tap-target flex items-center gap-1 text-xs font-semibold text-forest"
               >
                 {t(item.origin.format === "reel" ? "Watch on Instagram" : "View on Instagram")} <ExternalLink size={12} />
               </a>

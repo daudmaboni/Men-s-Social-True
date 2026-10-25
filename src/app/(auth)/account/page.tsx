@@ -153,7 +153,7 @@ const way =
 
 function Soon() {
   const t = useT();
-  return <span className="rounded-full bg-bg px-2 py-0.5 text-[0.625rem] text-ink-soft ring-1 ring-line">{t("Soon")}</span>;
+  return <span className="rounded-full bg-bg px-2 py-0.5 text-[0.6875rem] text-ink-soft ring-1 ring-line">{t("Soon")}</span>;
 }
 
 function EmailForm({ mode, onMode, onDone }: { mode: Mode; onMode: (m: Mode) => void; onDone: (msg: string) => void }) {
@@ -303,7 +303,7 @@ function PhoneForm({ onDone }: { onDone: () => void }) {
         {t(sentTo ? "Confirm code" : "Send me a code")}
       </button>
       {sentTo && (
-        <button type="button" onClick={() => { setSentTo(null); setCode(""); }} className="w-full text-xs font-semibold text-forest">
+        <button type="button" onClick={() => { setSentTo(null); setCode(""); }} className="tap-target w-full text-xs font-semibold text-forest">
           {t("Use a different number")}
         </button>
       )}
@@ -318,7 +318,7 @@ function Shell({ children, back, backLabel }: { children: React.ReactNode; back?
     <AuthScreen closeHref="/" closeLabel={t("Close")}>
       <div className="stagger space-y-5">
         {back && (
-          <button onClick={back} className="-mb-1 flex items-center gap-1 text-sm text-ink-soft">
+          <button onClick={back} className="tap-target -mb-1 flex items-center gap-1 text-sm text-ink-soft">
             <ArrowLeft size={16} /> {t(backLabel ?? "Back")}
           </button>
         )}

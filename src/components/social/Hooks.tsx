@@ -239,7 +239,7 @@ export function ChallengeStrip({ items, t }: { items: ContentItem[]; t: T }) {
             <div className="mt-2.5 flex items-center justify-between gap-2">
               <button
                 onClick={() => feedStore.quitChallenge(id)}
-                className="px-1 text-xs font-semibold text-ink-soft underline-offset-2 hover:underline"
+                className="tap-target px-1 text-xs font-semibold text-ink-soft underline-offset-2 hover:underline"
               >
                 {t("Stop")}
               </button>

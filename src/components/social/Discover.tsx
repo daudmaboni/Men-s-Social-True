@@ -146,7 +146,7 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
                 </p>
               </div>
               {!preview && (
-                <button onClick={() => setPickTopics(true)} className="flex items-center gap-1 text-xs font-semibold text-forest">
+                <button onClick={() => setPickTopics(true)} className="tap-target flex items-center gap-1 text-xs font-semibold text-forest">
                   <SlidersHorizontal size={14} /> {t(me.interests.length ? "Edit" : "Choose topics")}
                 </button>
               )}
@@ -175,7 +175,7 @@ export function DiscoverView({ me, items, config, preview = false }: { me: Perso
                 </h2>
                 <p className="text-xs text-ink-soft">{sub(s, t("Two minutes or less"))}</p>
               </div>
-              <Link href="/social/topic/videos" className="flex items-center text-xs font-semibold text-forest">
+              <Link href="/social/topic/videos" className="tap-target flex items-center text-xs font-semibold text-forest">
                 {t("All videos")} <ChevronRight size={14} />
               </Link>
             </div>

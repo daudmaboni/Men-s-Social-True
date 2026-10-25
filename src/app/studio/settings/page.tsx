@@ -441,7 +441,7 @@ function Audit() {
             </option>
           ))}
         </select>
-        <label className="flex min-w-48 flex-1 items-center gap-2 rounded-xl bg-bg px-3 ring-1 ring-line">
+        <label className="flex min-w-48 flex-1 items-center gap-2 rounded-xl bg-bg px-3 ring-1 ring-line focus-within:ring-2 focus-within:ring-forest">
           <Search size={14} className="text-ink-soft" />
           <input value={q} onChange={(e) => (setQ(e.target.value), setPage(0))} placeholder="Search" className="w-full bg-transparent py-2 text-sm outline-none" aria-label="Search the audit log" />
         </label>

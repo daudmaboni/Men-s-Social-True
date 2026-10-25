@@ -54,7 +54,7 @@ export default function InboxButton() {
       >
         <Bell size={18} />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[0.625rem] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[0.6875rem] font-bold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}

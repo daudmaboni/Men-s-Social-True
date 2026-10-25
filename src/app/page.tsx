@@ -132,7 +132,7 @@ export default function Welcome() {
           <span className="text-base font-semibold">Men&apos;s Social</span>
         </div>
         <div className="flex rounded-full bg-surface p-1 text-xs font-semibold ring-1 ring-line">
-          {(["en", "sw"] as const).map((l) => (
+          {(["sw", "en"] as const).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}

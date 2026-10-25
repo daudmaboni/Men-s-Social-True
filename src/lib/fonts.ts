@@ -61,13 +61,18 @@ export const FONT_GROUPS: { kinds: FontKind[]; heading: string }[] = [
   { kinds: ["serif"], heading: "Classic (serif)" },
 ];
 
-export type TextSize = "sm" | "md" | "lg" | "xl";
-export const TEXT_SIZES: { id: TextSize; heading: string; percent: number }[] = [
+export type TextSize = "sm" | "md" | "lg" | "xl" | "xxl" | "x3" | "x4";
+/** `bigger`: the reading-help sizes (Step 96). Apple asks that text can grow to at least 200%. */
+export const TEXT_SIZES: { id: TextSize; heading: string; percent: number; bigger?: boolean }[] = [
   { id: "sm", heading: "Small", percent: 90 },
   { id: "md", heading: "Normal", percent: 100 },
   { id: "lg", heading: "Large", percent: 112.5 },
   { id: "xl", heading: "Extra large", percent: 125 },
+  { id: "xxl", heading: "Bigger", percent: 150, bigger: true },
+  { id: "x3", heading: "Very big", percent: 175, bigger: true },
+  { id: "x4", heading: "Biggest", percent: 200, bigger: true },
 ];
+const SIZE_IDS = TEXT_SIZES.map((z) => z.id) as string[];
 
 export type Scope = "app" | "studio";
 export const fontKey = (s: Scope) => (s === "studio" ? "ms_admin_font" : "ms_font");
@@ -99,7 +104,7 @@ export const readFont = (s: Scope): string => {
 };
 export const readSize = (s: Scope): TextSize => {
   const v = read(sizeKey(s));
-  return v === "sm" || v === "lg" || v === "xl" ? v : "md";
+  return v && SIZE_IDS.includes(v) ? (v as TextSize) : "md";
 };
 
 /** Which side of the app this page belongs to. */

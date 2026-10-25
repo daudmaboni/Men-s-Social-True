@@ -27,7 +27,7 @@ export default function Preview({ item }: { item: ContentItem }) {
           Phone preview
         </p>
         <div className="inline-flex rounded-full bg-surface p-0.5 text-[0.6875rem] font-semibold ring-1 ring-line">
-          {(["en", "sw"] as const).map((l) => (
+          {(["sw", "en"] as const).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}

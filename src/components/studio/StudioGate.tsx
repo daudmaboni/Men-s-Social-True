@@ -215,7 +215,7 @@ function SetupTwoStep({ email, onStart, onVerify }: { email: string; onStart: ()
             {/* The QR code comes from Supabase as an image (it holds the secret, so it's never stored) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={setup.qr} alt="QR code for your authenticator app" width={176} height={176} className="rounded-2xl bg-white p-2 ring-1 ring-line" />
-            <button type="button" onClick={() => setShowKey((v) => !v)} className="flex items-center gap-1 text-xs font-semibold text-forest">
+            <button type="button" onClick={() => setShowKey((v) => !v)} className="tap-target flex items-center gap-1 text-xs font-semibold text-forest">
               <KeyRound size={13} /> {showKey ? "Hide the key" : "Can't scan? Type a key instead"}
             </button>
             {showKey && (

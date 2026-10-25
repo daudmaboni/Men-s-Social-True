@@ -13,7 +13,7 @@ export default function LearnPage() {
   const t = useT();
   return (
     <div className="stagger space-y-4">
-      <Link href="/man" className="flex items-center gap-1 text-sm text-ink-soft">
+      <Link href="/man" className="tap-target flex items-center gap-1 text-sm text-ink-soft">
         <ArrowLeft size={16} /> {t("Man")}
       </Link>
       <h1 className="text-2xl font-bold">{t("Lessons")}</h1>

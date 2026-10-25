@@ -16,7 +16,7 @@ export function Why({ text }: { text: string }) {
   const t = useT();
   return (
     <details className="mt-1.5 text-[0.6875rem] text-ink-soft">
-      <summary className="cursor-pointer select-none list-none font-medium underline decoration-line underline-offset-2">
+      <summary className="tap-target inline-block cursor-pointer select-none list-none font-medium underline decoration-line underline-offset-2">
         {t("Why am I seeing this?")}
       </summary>
       <p className="mt-1">{t(text)}</p>
@@ -102,7 +102,7 @@ export function ReminderCard({ f }: { f: HomeFeed }) {
       <p className="flex items-center gap-1.5 text-xs font-medium text-forest">
         <Clock size={13} /> {t("Now")} · {t(f.slot)}
       </p>
-      <div className="mt-1 flex items-center justify-between gap-3">
+      <div className="big-stack mt-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold">{t(title)}</p>
           <p className="text-xs text-ink-soft">{t(a.detail)}</p>

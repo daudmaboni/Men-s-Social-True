@@ -438,7 +438,7 @@ function CardsPanel({ cards, cfg, stats, canEdit, onToggle }: { cards: FeedCard[
       sub="The cards men swipe through on Discover. New ones come from Card maker. Pin one to put it at the top for everyone; hide one to take it off Discover (it still opens from links, search and Saved)."
     >
       <div className="mb-3 flex flex-wrap gap-2">
-        <label className="flex min-w-48 flex-1 items-center gap-2 rounded-xl bg-bg px-3 ring-1 ring-line">
+        <label className="flex min-w-48 flex-1 items-center gap-2 rounded-xl bg-bg px-3 ring-1 ring-line focus-within:ring-2 focus-within:ring-forest">
           <Search size={14} className="text-ink-soft" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search cards" aria-label="Search cards" className="w-full bg-transparent py-2 text-sm outline-none" />
         </label>

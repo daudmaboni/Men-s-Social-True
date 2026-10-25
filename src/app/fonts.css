@@ -56,3 +56,6 @@ html[data-font="playfair-display"] { --app-font: "MS Playfair Display", Georgia,
 html[data-size="sm"] { font-size: 90%; }
 html[data-size="lg"] { font-size: 112.5%; }
 html[data-size="xl"] { font-size: 125%; }
+html[data-size="xxl"] { font-size: 150%; }
+html[data-size="x3"] { font-size: 175%; }
+html[data-size="x4"] { font-size: 200%; }

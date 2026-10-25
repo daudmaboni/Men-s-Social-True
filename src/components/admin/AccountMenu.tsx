@@ -7,6 +7,7 @@
 import { growFromTrigger } from "@/lib/motion/origin";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useDialogFocus } from "@/lib/a11y/useDialogFocus";
 import Link from "next/link";
 import { Check, ChevronUp, LogOut, Monitor, Moon, Settings, Sun, X } from "lucide-react";
 import { FontStylePicker, TextSizePicker } from "@/components/me/FontChoices";
@@ -44,6 +45,7 @@ export default function AccountMenu({
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement | null>(null);
+  useDialogFocus(card, open); // Step 96
   // Nothing behind scrolls while it's open in the middle
   useEffect(() => {
     if (!open) return;
@@ -78,7 +80,7 @@ export default function AccountMenu({
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         title={compact ? `${display} · ${role}` : undefined}
         className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors hover:bg-bg ${open ? "bg-bg" : ""} ${compact ? "justify-center" : ""}`}
       >
@@ -101,6 +103,7 @@ export default function AccountMenu({
             <button
               type="button"
               aria-label="Close"
+              tabIndex={-1}
               onClick={() => setOpen(false)}
               className="menu-scrim absolute inset-0 bg-black/40 backdrop-blur-md"
             />
@@ -109,7 +112,8 @@ export default function AccountMenu({
                 card.current = el;
                 growFromTrigger(el);
               }}
-              role="menu"
+              role="dialog"
+              aria-modal="true"
               aria-label="Account"
               className="menu-pop relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-3xl bg-surface p-4 shadow-2xl ring-1 ring-line lg:max-w-md lg:p-6"
             >
@@ -154,7 +158,6 @@ export default function AccountMenu({
               <div className="mt-3 space-y-0.5 border-t border-line pt-2">
                 <Link
                   href="/studio/settings"
-                  role="menuitem"
                   onClick={() => {
                     setOpen(false);
                     onNavigate?.();
@@ -164,7 +167,6 @@ export default function AccountMenu({
                   <Settings size={16} className="text-ink-soft" /> Account settings
                 </Link>
                 <button
-                  role="menuitem"
                   onClick={() => {
                     setOpen(false);
                     onSignOut();

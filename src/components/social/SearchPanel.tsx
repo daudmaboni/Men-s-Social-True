@@ -61,7 +61,7 @@ export default function SearchPanel({ tab, onClose }: { tab: "discover" | "commu
             </button>
           )}
         </label>
-        <button onClick={onClose} className="text-sm font-semibold text-forest">
+        <button onClick={onClose} className="tap-target text-sm font-semibold text-forest">
           {t("Cancel")}
         </button>
       </div>

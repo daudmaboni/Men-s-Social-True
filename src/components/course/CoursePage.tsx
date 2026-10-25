@@ -23,7 +23,7 @@ export default function CoursePage() {
   if (!course) {
     return (
       <div className="space-y-4">
-        <Link href="/man" className="flex items-center gap-1 text-sm text-ink-soft">
+        <Link href="/man" className="tap-target flex items-center gap-1 text-sm text-ink-soft">
           <ArrowLeft size={16} /> {t("Man")}
         </Link>
         {ready ? (
@@ -44,7 +44,7 @@ export default function CoursePage() {
 
   return (
     <div className="stagger space-y-5">
-      <Link href="/man" className="flex items-center gap-1 text-sm text-ink-soft">
+      <Link href="/man" className="tap-target flex items-center gap-1 text-sm text-ink-soft">
         <ArrowLeft size={16} /> {t("Man")}
       </Link>
 

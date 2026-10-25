@@ -66,7 +66,7 @@ export default function ProfileHero({
           <span className="absolute inset-[11px] block">
             <Avatar name={nickname} photo={profile.photo} className="h-full w-full text-xl" />
           </span>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-mint-strong px-2 py-0.5 text-[0.625rem] font-bold text-forest-deep">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 cap-xs whitespace-nowrap rounded-full bg-mint-strong px-2 py-0.5 text-[0.6875rem] font-bold text-forest-deep">
             {t("Level {n}", { n: level.level })}
           </span>
         </button>

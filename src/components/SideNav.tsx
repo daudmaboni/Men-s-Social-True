@@ -92,7 +92,7 @@ export default function SideNav() {
 
         {/* Language: the same setting as Me → Language */}
         <div className="flex rounded-full bg-bg p-1 text-xs font-semibold" role="group" aria-label={t("Language")}>
-          {(["en", "sw"] as const).map((l) => (
+          {(["sw", "en"] as const).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}

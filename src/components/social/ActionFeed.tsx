@@ -386,7 +386,7 @@ export default function ActionFeed() {
                     </span>
                   </span>
                 </span>
-                <span className={`line-clamp-2 text-center text-[0.6875rem] leading-tight ${on ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>
+                <span className={`cap-xs line-clamp-2 text-center text-[0.6875rem] leading-tight ${on ? "font-bold text-ink" : "font-medium text-ink-soft"}`}>
                   {ring !== undefined ? label : t(label)}
                 </span>
               </button>

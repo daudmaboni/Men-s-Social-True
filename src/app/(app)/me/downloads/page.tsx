@@ -43,7 +43,7 @@ export default function DownloadsPage() {
 
   return (
     <div className="stagger space-y-5">
-      <Link href="/me" className="flex items-center gap-1 text-sm text-ink-soft">
+      <Link href="/me" className="tap-target flex items-center gap-1 text-sm text-ink-soft">
         <ArrowLeft size={16} /> {t("Me")}
       </Link>
       <div>

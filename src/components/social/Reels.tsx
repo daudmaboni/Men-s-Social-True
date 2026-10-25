@@ -11,6 +11,7 @@
 // Only the reel on screen (and the next one) loads, to save his data. Late at night, or after 15 reels,
 // a "that's enough for tonight" card comes up (see lib/content/reels.ts).
 
+import { useDialogFocus } from "@/lib/a11y/useDialogFocus";
 import { sized } from "@/lib/media/image";
 import Photo from "@/components/media/Photo";
 import ReelCaption from "./ReelCaption";
@@ -164,7 +165,7 @@ export function ReelPost({ reel, onOpen }: { reel: ContentItem; onOpen: () => vo
             type="button"
             onClick={() => feedPlayer.setSound(!sound)}
             aria-label={t(sound ? "Sound off" : "Sound on")}
-            className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur active:scale-90"
+            className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur active:scale-90"
           >
             {sound ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
@@ -255,6 +256,7 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
   const t = useT();
   const strip = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
+  useDialogFocus(root, true); // Step 96: focus into the viewer, back to the reel he tapped after
   const frame = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(start);
   // Opened by tapping a reel → sound on (the tap allows it). Otherwise his last choice.
@@ -479,7 +481,7 @@ export function ReelsViewer({ reels, start, onClose, withSound = false }: { reel
                     setEndDismissed(true);
                     requestAnimationFrame(() => strip.current?.querySelector<HTMLElement>(`[data-slide="r${i}"]`)?.scrollIntoView({ behavior: "smooth" }));
                   }}
-                  className="text-xs font-semibold text-white/60 underline underline-offset-4"
+                  className="tap-target text-xs font-semibold text-white/80 underline underline-offset-4"
                 >
                   {t("Keep watching")}
                 </button>
@@ -744,7 +746,7 @@ function RailButton({ label, onClick, children }: { label: string; onClick: () =
   return (
     <button type="button" onClick={onClick} aria-label={label} className="flex flex-col items-center gap-1 text-white drop-shadow transition-transform active:scale-90">
       {children}
-      <span className="max-w-[4.5rem] text-center text-[0.625rem] font-semibold leading-tight">{label}</span>
+      <span className="max-w-[4.5rem] text-center text-[0.6875rem] font-semibold leading-tight">{label}</span>
     </button>
   );
 }

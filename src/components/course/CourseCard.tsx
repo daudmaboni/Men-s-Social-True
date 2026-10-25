@@ -136,13 +136,13 @@ function LessonCardView({ lesson: l, course, discreet, sw, p: live }: CardProps 
           {!discreet && mod ? ` · ${pick(sw, mod.title, mod.titleSw)}` : ""}
         </p>
         {mine && p.countdown ? null : l.state === "done" ? (
-          <span className="flex shrink-0 items-center gap-1 rounded-full bg-forest px-2 py-0.5 text-[0.625rem] font-bold text-white">
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-forest px-2 py-0.5 text-[0.6875rem] font-bold text-white">
             <Check size={11} /> {t("Done")}
           </span>
         ) : l.state === "locked" ? (
           <Lock size={14} className="shrink-0 text-ink-soft" aria-label={t("Locked")} />
         ) : l.state === "soon" ? (
-          <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-[0.625rem] font-bold text-ink-soft">{t("Coming soon")}</span>
+          <span className="shrink-0 rounded-full bg-line px-2 py-0.5 text-[0.6875rem] font-bold text-ink-soft">{t("Coming soon")}</span>
         ) : null}
       </div>
       {mine && p.countdown && <Countdown forLesson={l.id} tone="light" className="absolute right-2 top-2 z-10" />}

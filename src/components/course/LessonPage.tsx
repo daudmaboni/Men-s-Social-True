@@ -36,7 +36,7 @@ export default function LessonPage({ id }: { id: string }) {
   const sw = t.lang === "sw";
 
   const back = (
-    <Link href="/man/course" className="flex items-center gap-1 text-sm text-ink-soft">
+    <Link href="/man/course" className="tap-target flex items-center gap-1 text-sm text-ink-soft">
       <ArrowLeft size={16} /> {t("Course")}
     </Link>
   );
@@ -263,7 +263,7 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
           </button>
           <button onClick={() => mine && coursePlayer.skip(-15)} disabled={!mine} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white disabled:opacity-40" aria-label={t("Back 15 seconds")}>
             <RotateCcw size={26} />
-            <span className="absolute text-[0.5625rem] font-bold">15</span>
+            <span className="absolute text-[0.5625rem] font-bold" aria-hidden>15</span>
           </button>
           <button
             onClick={() => (mine ? coursePlayer.toggle() : load(true))}
@@ -274,7 +274,7 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
           </button>
           <button onClick={() => mine && coursePlayer.skip(15)} disabled={!mine} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white disabled:opacity-40" aria-label={t("Forward 15 seconds")}>
             <RotateCw size={26} />
-            <span className="absolute text-[0.5625rem] font-bold">15</span>
+            <span className="absolute text-[0.5625rem] font-bold" aria-hidden>15</span>
           </button>
           <span className="w-14" />
         </div>
@@ -493,7 +493,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
               </button>
               <button onClick={() => skip(-15)} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white" aria-label={t("Back 15 seconds")}>
                 <RotateCcw size={26} />
-                <span className="absolute text-[0.5625rem] font-bold">15</span>
+                <span className="absolute text-[0.5625rem] font-bold" aria-hidden>15</span>
               </button>
               <button
                 onClick={toggle}
@@ -504,7 +504,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
               </button>
               <button onClick={() => skip(15)} className="relative flex h-12 w-12 items-center justify-center rounded-full text-white" aria-label={t("Forward 15 seconds")}>
                 <RotateCw size={26} />
-                <span className="absolute text-[0.5625rem] font-bold">15</span>
+                <span className="absolute text-[0.5625rem] font-bold" aria-hidden>15</span>
               </button>
               <span className="w-14" />
             </div>
@@ -544,7 +544,7 @@ function Reading({ lesson, done, hasNext }: { lesson: FlatLesson; done: boolean;
     <>
       {both && (
         <div className="inline-flex rounded-full bg-surface p-1 text-xs font-semibold ring-1 ring-line" role="tablist" aria-label={t("Language")}>
-          {(["en", "sw"] as const).map((l) => (
+          {(["sw", "en"] as const).map((l) => (
             <button key={l} role="tab" aria-selected={lang === l} onClick={() => setLang(l)} className={`rounded-full px-3 py-1.5 ${lang === l ? "bg-forest text-white" : "text-ink-soft"}`}>
               {l === "en" ? "English" : "Kiswahili"}
             </button>

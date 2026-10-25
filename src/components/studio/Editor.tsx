@@ -568,7 +568,7 @@ export default function Editor({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/studio/content"
-          className="flex items-center gap-1 text-sm text-ink-soft"
+          className="tap-target flex items-center gap-1 text-sm text-ink-soft"
         >
           <ArrowLeft size={16} /> All content
         </Link>

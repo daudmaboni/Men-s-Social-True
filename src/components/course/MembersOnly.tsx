@@ -14,7 +14,7 @@ export default function MembersOnly({ children }: { children: React.ReactNode })
   if (acc.status === "guest")
     return (
       <div className="space-y-4">
-        <Link href="/social" className="flex items-center gap-1 text-sm text-ink-soft">
+        <Link href="/social" className="tap-target flex items-center gap-1 text-sm text-ink-soft">
           <ArrowLeft size={16} /> {t("Social")}
         </Link>
         <LockedTab tab="man" />

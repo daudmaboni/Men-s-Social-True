@@ -180,7 +180,7 @@ export function SettingsCard({ lang, discreet }: { lang: Lang; discreet: boolean
           <p className="text-xs text-ink-soft">{t("Buttons, menus and labels.")}</p>
         </div>
         <div className="inline-flex shrink-0 rounded-full bg-bg p-1 text-xs font-semibold ring-1 ring-line" role="radiogroup" aria-label={t("Language")}>
-          {(["en", "sw"] as const).map((l) => (
+          {(["sw", "en"] as const).map((l) => (
             <button
               key={l}
               role="radio"

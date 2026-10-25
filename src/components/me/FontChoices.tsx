@@ -65,28 +65,42 @@ export function TextSizePicker({ scope, t = plain, onPicked }: { scope: Scope; t
         <p className="text-xs font-semibold text-ink-soft">{t("Text size")}</p>
         <p className="text-xs text-ink-soft">{t(TEXT_SIZES.find((s) => s.id === size)?.heading ?? "Normal")}</p>
       </div>
-      <div className="mt-2 grid grid-cols-4 gap-1.5" role="radiogroup" aria-label={t("Text size")}>
-        {TEXT_SIZES.map((s, i) => {
-          const on = s.id === size;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              aria-label={t(s.heading)}
-              onClick={() => {
-                setTextSize(scope, s.id);
-                onPicked?.(t(s.heading));
-              }}
-              className={`flex h-12 items-end justify-center rounded-xl pb-2 font-semibold leading-none transition-colors ${on ? "bg-forest text-white" : "bg-bg text-ink-soft ring-1 ring-line hover:text-ink"}`}
-            >
-              {/* Fixed pixel sizes so the buttons show the difference whatever size is chosen */}
-              <span style={{ fontSize: `${13 + i * 4}px` }}>A</span>
-            </button>
-          );
-        })}
+      <div role="radiogroup" aria-label={t("Text size")}>
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
+          {TEXT_SIZES.filter((s) => !s.bigger).map((s, i) => (
+            <SizeButton key={s.id} on={s.id === size} label={t(s.heading)} px={13 + i * 4} onPick={() => {
+              setTextSize(scope, s.id);
+              onPicked?.(t(s.heading));
+            }} />
+          ))}
+        </div>
+        {/* Step 96: reading-help sizes, up to twice the normal size (Apple: text should grow to at least 200%) */}
+        <p className="mt-3 text-xs font-semibold text-ink-soft">{t("Bigger text, for easier reading")}</p>
+        <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+          {TEXT_SIZES.filter((s) => s.bigger).map((s, i) => (
+            <SizeButton key={s.id} on={s.id === size} label={t(s.heading)} px={29 + i * 4} onPick={() => {
+              setTextSize(scope, s.id);
+              onPicked?.(t(s.heading));
+            }} />
+          ))}
+        </div>
       </div>
     </div>
+  );
+}
+
+function SizeButton({ on, label, px, onPick }: { on: boolean; label: string; px: number; onPick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={on}
+      aria-label={label}
+      onClick={onPick}
+      className={`flex h-12 items-end justify-center rounded-xl pb-2 font-semibold leading-none transition-colors ${on ? "bg-forest text-white" : "bg-bg text-ink-soft ring-1 ring-line hover:text-ink"}`}
+    >
+      {/* Fixed pixel sizes so the buttons show the difference whatever size is chosen */}
+      <span style={{ fontSize: `${px}px` }}>A</span>
+    </button>
   );
 }

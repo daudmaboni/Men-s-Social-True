@@ -27,7 +27,7 @@ const PAD = 6; // space between the bar's edge and the glass
 
 function TabFace({ Icon, label, active }: { Icon: (typeof tabs)[number]["Icon"]; label: string; active: boolean }) {
   return (
-    <span className="flex flex-col items-center gap-0.5 py-2 text-[0.6875rem] font-semibold">
+    <span className="cap-xs flex flex-col items-center gap-0.5 py-2 text-[0.6875rem] font-semibold">
       <Icon size={21} strokeWidth={active ? 2.4 : 1.8} />
       {label}
     </span>

@@ -85,7 +85,7 @@ export default function CheckInCard({ period }: { period: Period }) {
                     }`}
                   >
                     <span className="text-sm font-bold">{i + 1}</span>
-                    <span className={`text-[0.5625rem] ${selected ? "text-mint" : "text-ink-soft"}`}>{t(label)}</span>
+                    <span className={`text-[0.6875rem] ${selected ? "text-mint" : "text-ink-soft"}`}>{t(label)}</span>
                   </button>
                 );
               })}

@@ -302,7 +302,7 @@ function ItemCard({ it, onDone, canRestrict }: { it: Item; onDone: () => void; c
 
       <Confirm open={warn} title="Warn the author" confirmLabel="Send warning" busy={busy} disabled={msg.trim().length < 5} onClose={() => setWarn(false)} onConfirm={() => void run(() => rpc("admin_warn_user", { p_user: it.author_id, p_message: msg.trim() }), "Warning sent to his inbox").then(() => (setWarn(false), setMsg("")))}>
         <p>He sees it in his app inbox. He isn&apos;t told who reported him.</p>
-        <textarea value={msg} onChange={(e) => setMsg(e.target.value)} maxLength={300} className={`${input} mt-3 min-h-24`} placeholder="Please don't share selling posts in Community." />
+        <textarea aria-label="Warning message" value={msg} onChange={(e) => setMsg(e.target.value)} maxLength={300} className={`${input} mt-3 min-h-24`} placeholder="Please don't share selling posts in Community." />
       </Confirm>
       <Confirm open={restrict} title="Restrict the author" confirmLabel="Restrict" danger busy={busy} disabled={msg.trim().length < 3} onClose={() => setRestrict(false)} onConfirm={() => void run(() => rpc("admin_restrict_user", { p_user: it.author_id, p_days: days, p_reason: msg.trim() }), `Restricted for ${days} days`).then(() => (setRestrict(false), setMsg("")))}>
         <p>He can&apos;t sign in or post until it ends.</p>

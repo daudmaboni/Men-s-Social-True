@@ -6,6 +6,7 @@
 // moment, and a flick hands its speed straight to the spring. It leaves the way it came in (to the left).
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useDialogFocus } from "@/lib/a11y/useDialogFocus";
 import { animateSpring, project, releaseVelocity, rubberband, type SpringHandle } from "@/lib/motion/spring";
 
 /** A sheet-like spring: Apple's drawer values (a hint of give after a flick). */
@@ -25,6 +26,7 @@ export default function SwipeDrawer({
   children: (close: () => void) => React.ReactNode;
 }) {
   const panel = useRef<HTMLDivElement>(null);
+  useDialogFocus(panel, open); // Step 96
   const scrim = useRef<HTMLButtonElement>(null);
   const x = useRef(0); // where the panel is now (0 = fully open, -width = gone)
   const spring = useRef<SpringHandle | null>(null);
@@ -135,7 +137,7 @@ export default function SwipeDrawer({
 
   return (
     <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label={label}>
-      <button ref={scrim} className="absolute inset-0 bg-black/40" style={{ opacity: 0 }} aria-label="Close menu" onClick={closeNow} />
+      <button ref={scrim} className="absolute inset-0 bg-black/40" style={{ opacity: 0 }} aria-label="Close menu" tabIndex={-1} onClick={closeNow} />
       <div
         ref={panel}
         onPointerDown={onPointerDown}

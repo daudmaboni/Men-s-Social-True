@@ -152,7 +152,7 @@ export default function SleepCard({ period }: { period: Period }) {
         </span>
         <div>
           <p className="font-semibold">{t("Sleep")}</p>
-          <button onClick={openGoal} className="flex items-center gap-1 text-xs text-ink-soft">
+          <button onClick={openGoal} className="tap-target flex items-center gap-1 text-xs text-ink-soft">
             {t("Goal")} {goal ? duration(goal) : t("not set")} <Pencil size={11} />
           </button>
         </div>
@@ -423,7 +423,7 @@ export default function SleepCard({ period }: { period: Period }) {
                 <button
                   key={label}
                   onClick={() => setQuality(quality === i + 1 ? null : i + 1)}
-                  className={`rounded-xl py-2 text-[0.625rem] font-semibold transition-colors ${
+                  className={`rounded-xl py-2 text-[0.6875rem] font-semibold transition-colors ${
                     quality === i + 1 ? "bg-forest text-white" : "ring-1 ring-line"
                   }`}
                 >
@@ -464,7 +464,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint: stri
     <div className="rounded-2xl bg-bg p-3">
       <p className="text-lg font-bold">{value}</p>
       <p className="text-[0.6875rem] font-medium">{label}</p>
-      <p className="text-[0.625rem] text-ink-soft">{hint}</p>
+      <p className="text-[0.6875rem] text-ink-soft">{hint}</p>
     </div>
   );
 }

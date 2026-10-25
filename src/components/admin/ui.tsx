@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Inbox, Loader2, X } from "lucide-react";
+import { useDialogFocus } from "@/lib/a11y/useDialogFocus";
 
 /* ───────── Page header ───────── */
 export function PageHeader({ title, sub, actions }: { title: string; sub?: React.ReactNode; actions?: React.ReactNode }) {
@@ -192,19 +193,21 @@ export function Confirm({
     setTyped("");
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    ref.current?.querySelector<HTMLElement>("input,button[data-primary]")?.focus();
+    // Step 96: start on the box to type in; for a dangerous action start on Cancel, so Enter never deletes by accident
+    ref.current?.querySelector<HTMLElement>(danger ? "input,button[data-cancel]" : "input,button[data-primary]")?.focus();
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, danger]);
+  useDialogFocus(ref, open);
   if (!open || typeof document === "undefined") return null;
   const ok = !typeToConfirm || typed.trim().toLowerCase() === typeToConfirm.toLowerCase();
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
-      <button className="absolute inset-0 bg-black/40" aria-label="Close" onClick={onClose} />
+      <button className="absolute inset-0 bg-black/40" aria-label="Close" tabIndex={-1} onClick={onClose} />
       <div ref={ref} className="page-enter relative w-full max-w-md rounded-2xl bg-surface p-5 shadow-xl ring-1 ring-line">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-base font-bold">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="text-ink-soft">
-            <X size={18} />
+          <h2 className="pt-1 text-base font-bold">{title}</h2>
+          <button onClick={onClose} aria-label="Close" className="-mr-2 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-bg hover:text-ink">
+            <X size={18} aria-hidden />
           </button>
         </div>
         {children && <div className="mt-2 text-sm text-ink-soft">{children}</div>}
@@ -215,7 +218,7 @@ export function Confirm({
           </label>
         )}
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className={btn.ghost}>
+          <button data-cancel onClick={onClose} className={btn.ghost}>
             Cancel
           </button>
           <button data-primary onClick={onConfirm} disabled={!ok || busy || disabled} className={danger ? btn.danger : btn.primary}>
@@ -230,6 +233,8 @@ export function Confirm({
 
 /** A panel that slides in from the right (details, editors). */
 export function Drawer({ open, title, onClose, children, wide = false }: { open: boolean; title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+  const box = useRef<HTMLDivElement>(null);
+  useDialogFocus(box, open);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -239,12 +244,12 @@ export function Drawer({ open, title, onClose, children, wide = false }: { open:
   if (!open || typeof document === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label={title}>
-      <button className="absolute inset-0 bg-black/30" aria-label="Close" onClick={onClose} />
-      <div className={`page-enter absolute inset-y-0 right-0 flex w-full flex-col bg-surface shadow-xl ${wide ? "max-w-2xl" : "max-w-md"}`}>
+      <button className="absolute inset-0 bg-black/30" aria-label="Close" tabIndex={-1} onClick={onClose} />
+      <div ref={box} className={`page-enter absolute inset-y-0 right-0 flex w-full flex-col bg-surface shadow-xl ${wide ? "max-w-2xl" : "max-w-md"}`}>
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="truncate text-base font-bold">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full ring-1 ring-line">
-            <X size={16} />
+            <X size={16} aria-hidden />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">{children}</div>

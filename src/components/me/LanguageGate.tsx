@@ -5,12 +5,16 @@
 
 import { setLang, useLangChosen } from "@/lib/me/lang";
 import BrandMark from "@/components/brand/BrandMark";
+import { useRef } from "react";
+import { useDialogFocus } from "@/lib/a11y/useDialogFocus";
 
 export default function LanguageGate() {
   const chosen = useLangChosen();
+  const box = useRef<HTMLDivElement>(null);
+  useDialogFocus(box, !chosen); // Step 96
   if (chosen) return null;
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="lang-gate-h" className="fixed inset-0 z-[100] flex flex-col bg-forest-deep text-white">
+    <div ref={box} role="dialog" aria-modal="true" aria-labelledby="lang-gate-h" className="fixed inset-0 z-[100] flex flex-col bg-forest-deep text-white">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-12">
         <BrandMark />
         <h1 id="lang-gate-h" className="mt-10 font-display text-[2rem] font-bold leading-tight">
