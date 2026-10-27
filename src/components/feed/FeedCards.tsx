@@ -44,15 +44,22 @@ export function TodayCard({ f }: { f: HomeFeed }) {
       return () => clearTimeout(tm);
     }
   }, [f.level.level]);
+  // Squint test (Step 97): for a new man this card has no button, it only points down the page.
+  // Dark and big, it was the loudest thing on Mwanaume and pushed the real first action
+  // (the Now card's Done) into second place. So it stays, but as a quiet light intro.
+  if (f.isNew) {
+    return (
+      <section className="rounded-3xl bg-mint/50 px-5 py-4 text-forest-deep">
+        <p className="text-sm text-forest">{t(f.greeting)}</p>
+        <p className="font-display mt-0.5 text-xl font-extrabold">{t("Try your first activity")}</p>
+        <p className="mt-0.5 text-sm text-ink-soft">{t("Pick anything below. Small steps count.")}</p>
+      </section>
+    );
+  }
   return (
     <section key={levelUp || undefined} className={`kayani-arcs rounded-3xl bg-forest-deep p-5 text-white ${levelUp ? "level-up" : ""}`}>
       <p className="text-sm text-mint-strong">{t(f.greeting)}</p>
-      {f.isNew ? (
-        <>
-          <p className="font-display mt-1 text-2xl font-extrabold">{t("Try your first activity")}</p>
-          <p className="mt-1 text-sm text-mint">{t("Pick anything below. Small steps count.")}</p>
-        </>
-      ) : (
+      {(
         <>
           <p className="font-display mt-1 text-2xl font-extrabold">
             {t("{done} of {total} done today", { done: f.doneCount, total: f.total })}

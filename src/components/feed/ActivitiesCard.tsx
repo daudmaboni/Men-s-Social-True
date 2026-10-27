@@ -127,7 +127,7 @@ export default function ActivitiesCard({ f }: { f: HomeFeed }) {
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <button
                   onClick={(e) => done(a, e.currentTarget)}
-                  className="tap-target rounded-full bg-forest px-3.5 py-1.5 text-xs font-semibold text-white transition-transform active:scale-95"
+                  className="tap-target rounded-full bg-mint px-3.5 py-1.5 text-xs font-semibold text-forest transition-transform active:scale-95"
                 >
                   {t("Done")}
                 </button>

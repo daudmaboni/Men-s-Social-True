@@ -571,8 +571,10 @@ export function ActionPost({
             {t("{n} min", { n: item.minutes })} · @kayaniherbs
           </p>
         </div>
+        {/* Squint test (Step 97): this tag was the loudest thing on the card, louder than the
+            title. Honey stays for the one thing a man should act on (the +points on "I did it"). */}
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold ${spec.results === "tonight" ? "bg-honey text-on-honey" : "bg-mint text-forest"}`}
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] text-forest ${spec.results === "tonight" ? "bg-mint font-bold" : "bg-mint/60 font-semibold"}`}
         >
           {t(RESULT_LABEL[spec.results])}
         </span>
