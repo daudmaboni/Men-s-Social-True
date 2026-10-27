@@ -327,7 +327,7 @@ function Editor({ draft, live, can, onSaved }: { draft: CourseRow | null; live: 
                   className={input}
                   value={course.passPercent}
                   disabled={!editable}
-                  onChange={(e) => change({ ...course, passPercent: Math.min(100, Math.max(10, Number(e.target.value) || 70)) })}
+                  onChange={(e) => change({ ...course, passPercent: Math.min(100, Math.max(10, Number(e.target.value) || 85)) })}
                 />
               </Field>
             </div>

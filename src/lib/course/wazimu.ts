@@ -35,7 +35,7 @@ export const WAZIMU_OUTLINE: Course = {
   summarySw: "Kozi ya sauti hatua kwa hatua kwa waume: malengo, akili ya kujiamini, kumwandaa mkeo kisaikolojia, mguso na mahaba, lishe na stamina, na mazoezi ya Kegel.",
   credit: "© Kayani Herbs · Adapted from the course by Mangi Masawe",
   creditSw: "© Kayani Herbs · Imeandaliwa kutoka kozi ya Mangi Masawe",
-  passPercent: 70,
+  passPercent: 85,
   modules: [
     {
       id: "m1",

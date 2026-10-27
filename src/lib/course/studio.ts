@@ -27,7 +27,7 @@ export function checkCourse(c: Course): CourseIssue[] {
   for (const l of visible) {
     if (!l.title.trim()) issues.push({ level: "block", message: "A lesson has no title.", where: l.code });
     if (l.kind !== "reading" && !l.mediaUrl) issues.push({ level: "block", message: `No ${l.kind} uploaded yet.`, where: l.code });
-    if (l.kind !== "reading" && l.mediaUrl && !l.seconds) issues.push({ level: "warn", message: "Length unknown: the 70% rule can't work. Upload the file again.", where: l.code });
+    if (l.kind !== "reading" && l.mediaUrl && !l.seconds) issues.push({ level: "warn", message: "Length unknown: the listening rule can't work. Upload the file again.", where: l.code });
     if (l.kind === "reading" && !(l.bodySw?.length || l.body?.length)) issues.push({ level: "block", message: "Reading lesson has no text.", where: l.code });
     for (const i of claimsFor(l)) issues.push({ level: i.level, message: `${i.message} ("${i.match}")`, where: l.code });
   }

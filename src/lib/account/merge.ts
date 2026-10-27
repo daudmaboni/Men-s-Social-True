@@ -7,6 +7,7 @@ import type { SocialDB } from "../social/store";
 import { cleanProfile, newestProfile } from "../me/profile";
 import type { Goal, TrackingRecord } from "../progress/types";
 import { isDeleted, mergeTombstones, type Tombstones } from "./tombstones";
+import { heardSeconds, partsFromOld, unionParts } from "../course/heard";
 
 // Deletions win over older copies: see tombstones.ts.
 // Every merge gives the same result in the same order whichever side is "local",
@@ -74,7 +75,7 @@ export function mergeFeed(local: FeedDB, remote: Partial<FeedDB> | null, now: Da
   if (!ls.updatedAt && !rs?.updatedAt) settings = { discreet: Boolean(ls.discreet || rs?.discreet) }; // saved before Step 35
   else if ((rs?.updatedAt ?? "") > (ls.updatedAt ?? "")) settings = { discreet: Boolean(rs?.discreet), updatedAt: rs?.updatedAt };
   else settings = { discreet: Boolean(ls.discreet), updatedAt: ls.updatedAt };
-  // Course lessons: the newest spot wins, listening time only grows, and the first finish counts
+  // Course lessons: the newest spot wins, heard parts only grow, and the first finish counts
   const course: NonNullable<FeedDB["course"]> = {};
   for (const src of [local.course ?? {}, remote?.course ?? {}]) {
     for (const [id, c] of Object.entries(src)) {
@@ -86,7 +87,14 @@ export function mergeFeed(local: FeedDB, remote: Partial<FeedDB> | null, now: Da
       }
       const newer = c.at > have.at || (c.at === have.at && c.pos > have.pos) ? c : have;
       const done = !have.done ? c.done : !c.done ? have.done : c.done.at < have.done.at ? c.done : have.done;
-      course[id] = { pos: newer.pos, heard: Math.max(have.heard, c.heard), at: newer.at, ...(done ? { done } : {}) };
+      // Heard parts (Step 98): everything heard on either phone. Old saves (seconds only) stay as they were.
+      let heard = Math.max(have.heard, c.heard);
+      let parts: ReturnType<typeof unionParts> | undefined;
+      if (have.parts || c.parts) {
+        parts = unionParts(partsFromOld(have.heard, have.parts), partsFromOld(c.heard, c.parts));
+        heard = Math.round(heardSeconds(parts));
+      }
+      course[id] = { pos: newer.pos, heard, ...(parts ? { parts } : {}), at: newer.at, ...(done ? { done } : {}) };
     }
   }
   // Discover cards he did (Step 79): the first "I did it" counts, a later take-back removes it,

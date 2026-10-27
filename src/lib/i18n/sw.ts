@@ -729,6 +729,8 @@ export const SW: Record<string, string> = {
   "This lesson couldn't play. Check your internet and try again.": "Somo hili halikuweza kucheza. Angalia intaneti yako kisha ujaribu tena.",
   "Lesson finished · +{n} points": "Somo limekamilika · +{n} pointi",
   "{n}% heard · the next lesson opens at {pass}%": "Umesikiliza {n}% · somo linalofuata linafunguka kwa {pass}%",
+  "You skipped {from}–{to}": "Umeruka {from}–{to}",
+  "Parts of the lesson you've heard: {n}%": "Sehemu za somo ulizosikiliza: {n}%",
   "I've read it · +{n} points": "Nimesoma · +{n} pointi",
   // Step 49: lesson strip, countdown, mini player
   "Swipe to see other lessons": "Telezesha kuona masomo mengine",

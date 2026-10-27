@@ -2,8 +2,9 @@
 
 // One course lesson (Step 48): audio player, video, or reading.
 // - Continues from where he stopped (on any of his phones).
-// - Counts only what he actually listens to: when he has heard the pass share (70%), the lesson is
-//   finished, points are added and the next lesson opens.
+// - Counts only what he actually listens to: when he has heard the pass share, the lesson is
+//   finished, points are added and the next lesson opens. Since Step 98 it counts WHICH parts he heard
+//   (replays count once, locked-screen listening counts) and shows him any part he skipped.
 // - Lock screen shows only "Lesson 5 · Men's Social", never the lesson title.
 // - Step 49: audio plays in the app-wide player (keeps playing on other pages, mini player), a 10-second
 //   countdown to the next lesson at the top right when it ends, and lessons that wait for him show what to do.
@@ -22,7 +23,9 @@ import { coursePlayer, useCoursePlayer } from "@/lib/course/player";
 import { useToast } from "@/components/motion/Toast";
 import { feedStore, useFeed } from "@/lib/feed/store";
 import { pick, useMainCourse } from "@/lib/course/useCourses";
-import { clock, courseView, heardStep, passReached, passSeconds } from "@/lib/course/progress";
+import { clock, courseView, passReached } from "@/lib/course/progress";
+import { addPart, heardPercent, heardSeconds, isListening, partsFromOld, skippedParts, type HeardParts } from "@/lib/course/heard";
+import type { CourseProgress } from "@/lib/feed/store";
 import { lessonAfter, lessonMinutes, type Course, type FlatLesson } from "@/lib/course/types";
 import { useT } from "@/lib/i18n";
 import { useMediaSrc } from "@/lib/course/media";
@@ -197,7 +200,7 @@ export default function LessonPage({ id }: { id: string }) {
 
 /* ───────────── Audio (app-wide player, Step 49) ───────────── */
 
-function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; lesson: FlatLesson & { state: string; progress?: { pos: number; heard: number } }; moduleTitle: string; done: boolean }) {
+function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; lesson: FlatLesson & { state: string; progress?: CourseProgress }; moduleTitle: string; done: boolean }) {
   const t = useT();
   const sw = t.lang === "sw";
   const params = useSearchParams();
@@ -216,11 +219,18 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
 
   const time = mine ? p.time : lesson.progress?.pos ?? 0;
   const duration = (mine && p.duration) || lesson.seconds || 0;
-  const heard = mine ? p.heard : lesson.progress?.heard ?? 0;
+  const parts = mine ? p.parts : partsFromOld(lesson.progress?.heard, lesson.progress?.parts);
   const playing = mine && p.playing;
   const finished = done || (mine && Boolean(p.lesson?.done));
-  const need = passSeconds(duration, course.passPercent);
-  const heardPct = duration ? Math.min(100, Math.round((heard / duration) * 100)) : 0;
+  // "Listen to the part you skipped": jump there and play
+  const jumpTo = (to: number) => {
+    if (mine) {
+      coursePlayer.seek(to);
+      void coursePlayer.play();
+    } else {
+      coursePlayer.load(toPlayerLesson(course, lesson, sw), { ...lesson.progress, pos: to }, { autoplay: true, lockLabel: t("Lesson {n}", { n: "{n}" }) });
+    }
+  };
   const SPEED_LIST = SPEEDS;
 
   return (
@@ -281,29 +291,57 @@ function AudioPlayer({ course, lesson, moduleTitle, done }: { course: Course; le
 
         {mine && p.failed && <p className="mt-3 rounded-2xl bg-white/10 p-3 text-left text-xs text-mint">{t("This lesson couldn't play. Check your internet and try again.")}</p>}
 
-        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2.5 text-left text-xs text-mint">
-          {finished ? (
-            <>
-              <Check size={15} className="shrink-0 text-mint-strong" /> {t("Lesson finished · +{n} points", { n: lesson.points })}
-            </>
-          ) : (
-            <span className="min-w-0 flex-1">
-              <span className="block">{t("{n}% heard · the next lesson opens at {pass}%", { n: heardPct, pass: course.passPercent })}</span>
-              <span className="relative mt-2 block h-1.5 overflow-hidden rounded-full bg-white/15">
-                <span className="absolute inset-y-0 left-0 rounded-full bg-mint-strong" style={{ width: `${Math.min(100, (heard / Math.max(need, 1)) * 100)}%` }} />
-              </span>
-            </span>
-          )}
-        </div>
+        <HeardBox parts={parts} duration={duration} time={time} pass={course.passPercent} finished={finished} points={lesson.points} onJump={jumpTo} />
         <p className="mt-2 text-[0.6875rem] text-mint/80">{t("Keeps playing when you leave this page.")}</p>
       </div>
     </section>
   );
 }
 
+/* ───────────── What he has heard (Step 98) ───────────── */
+
+/**
+ * "62% heard · the next lesson opens at 85%", a bar that is the whole lesson with the parts he heard
+ * lit up, and, if he jumped over something, "You skipped 3:10–6:40 · Listen" which plays that part.
+ */
+function HeardBox({ parts, duration, time, pass, finished, points, onJump }: { parts: HeardParts; duration: number; time: number; pass: number; finished: boolean; points: number; onJump: (to: number) => void }) {
+  const t = useT();
+  if (finished) {
+    return (
+      <div className="mt-4 flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2.5 text-left text-xs text-mint">
+        <Check size={15} className="shrink-0 text-mint-strong" /> {t("Lesson finished · +{n} points", { n: points })}
+      </div>
+    );
+  }
+  const pct = heardPercent(parts, duration);
+  const gap = duration ? skippedParts(parts, time, duration)[0] : undefined;
+  const at = (s: number) => `${Math.max(0, Math.min(100, (s / Math.max(duration, 1)) * 100))}%`;
+  return (
+    <div className="mt-4 rounded-2xl bg-white/10 px-3 py-2.5 text-left text-xs text-mint">
+      <p>{t("{n}% heard · the next lesson opens at {pass}%", { n: pct, pass })}</p>
+      {/* The whole lesson, left to right; lit = parts he has heard */}
+      <div className="relative mt-2 h-1.5 overflow-hidden rounded-full bg-white/15" role="img" aria-label={t("Parts of the lesson you've heard: {n}%", { n: pct })}>
+        {duration > 0 &&
+          parts.map(([a, b]) => (
+            <span key={a} className="absolute inset-y-0 rounded-full bg-mint-strong" style={{ left: at(a), width: `calc(${at(Math.min(b, duration))} - ${at(a)})` }} />
+          ))}
+        {duration > 0 && <span className="absolute inset-y-0 w-0.5 bg-white" style={{ left: at(time) }} aria-hidden />}
+      </div>
+      {gap && (
+        <button onClick={() => onJump(gap[0])} className="tap-target mt-2 flex w-full items-center justify-between gap-2 text-left font-semibold text-white">
+          <span>{t("You skipped {from}–{to}", { from: clock(gap[0]), to: clock(gap[1]) })}</span>
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-white/15 px-2.5 py-1">
+            <Play size={11} fill="currentColor" aria-hidden /> {t("Listen")}
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ───────────── Video ───────────── */
 
-function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course; lesson: FlatLesson & { progress?: { pos: number; heard: number } }; moduleTitle: string; done: boolean; hasNext: boolean }) {
+function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course; lesson: FlatLesson & { progress?: CourseProgress }; moduleTitle: string; done: boolean; hasNext: boolean }) {
   const t = useT();
   const sw = t.lang === "sw";
   const showToast = useToast();
@@ -316,12 +354,18 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
   const [time, setTime] = useState(lesson.progress?.pos ?? 0);
   const [duration, setDuration] = useState(lesson.seconds ?? 0);
   const [speed, setSpeed] = useState(1);
-  const [heard, setHeard] = useState(lesson.progress?.heard ?? 0);
+  const [parts, setParts] = useState<HeardParts>(() => partsFromOld(lesson.progress?.heard, lesson.progress?.parts));
   const [failed, setFailed] = useState(false);
 
   // Kept in refs so the event handlers always see the latest values
-  const heardRef = useRef(lesson.progress?.heard ?? 0);
+  const partsRef = useRef<HeardParts>(parts);
   const prev = useRef(lesson.progress?.pos ?? 0);
+  /** Real time of the last position report while playing (Step 98): a step the clock can't explain is a jump. */
+  const lastWall = useRef(0);
+  const resetCount = useCallback(() => {
+    prev.current = (lesson.kind === "video" ? video.current : audio.current)?.currentTime ?? 0;
+    lastWall.current = performance.now();
+  }, [lesson.kind]);
   const lastSave = useRef(0);
   const doneRef = useRef(done);
   doneRef.current = done;
@@ -329,15 +373,15 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
   const save = useCallback(() => {
     const el = media();
     if (!el) return;
-    feedStore.saveCourseSpot(lesson.id, el.ended ? 0 : el.currentTime, heardRef.current);
+    feedStore.saveCourseSpot(lesson.id, el.ended ? 0 : el.currentTime, partsRef.current);
     lastSave.current = Date.now();
   }, [lesson.id, media]);
 
   const checkPass = useCallback(
     (len: number) => {
-      if (doneRef.current || !passReached(heardRef.current, len, course.passPercent)) return;
+      if (doneRef.current || !passReached(heardSeconds(partsRef.current, len), len, course.passPercent)) return;
       doneRef.current = true;
-      feedStore.saveCourseSpot(lesson.id, media()?.currentTime ?? 0, heardRef.current);
+      feedStore.saveCourseSpot(lesson.id, media()?.currentTime ?? 0, partsRef.current);
       feedStore.finishCourseLesson(lesson.id, lesson.points);
       haptic("success");
       showToast(hasNext ? t("+{n} points · Next lesson open", { n: lesson.points }) : t("+{n} points", { n: lesson.points }));
@@ -353,21 +397,22 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
     setDuration(len);
     const pos = lesson.progress?.pos ?? 0;
     if (pos > 0 && pos < len - 5) el.currentTime = pos;
-    prev.current = el.currentTime;
+    resetCount();
     if (params.get("play") === "1") el.play().catch(() => {});
   };
 
   const onTime = () => {
     const el = media();
     if (!el) return;
-    const add = heardStep(prev.current, el.currentTime, el.playbackRate);
-    prev.current = el.currentTime;
-    if (add) {
-      const len = duration || el.duration || 0;
-      heardRef.current = Math.min(heardRef.current + add, len || Infinity);
-      setHeard(heardRef.current);
-      checkPass(len);
+    const pos = el.currentTime;
+    const t0 = performance.now();
+    if (!el.seeking && isListening(prev.current, pos, (t0 - lastWall.current) / 1000, el.playbackRate)) {
+      partsRef.current = addPart(partsRef.current, prev.current, pos);
+      setParts(partsRef.current);
+      checkPass(duration || el.duration || 0);
     }
+    prev.current = pos;
+    lastWall.current = t0;
     setTime(el.currentTime);
     if (Date.now() - lastSave.current > 5000) save();
   };
@@ -409,8 +454,16 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
     const el = media();
     if (!el) return;
     el.currentTime = Math.max(0, Math.min(el.currentTime + s, (el.duration || duration) - 0.5));
-    prev.current = el.currentTime;
+    resetCount();
     setTime(el.currentTime);
+  };
+  const jumpTo = (to: number) => {
+    const el = media();
+    if (!el) return;
+    el.currentTime = to;
+    resetCount();
+    setTime(to);
+    el.play().catch(() => setFailed(true));
   };
   const cycleSpeed = () => {
     const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
@@ -419,15 +472,14 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
     if (el) el.playbackRate = next;
   };
 
-  const need = passSeconds(duration || lesson.seconds || 0, course.passPercent);
   const mediaSrc = useMediaSrc(lesson.mediaUrl); // private files: a one-day link (Step 59)
-  const heardPct = duration ? Math.min(100, Math.round((heard / duration) * 100)) : 0;
   const common = {
     src: mediaSrc || undefined,
     preload: "metadata" as const,
     onLoadedMetadata: onLoaded,
     onTimeUpdate: onTime,
     onPlay: () => {
+      resetCount();
       setPlaying(true);
       coursePlayer.pause(); // a video lesson takes over from any audio lesson
     },
@@ -439,9 +491,8 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
       setPlaying(false);
       save();
     },
-    onSeeked: () => {
-      prev.current = media()?.currentTime ?? 0;
-    },
+    onSeeking: resetCount,
+    onSeeked: resetCount,
     onError: () => setFailed(true),
   };
 
@@ -476,7 +527,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
                 const el = media();
                 if (!el) return;
                 el.currentTime = Number(e.target.value);
-                prev.current = el.currentTime;
+                resetCount();
                 setTime(el.currentTime);
               }}
               aria-label={t("Position in the lesson")}
@@ -513,20 +564,7 @@ function Player({ course, lesson, moduleTitle, done, hasNext }: { course: Course
 
         {failed && <p className="mt-3 rounded-2xl bg-white/10 p-3 text-left text-xs text-mint">{t("This lesson couldn't play. Check your internet and try again.")}</p>}
 
-        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2.5 text-left text-xs text-mint">
-          {done ? (
-            <>
-              <Check size={15} className="shrink-0 text-mint-strong" /> {t("Lesson finished · +{n} points", { n: lesson.points })}
-            </>
-          ) : (
-            <span className="min-w-0 flex-1">
-              <span className="block">{t("{n}% heard · the next lesson opens at {pass}%", { n: heardPct, pass: course.passPercent })}</span>
-              <span className="relative mt-2 block h-1.5 overflow-hidden rounded-full bg-white/15">
-                <span className="absolute inset-y-0 left-0 rounded-full bg-mint-strong" style={{ width: `${Math.min(100, (heard / Math.max(need, 1)) * 100)}%` }} />
-              </span>
-            </span>
-          )}
-        </div>
+        <HeardBox parts={parts} duration={duration || lesson.seconds || 0} time={time} pass={course.passPercent} finished={done} points={lesson.points} onJump={jumpTo} />
       </div>
     </section>
   );

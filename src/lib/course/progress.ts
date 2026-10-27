@@ -1,6 +1,6 @@
 // Course progress rules (Step 48). Pure functions, so they're easy to test.
 // - Lessons open one after another: finish one, the next opens. Finished lessons stay open.
-// - Audio/video: finished when he has HEARD the pass share (70% by default). Skipping ahead doesn't count.
+// - Audio/video: finished when he has HEARD the pass share (85% by default). Skipping ahead doesn't count; replays count once (Step 98, see heard.ts).
 // - Reading: finished when he taps "I've read it".
 // - A lesson that isn't ready yet (no audio uploaded) never blocks him: it shows "Coming soon" and is skipped.
 
@@ -11,7 +11,7 @@ export type LessonState = "done" | "current" | "open" | "locked" | "soon";
 
 /** Seconds he must hear before a lesson counts as finished. */
 export function passSeconds(seconds: number, passPercent: number): number {
-  const pct = Math.min(Math.max(passPercent || 70, 10), 100);
+  const pct = Math.min(Math.max(passPercent || 85, 10), 100);
   return Math.ceil((seconds * pct) / 100);
 }
 

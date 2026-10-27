@@ -94,7 +94,7 @@ export default function CourseCard() {
 type ViewLesson = CourseView["lessons"][number];
 const IDLE: PlayerState = coursePlayerIdle();
 function coursePlayerIdle(): PlayerState {
-  return { lesson: null, playing: false, time: 0, duration: 0, heard: 0, speed: 1, failed: false, ended: false, countdown: null };
+  return { lesson: null, playing: false, time: 0, duration: 0, parts: [], speed: 1, failed: false, ended: false, countdown: null };
 }
 
 /** One lesson in the swipe row: play it right here (audio), or open it. */

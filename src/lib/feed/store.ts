@@ -7,6 +7,7 @@ import { useSyncExternalStore } from "react";
 import { dateKey } from "../progress/dates";
 import { markDeleted, unmarkDeleted, type Tombstones } from "../account/tombstones";
 import type { ChallengeEntry } from "../content/hooks";
+import { heardSeconds, partsFromOld, unionParts, type HeardParts } from "../course/heard";
 
 export type ChoiceStatus = "done" | "later" | "skipped";
 
@@ -40,8 +41,11 @@ export interface TriedEntry {
 export interface CourseProgress {
   /** Where he stopped (seconds), so the lesson continues from there. */
   pos: number;
-  /** Seconds he actually listened to (skipping ahead doesn't count). */
+  /** Seconds of the lesson he has heard, each second once (skipping ahead doesn't count).
+   *  Kept for older app versions and Studio; the real record is `parts` (Step 98). */
   heard: number;
+  /** Which parts he heard (Step 98): [[0, 190], [400, 480]] = 0:00–3:10 and 6:40–8:00. */
+  parts?: HeardParts;
   /** When this was last changed. */
   at: string;
   /** Finished: the day (his time) and the points it earned. */
@@ -142,16 +146,19 @@ export const feedStore = {
   /** Where he is in a course lesson. `heard` only ever grows. */
   /** Where he is in a lesson. `quiet` while it plays (kept on the phone only, so nothing redraws or
    *  uploads every few seconds and scrolling stays smooth); a normal save on pause / leaving / the end. */
-  saveCourseSpot(lessonId: string, pos: number, heard: number, quiet = false) {
+  saveCourseSpot(lessonId: string, pos: number, heardParts: HeardParts, quiet = false) {
     const db = load();
     const have = db.course?.[lessonId];
+    // Heard parts only ever grow: what he heard before (or on another phone) stays heard
+    const parts = unionParts(partsFromOld(have?.heard, have?.parts), heardParts);
     const next: CourseProgress = {
       ...have,
       pos: Math.max(0, Math.round(pos)),
-      heard: Math.max(have?.heard ?? 0, Math.round(heard)),
+      heard: Math.round(heardSeconds(parts)),
+      parts,
       at: new Date().toISOString(),
     };
-    if (have && have.pos === next.pos && have.heard === next.heard && !quietPending) return;
+    if (have && have.pos === next.pos && JSON.stringify(have.parts ?? null) === JSON.stringify(parts) && !quietPending) return;
     quietPending = quiet;
     save({ ...db, course: { ...db.course, [lessonId]: next } }, quiet);
   },
@@ -166,7 +173,7 @@ export const feedStore = {
       ...db,
       course: {
         ...db.course,
-        [lessonId]: { pos: have?.pos ?? 0, heard: have?.heard ?? 0, at: now.toISOString(), done: { localDate: dateKey(now), at: now.toISOString(), points } },
+        [lessonId]: { ...have, pos: have?.pos ?? 0, heard: have?.heard ?? 0, at: now.toISOString(), done: { localDate: dateKey(now), at: now.toISOString(), points } },
       },
     });
   },

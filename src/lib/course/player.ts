@@ -2,13 +2,14 @@
 
 // One audio player for the whole app (Step 49). It lives outside any page, so a lesson keeps playing
 // when he switches tabs or opens another page; the mini player shows it, and the lesson page controls it.
-// It also does the listening rules from Step 48: only real listening counts, the lesson is finished at
+// It also does the listening rules (Step 48, counted by heard parts since Step 98): only real listening counts, the lesson is finished at
 // the pass share, and where he stopped is saved (on all his phones through his account).
 // When a lesson ends, the countdown to the next lesson runs here, so it works wherever he is.
 
 import { useSyncExternalStore } from "react";
 import { feedStore } from "../feed/store";
-import { heardStep, passReached } from "./progress";
+import { passReached } from "./progress";
+import { addPart, heardSeconds, isListening, partsFromOld, type HeardParts } from "./heard";
 import { linkFor, playable } from "./media";
 
 export interface PlayerLesson {
@@ -27,7 +28,8 @@ export interface PlayerState {
   playing: boolean;
   time: number;
   duration: number;
-  heard: number;
+  /** Which parts of the lesson he has heard (Step 98). */
+  parts: HeardParts;
   speed: number;
   failed: boolean;
   ended: boolean;
@@ -37,11 +39,14 @@ export interface PlayerState {
 
 export const COUNTDOWN_MS = 10_000;
 
-const EMPTY: PlayerState = { lesson: null, playing: false, time: 0, duration: 0, heard: 0, speed: 1, failed: false, ended: false, countdown: null };
+const EMPTY: PlayerState = { lesson: null, playing: false, time: 0, duration: 0, parts: [], speed: 1, failed: false, ended: false, countdown: null };
 let state: PlayerState = EMPTY;
 const listeners = new Set<() => void>();
 let el: HTMLAudioElement | null = null;
 let prev = 0;
+/** Real time (ms) of the last position report while playing: a step the clock can't explain is a jump. */
+let lastWall = 0;
+const wallNow = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 /** Where to start once the file has loaded (the browser ignores a jump before that). */
 let pendingStart = 0;
 /** Resolves when the current lesson's file address is in the player (private files need a link first, Step 59). */
@@ -79,7 +84,11 @@ function audio(): HTMLAudioElement {
     set({ duration: len, time: el.currentTime });
   });
   el.addEventListener("timeupdate", onTime);
-  el.addEventListener("play", () => set({ playing: true, ended: false, failed: false }));
+  el.addEventListener("play", () => {
+    prev = el?.currentTime ?? prev;
+    lastWall = wallNow();
+    set({ playing: true, ended: false, failed: false });
+  });
   el.addEventListener("pause", () => {
     set({ playing: false });
     save();
@@ -89,9 +98,13 @@ function audio(): HTMLAudioElement {
     save(true);
     if (state.lesson) playerHooks.onEnded?.(state.lesson);
   });
-  el.addEventListener("seeked", () => {
+  // Any jump (slider, ±15, lock-screen buttons): start counting again from the new place
+  const reset = () => {
     prev = el?.currentTime ?? 0;
-  });
+    lastWall = wallNow();
+  };
+  el.addEventListener("seeking", reset);
+  el.addEventListener("seeked", reset);
   el.addEventListener("error", () => set({ failed: true, playing: false }));
   // Save when the app goes to the background
   document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && save());
@@ -101,28 +114,33 @@ function audio(): HTMLAudioElement {
 function save(atEnd = false, quiet = false) {
   const l = state.lesson;
   if (!l || !el) return;
-  feedStore.saveCourseSpot(l.id, atEnd ? 0 : el.currentTime, state.heard, quiet);
+  feedStore.saveCourseSpot(l.id, atEnd ? 0 : el.currentTime, state.parts, quiet);
   lastSave = Date.now();
 }
 
 function onTime() {
   if (!el || !state.lesson) return;
-  const add = heardStep(prev, el.currentTime, el.playbackRate);
-  prev = el.currentTime;
-  let heard = state.heard;
-  if (add) {
+  const pos = el.currentTime;
+  const t = wallNow();
+  // Real listening: he moved forward about as much as the clock and speed explain. This also counts
+  // while the screen is locked, when the phone reports the place only every few seconds (Step 98).
+  const listened = !el.seeking && isListening(prev, pos, (t - lastWall) / 1000, el.playbackRate);
+  let parts = state.parts;
+  if (listened) {
+    parts = addPart(parts, prev, pos);
     const len = state.duration || el.duration || 0;
-    heard = Math.min(heard + add, len || Infinity);
     const l = state.lesson;
-    if (!l.done && passReached(heard, len, l.passPercent)) {
+    if (!l.done && passReached(heardSeconds(parts, len), len, l.passPercent)) {
       const done = { ...l, done: true };
-      set({ lesson: done, heard });
-      feedStore.saveCourseSpot(l.id, el.currentTime, heard);
+      set({ lesson: done, parts });
+      feedStore.saveCourseSpot(l.id, pos, parts);
       feedStore.finishCourseLesson(l.id, l.points);
       playerHooks.onFinish?.(done);
     }
   }
-  set({ time: el.currentTime, heard });
+  prev = pos;
+  lastWall = t;
+  set({ time: pos, parts });
   // Every few seconds while playing: kept on the phone only (a full save happens on pause / leaving)
   if (Date.now() - lastSave > 5000) save(false, true);
 }
@@ -141,7 +159,7 @@ export const coursePlayer = {
   get: () => state,
 
   /** Put a lesson in the player (starting where he stopped). Plays straight away when `autoplay`. */
-  load(l: PlayerLesson, from: { pos?: number; heard?: number }, opts: { autoplay?: boolean; lockLabel?: string } = {}) {
+  load(l: PlayerLesson, from: { pos?: number; heard?: number; parts?: HeardParts }, opts: { autoplay?: boolean; lockLabel?: string } = {}) {
     const a = audio();
     this.cancelCountdown();
     if (state.lesson?.id !== l.id) {
@@ -166,7 +184,8 @@ export const coursePlayer = {
       const start = pos > 0 && (!len || pos < len - 5) ? pos : 0;
       pendingStart = start;
       prev = start;
-      set({ lesson: l, time: start, duration: len, heard: from.heard ?? 0, failed: false, ended: false, playing: false });
+      lastWall = wallNow();
+      set({ lesson: l, time: start, duration: len, parts: partsFromOld(from.heard, from.parts), failed: false, ended: false, playing: false });
       mediaSession(l, opts.lockLabel ?? "Lesson {n}");
     } else {
       set({ lesson: { ...state.lesson, ...l, done: state.lesson.done || l.done } });
@@ -180,6 +199,7 @@ export const coursePlayer = {
     if (state.ended) {
       a.currentTime = 0;
       prev = 0;
+      lastWall = wallNow();
     }
     this.cancelCountdown();
     try {
@@ -202,6 +222,7 @@ export const coursePlayer = {
     if (!el) return;
     el.currentTime = Math.max(0, Math.min(to, (el.duration || state.duration || to) - 0.5));
     prev = el.currentTime;
+    lastWall = wallNow();
     set({ time: el.currentTime, ended: false });
   },
   skip(by: number) {
