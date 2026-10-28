@@ -267,7 +267,7 @@ export default function Welcome() {
                   onClick={() => enter(`/social/c/${id}`)}
                   className="flex h-full min-h-[190px] w-full flex-col rounded-3xl bg-surface p-5 text-left ring-1 ring-line transition-transform active:scale-[0.98]"
                 >
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-mint text-forest-deep">
+                  <span className="concentric flex h-12 w-12 items-center justify-center bg-mint text-forest-deep">
                     <Icon size={24} aria-hidden />
                   </span>
                   <span className="mt-4 block text-base font-bold leading-snug">{title}</span>

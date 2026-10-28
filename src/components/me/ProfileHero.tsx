@@ -36,7 +36,7 @@ export default function ProfileHero({
   const details = [profile.ageRange, profile.region === "Outside Tanzania" ? t("Outside Tanzania") : profile.region].filter(Boolean).join(" · ");
 
   return (
-    <section className="relative overflow-hidden rounded-[28px] bg-forest-deep p-5 text-white">
+    <section className="relative overflow-hidden rounded-[28px] bg-forest-deep p-5 text-white [--nest-r:28px]">
       <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-forest/60" />
       <div aria-hidden className="absolute -bottom-16 right-16 h-32 w-32 rounded-full bg-mint-strong/10" />
 
@@ -91,13 +91,13 @@ export default function ProfileHero({
       </div>
 
       <div className="relative mt-5 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white/10 p-3">
+        <div className="concentric bg-white/10 p-3">
           <p className="text-2xl font-bold">
             <CountUp to={points} />
           </p>
           <p className="text-xs text-mint">{t("points")}</p>
         </div>
-        <div className="rounded-2xl bg-white/10 p-3">
+        <div className="concentric bg-white/10 p-3">
           <p className="flex items-center gap-1 text-2xl font-bold">
             <Flame size={20} className={streak > 0 ? "text-mint-strong" : "text-white/40"} />
             {streak}

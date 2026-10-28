@@ -50,7 +50,7 @@ export default function CourseCard() {
   return (
     <section ref={box} className="overflow-hidden rounded-3xl bg-surface ring-1 ring-line lg:flex lg:items-stretch">
       <Link href="/man/course" className="flex items-center gap-4 p-5 pb-4 lg:flex-1 lg:pb-5" aria-label={t("Open the course")}>
-        <CourseArt className="h-16 w-16 shrink-0 rounded-2xl lg:h-20 lg:w-20" size={26} />
+        <CourseArt className="concentric h-16 w-16 shrink-0 lg:h-20 lg:w-20" size={26} />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-forest">
             {t("Your course")} · {t("Free")}

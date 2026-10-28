@@ -25,7 +25,7 @@ export default function BadgesSection({ badges }: { badges: Badge[] }) {
           <button
             key={b.id}
             onClick={() => setOpen(b)}
-            className={`flex flex-col items-center rounded-2xl p-3 text-center transition-transform active:scale-95 ${
+            className={`concentric flex flex-col items-center p-3 text-center transition-transform active:scale-95 ${
               b.earned ? "bg-mint" : "bg-bg ring-1 ring-line"
             }`}
           >

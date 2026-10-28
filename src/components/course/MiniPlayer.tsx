@@ -134,10 +134,10 @@ export default function MiniPlayer() {
       style={{ touchAction: "none" }}
       data-own-swipe
       className="mini-in fixed inset-x-3 z-30 mx-auto max-w-md bottom-[calc(max(12px,env(safe-area-inset-bottom))+84px)] lg:bottom-6 lg:left-auto lg:right-6 lg:mx-0 lg:w-[380px]">
-      <div className="glass-card overflow-hidden rounded-2xl shadow-xl ring-1 ring-line">
+      <div className="glass-card overflow-hidden rounded-2xl shadow-xl ring-1 ring-line [--nest-r:16px] [--nest-p:10px] [--nest-min:6px]">
         <div className="flex items-center gap-3 p-2.5">
           <button onClick={open} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={t("Open the lesson")}>
-            <CourseArt className={`h-11 w-11 shrink-0 rounded-xl ${p.playing ? "mini-pulse" : ""}`} size={18} />
+            <CourseArt className={`concentric h-11 w-11 shrink-0 ${p.playing ? "mini-pulse" : ""}`} size={18} />
             <span className="min-w-0 flex-1">
               <span className="block text-[0.6875rem] font-semibold text-forest">{t("Lesson {n}", { n: l.number })}</span>
               <span className="block truncate text-sm font-semibold">{discreet ? "Men's Social" : l.title}</span>

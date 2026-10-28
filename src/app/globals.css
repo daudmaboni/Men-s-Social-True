@@ -880,3 +880,12 @@ html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .cap-xs { font-si
 html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .cap-sm { font-size: 16px; }
 html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .big-stack { flex-direction: column; align-items: stretch; }
 html:is([data-size="xxl"], [data-size="x3"], [data-size="x4"]) .big-stack > :is(a, button) { text-align: center; }
+
+/* Step 99: corner concentricity (Apple's ConcentricRectangle, in CSS).
+   A rounded shape sitting in the corner of a rounded card gets the card's radius minus the gap,
+   so both curves share one centre. The card says its radius and padding once:
+   [--nest-r:28px] [--nest-p:20px]. Defaults fit our usual card: rounded-3xl (24px) with p-5 (20px).
+   --nest-min keeps small shapes from going square (Apple's minimum radius). */
+.concentric {
+  border-radius: max(var(--nest-min, 8px), calc(var(--nest-r, 24px) - var(--nest-p, 20px)));
+}

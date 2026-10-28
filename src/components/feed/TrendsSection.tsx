@@ -33,7 +33,7 @@ export default function TrendsSection() {
       id="trends"
       head={
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-mint text-forest">
+          <span className="concentric flex h-9 w-9 items-center justify-center bg-mint text-forest">
             <LineChart size={18} />
           </span>
           <h2 className="text-lg font-bold">{t("Your trends")}</h2>

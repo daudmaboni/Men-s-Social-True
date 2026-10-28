@@ -53,19 +53,19 @@ export function GoalsCard({ water, sleep, interests }: { water: number | null; s
     <section className="rounded-3xl bg-surface p-5 ring-1 ring-line">
       <h2 className="text-lg font-bold">{t("My goals")}</h2>
       <div className="mt-3 grid grid-cols-2 gap-3">
-        <button onClick={() => open("water")} className="rounded-2xl bg-bg p-4 text-left ring-1 ring-line">
+        <button onClick={() => open("water")} className="concentric bg-bg p-4 text-left ring-1 ring-line">
           <Droplet size={18} className="text-forest" />
           <p className="mt-2 text-xl font-bold">{water ? fmt("water", water) : t("Not set")}</p>
           <p className="text-xs text-ink-soft">{t("water a day")}</p>
         </button>
-        <button onClick={() => open("sleep")} className="rounded-2xl bg-bg p-4 text-left ring-1 ring-line">
+        <button onClick={() => open("sleep")} className="concentric bg-bg p-4 text-left ring-1 ring-line">
           <Moon size={18} className="text-forest" />
           <p className="mt-2 text-xl font-bold">{sleep ? fmt("sleep", sleep) : t("Not set")}</p>
           <p className="text-xs text-ink-soft">{t("sleep a night")}</p>
         </button>
       </div>
 
-      <button onClick={() => setTopics(true)} className="mt-3 flex w-full items-center justify-between rounded-2xl bg-mint/60 px-4 py-3 text-left">
+      <button onClick={() => setTopics(true)} className="concentric mt-3 flex w-full items-center justify-between bg-mint/60 px-4 py-3 text-left">
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-forest-deep">{t("Topics I follow")}</span>
           <span className="block truncate text-xs text-forest">
