@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Bookmark, Search } from "lucide-react";
 import Discover, { DiscoverSkeleton } from "@/components/social/Discover";
 import Community from "@/components/social/Community";
+import JourneyHome from "@/components/journey/JourneyHome";
 import SearchPanel from "@/components/social/SearchPanel";
 import ContentLangOffer from "@/components/social/ContentLangOffer";
 import LiquidSegment from "@/components/LiquidSegment";
@@ -24,20 +25,24 @@ const refreshDiscover = () => {
   return refreshLibrary();
 };
 
-type Tab = "discover" | "community";
+// Step 100: My Journey is the first section (and where the app opens). Discover and Community are unchanged,
+// one tap away, and ?tab=discover / ?tab=community still open them directly.
+type Tab = "journey" | "discover" | "community";
+const ORDER: Tab[] = ["journey", "discover", "community"];
+const fromAddress = (v: string | null): Tab | null => (v === "journey" || v === "discover" || v === "community" ? v : null);
 
 function SocialInner() {
-  // Opens on Community when the address says ?tab=community (e.g. a shared link); after that it's
-  // remembered while he moves between the main tabs, because this tab stays open in the background.
+  // Opens on My Journey, or on the section the address names (?tab=discover / ?tab=community, e.g. a shared
+  // link); after that it's remembered while he moves between the main tabs (this tab stays open in the background).
   const params = useSearchParams();
-  const [tab, setTab] = useState<Tab>(params.get("tab") === "community" ? "community" : "discover");
+  const [tab, setTab] = useState<Tab>(fromAddress(params.get("tab")) ?? "journey");
   const [searching, setSearching] = useState(false);
   // Which way the content glides when switching (Community is to the right of Discover)
   const [dir, setDir] = useState<"left" | "right" | null>(null);
   // The address can switch the section: ?tab=community (back from a post) or ?tab=discover (after signing out)
-  const wanted = params.get("tab");
+  const wanted = fromAddress(params.get("tab"));
   useEffect(() => {
-    if (wanted === "community" || wanted === "discover") {
+    if (wanted) {
       setTab(wanted);
       setSearching(false);
     }
@@ -49,39 +54,52 @@ function SocialInner() {
 
   return (
     <div className="space-y-5">
-      {/* One row: Discover / Community on the left, Search and Saved on the right */}
-      <header className="edge-pad flex items-center justify-between gap-2">
-        <h1 className="sr-only">{t("Social")}</h1>
-        <LiquidSegment
-          label={t("Social sections")}
-          value={tab}
-          onChange={(t) => {
-            if (t === tab) return;
-            setDir(t === "community" ? "left" : "right");
-            setTab(t);
-          }}
-          options={[
-            { id: "discover", label: t("Discover") },
-            { id: "community", label: t("Community") },
-          ]}
-        />
-        <div className="flex shrink-0 gap-2">
-          <InboxButton />
-          <button
-            aria-label={t("Search")}
-            aria-pressed={searching}
-            onClick={() => setSearching((s) => !s)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
-          >
-            <Search size={18} />
-          </button>
-          <Link
-            href="/social/saved"
-            aria-label={t("Saved")}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
-          >
-            <Bookmark size={18} />
-          </Link>
+      {/* Step 100: three sections don't fit beside the buttons on a phone, so: the title with Inbox, Search and
+          Saved on top, and My plan / Discover / Community across the full width below it */}
+      <header className="edge-pad flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="font-display text-2xl font-extrabold">{t("Social")}</h1>
+          <div className="flex shrink-0 gap-2">
+            <InboxButton />
+            <button
+              aria-label={t("Search")}
+              aria-pressed={searching && tab !== "journey"}
+              onClick={() => {
+                // Search looks through Discover and Community; from My plan it opens Discover's search
+                if (tab === "journey") {
+                  setDir("left");
+                  setTab("discover");
+                  setSearching(true);
+                } else setSearching((s) => !s);
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
+            >
+              <Search size={18} />
+            </button>
+            <Link
+              href="/social/saved"
+              aria-label={t("Saved")}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-surface ring-1 ring-line transition-transform active:scale-95"
+            >
+              <Bookmark size={18} />
+            </Link>
+          </div>
+        </div>
+        <div className="grid">
+          <LiquidSegment
+            label={t("Social sections")}
+            value={tab}
+            onChange={(next) => {
+              if (next === tab) return;
+              setDir(ORDER.indexOf(next) > ORDER.indexOf(tab) ? "left" : "right");
+              setTab(next);
+            }}
+            options={[
+              { id: "journey", label: t("My plan") },
+              { id: "discover", label: t("Discover") },
+              { id: "community", label: t("Community") },
+            ]}
+          />
         </div>
       </header>
 
@@ -91,7 +109,9 @@ function SocialInner() {
         aria-labelledby={`tab-${tab}`} key={`${tab}-${searching}`}
         className={dir === "left" ? "glass-from-right" : dir === "right" ? "glass-from-left" : "page-enter"}
       >
-        {tab === "community" && communityLocked ? (
+        {tab === "journey" ? (
+          <JourneyHome />
+        ) : tab === "community" && communityLocked ? (
           <LockedTab tab="community" />
         ) : searching ? (
           <SearchPanel tab={tab} onClose={() => setSearching(false)} />

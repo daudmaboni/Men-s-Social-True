@@ -12,10 +12,11 @@ import { getSupabase } from "../supabase/client";
 import { feedSync } from "../feed/store";
 import { progressSync } from "../progress/store";
 import { socialSync } from "../social/store";
+import { journeySync, mergeJourney } from "../journey/store";
 import { mergeFeed, mergeProgress, mergeSocial } from "./merge";
 import { sameData } from "./tombstones";
 
-export type Kind = "progress" | "feed" | "social";
+export type Kind = "progress" | "feed" | "social" | "journey";
 export type SyncStatus = "idle" | "syncing" | "saved" | "offline" | "error";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -23,6 +24,8 @@ const STORES: Record<Kind, { get: () => any; replace: (db: any) => void; clear: 
   progress: { ...progressSync, merge: (l, r, u) => mergeProgress(l, r, u) },
   feed: { ...feedSync, merge: (l, r) => mergeFeed(l, r) },
   social: { ...socialSync, merge: (l, r) => mergeSocial(l, r) },
+  // Step 100: My Journey (assessment + plan). Needs migration 0021 (adds "journey" to the allowed kinds).
+  journey: { ...journeySync, merge: (l, r) => mergeJourney(l, r) },
 };
 /* eslint-enable @typescript-eslint/no-explicit-any */
 const KINDS = Object.keys(STORES) as Kind[];
@@ -48,12 +51,28 @@ let current: { userId: string; stop: () => void } | null = null;
 const pending = new Set<Kind>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 /** Saves started by sync itself (not by him) in a row — a safety stop against endless saving. */
-const followUps: Record<Kind, number> = { progress: 0, feed: 0, social: 0 };
+const followUps: Record<Kind, number> = { progress: 0, feed: 0, social: 0, journey: 0 };
 const MAX_TRIES = 4;
 const REFRESH_EVERY_MS = 20_000;
 let lastRefresh = 0;
 
-class SyncError extends Error {}
+class SyncError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * Step 100: if the database hasn't had migration 0021 yet, it refuses the "journey" row (check constraint,
+ * code 23514). Then his journey stays on this phone only, and the other kinds keep saving as normal
+ * (no endless "couldn't save" for something he can't fix).
+ */
+let journeyRefused = false;
+export const journeyCloud = { refused: () => journeyRefused };
+const usable = (kinds: Kind[]) => (journeyRefused ? kinds.filter((k) => k !== "journey") : kinds);
 
 /**
  * Bring one kind of data in step: read his account copy, merge with this phone, save the result
@@ -77,12 +96,12 @@ async function syncKind(userId: string, kind: Kind): Promise<void> {
           .eq("kind", kind)
           .eq("updated_at", row.updated_at)
           .select("updated_at");
-        if (e) throw new SyncError(e.message);
+        if (e) throw new SyncError(e.message, e.code);
         if (!saved?.length) continue; // another phone saved first → read again and merge
       } else {
         const { error: e } = await sb.from("user_data").insert({ user_id: userId, kind, data: merged });
         if (e?.code === "23505") continue; // another phone created it first → read again and merge
-        if (e) throw new SyncError(e.message);
+        if (e) throw new SyncError(e.message, e.code);
       }
     }
     // Show the merged data on this phone, keeping anything he changed while we were saving
@@ -98,7 +117,8 @@ async function syncKind(userId: string, kind: Kind): Promise<void> {
   throw new SyncError("Account is busy, will try again");
 }
 
-async function push(userId: string, kinds: Kind[]) {
+async function push(userId: string, wanted: Kind[]) {
+  const kinds = usable(wanted);
   if (!getSupabase() || kinds.length === 0) return;
   setStatus("syncing");
   let failed = false;
@@ -106,7 +126,11 @@ async function push(userId: string, kinds: Kind[]) {
   // so the waits added up — about 3 round trips on every open)
   await Promise.all(
     kinds.map((kind) =>
-      syncKind(userId, kind).catch(() => {
+      syncKind(userId, kind).catch((err: unknown) => {
+        if (kind === "journey" && err instanceof SyncError && err.code === "23514") {
+          journeyRefused = true;
+          return;
+        }
         pending.add(kind);
         failed = true;
       }),
